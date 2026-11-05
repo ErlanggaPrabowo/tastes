@@ -19,7 +19,7 @@
       autorejoin|arj         Rejoin otomatis kalau terputus
       session|sesi           GUI sesi (simpan & pulihkan otomatis)
       af|autofarm [on|off]   GUI Auto Farm (kecepatan pukulan, ID block, grid 5x5)
-      ac|autoclear [on|off]  Auto Clear World (GrowScan dulu, break 4 block sekaligus + semua block sekitar player, ambil drop)
+      ac|autoclear [on|off]  Auto Clear World (Legit 1-by-1 dari ujung, berdiri di atas block, skip >5s)
       ctp|clicktp [on|off]   Click TP: klik mana saja, jalan lewat path (tampil seperti teleport)
       move|mv <walk|fly|mix> Mode gerak: jalan / terbang / campur
       aq|autoquest [on|off|scan]  Auto quest (claim + kerjakan quest break/place)
@@ -37,7 +37,6 @@
 -- Cegah dobel-eksekusi
 local genv = (getgenv and getgenv()) or _G
 if genv.ANCHHubGB_Loaded then
-    -- Diam kalau cuma eksekusi ganda otomatis (autoexec + auto-reload)
     if type(genv.ANCHHubGB_Loaded) ~= "number" or os.clock() - genv.ANCHHubGB_Loaded > 15 then
         pcall(function()
             game:GetService("StarterGui"):SetCore("SendNotification", {
@@ -82,35 +81,35 @@ local Config = {
     longhandRange = 3,
     blinkMin = 0.2,
     blinkMax = 0.5,
-    winDrop = 0, -- jumlah WL otomatis di-drop setelah /win (0 = mati)
+    winDrop = 0,
     pos1 = {},
     pos2 = {},
     -- Sesi
-    autoRestore = true, -- pulihkan fitur yang aktif sebelumnya
-    autoReload = true,  -- jalankan ulang skrip otomatis setelah teleport / rejoin
-    autoWarp = false,   -- masuk lagi ke world terakhir setelah buka Roblox
-    launcher = true,    -- tombol melayang WindUI
+    autoRestore = true,
+    autoReload = true,
+    autoWarp = false,
+    launcher = true,
     lastWorld = "",
-    scriptUrl = "",     -- opsional: URL skrip untuk auto-reload
-    session = {},       -- fitur yang sedang aktif (key -> true)
+    scriptUrl = "",
+    session = {},
     -- Auto Farm
-    farmDelay = 0.22,   -- jeda antar pukulan (detik)
-    farmPlaceId = 0,    -- ID block yang di-place
-    farmGrid = { ["1,0"] = true }, -- kotak 5x5 (dx,dy dari posisi player) yang di-place
-    farmTake = true,    -- teleport ambil item setelah break
+    farmDelay = 0.22,
+    farmPlaceId = 0,
+    farmGrid = { ["1,0"] = true },
+    farmTake = true,
     -- Auto Clear World
-    clearBreakDelay = 0.15, -- jeda antar putaran pukulan (detik)
-    clearTpDelay = 0.25,    -- jeda setelah teleport (detik)
-    clearTake = true,       -- ambil item drop otomatis
+    clearBreakDelay = 0.15,
+    clearTpDelay = 0.15,
+    clearTake = true,
     -- Pathfinding / Click TP
-    navPath = true,         -- (lama, tidak dipakai lagi; diganti moveMode)
-    moveMode = "mix",       -- "walk" = jalan lewat path | "fly" = terbang lurus tembus block | "mix" = jalan dulu, kalau buntu terbang
-    navSpeed = 2,           -- jumlah tile per frame saat menyusuri path (1-12)
-    clickTpShift = false,   -- Click TP hanya aktif kalau tahan Shift kiri atau kanan (PC)
+    navPath = true,
+    moveMode = "mix",
+    navSpeed = 2,
+    clickTpShift = false,
 }
 
 local SCRIPT_FILE = "ANCHHub_GrowBlox.lua"
-local QueueReload -- didefinisikan di bagian sesi
+local QueueReload
 
 local MAX_AMOUNT = 10000
 local COOLDOWN = 0.3
@@ -141,7 +140,7 @@ LoadConfig()
 ----------------------------------------------------------------------
 -- UTIL
 ----------------------------------------------------------------------
-local ToastHook = nil -- diisi oleh bagian WindUI
+local ToastHook = nil
 
 local function Notify(message)
     if ToastHook then
@@ -204,7 +203,6 @@ local function ScanGc(name, check)
     return nil
 end
 
--- Tabel inventory (onDrop, canDrop, isWorn, buildRange, refresh)
 local function FindInventory()
     return ScanGc("inventory", function(t)
         return type(rawget(t, "onDrop")) == "function"
@@ -213,7 +211,6 @@ local function FindInventory()
     end)
 end
 
--- Tabel world (enter, dropOk, goTo, name, ghost)
 local function FindWorld()
     return ScanGc("world", function(t)
         return type(rawget(t, "enter")) == "function"
@@ -221,7 +218,6 @@ local function FindWorld()
     end)
 end
 
--- Rig karakter lokal: [1] hadap kanan, [-1] hadap kiri, [0] portrait
 local function FindRigs()
     return ScanGc("rigs", function(t)
         local a, b = rawget(t, 1), rawget(t, -1)
@@ -231,7 +227,6 @@ local function FindRigs()
     end)
 end
 
--- Tabel item yang sedang dipakai (slot -> id), upvalue dari isWorn
 local function GetWorn()
     local inv = FindInventory()
     if not inv then
@@ -260,7 +255,7 @@ local function GetItemDB()
 end
 
 ----------------------------------------------------------------------
--- POSISI GRID (canDrop -> world, x, facing | onDrop -> x, facing, y)
+-- POSISI GRID
 ----------------------------------------------------------------------
 local function GetGridState()
     local inv = FindInventory()
@@ -290,7 +285,6 @@ local function GetGridState()
     return x, y, (facing >= 0) and 1 or -1
 end
 
--- Koordinat tile (sama dengan yang dipakai game: baris = floor(y - 0.475))
 local function GetTile()
     local x, y = GetGridState()
     if not x then
@@ -350,7 +344,7 @@ local function DropWorldLock(amount)
 end
 
 ----------------------------------------------------------------------
--- WARP ANTAR WORLD (/tp, /warp) -> world.enter milik game
+-- WARP ANTAR WORLD
 ----------------------------------------------------------------------
 local function WarpToWorld(name)
     name = Trim(name):upper()
@@ -381,7 +375,7 @@ local function WarpToWorld(name)
 end
 
 ----------------------------------------------------------------------
--- POS1 / POS2 + WIN1 / WIN2  (teleport dalam world lewat world.goTo)
+-- POS1 / POS2 + WIN1 / WIN2
 ----------------------------------------------------------------------
 local function SetPos(slot)
     local tx, ty = GetTile()
@@ -426,7 +420,7 @@ local function GoToPos(slot, amount)
         dropAmount = Config.winDrop
     end
     if dropAmount then
-        task.wait(0.4) -- tunggu posisi game ter-update
+        task.wait(0.4)
         DropWorldLock(dropAmount)
     end
 end
@@ -447,7 +441,7 @@ local function ShowPos()
 end
 
 ----------------------------------------------------------------------
--- REJOIN (masuk ulang ke world yang sama)
+-- REJOIN
 ----------------------------------------------------------------------
 local function Rejoin()
     local name = CurrentWorldName()
@@ -458,7 +452,6 @@ local function Rejoin()
     if QueueReload then
         pcall(QueueReload)
     end
-    -- Game membaca teleport data { world = "NAMA" } saat tiba di server baru
     local data = (name ~= "") and { world = name } or nil
     Notify(name ~= "" and ("Rejoin world " .. name .. "...") or "Rejoin...")
     local ok, err = pcall(function()
@@ -471,7 +464,7 @@ local function Rejoin()
 end
 
 ----------------------------------------------------------------------
--- BLINK SKIN (warna skin ganti otomatis)
+-- BLINK SKIN
 ----------------------------------------------------------------------
 local blinkOn = false
 local blinkOriginal = {}
@@ -562,7 +555,7 @@ local function StartBlink()
 end
 
 ----------------------------------------------------------------------
--- LONGHAND (jangkauan punch & build lebih jauh)
+-- LONGHAND
 ----------------------------------------------------------------------
 local longhandOn = false
 local longhandOriginal = nil
@@ -578,7 +571,6 @@ local function ApplyLonghand()
         longhandOriginal = { build = inv.buildRange, punch = inv.punchRange }
     end
 
-    -- Game: range = reach/build item terbaik + 2.5
     local target = 2.5 + Config.longhandRange
     inv.buildRange = function()
         return math.max(longhandOriginal.build(), target)
@@ -604,7 +596,7 @@ local function StopLonghand()
 end
 
 ----------------------------------------------------------------------
--- NOCLIP (memakai mode "ghost" bawaan game: tembus blok + terbang)
+-- NOCLIP
 ----------------------------------------------------------------------
 local noclipOn = false
 local noclipConn = nil
@@ -757,7 +749,7 @@ local function StartUjump()
 end
 
 ----------------------------------------------------------------------
--- VISUAL ITEM (hanya tampilan lokal)
+-- VISUAL ITEM
 ----------------------------------------------------------------------
 local visualBackup = {}
 
@@ -847,9 +839,8 @@ local function GetWearables()
 end
 
 ----------------------------------------------------------------------
--- FEATURE SETTERS (dipakai GUI & command)
+-- FEATURE SETTERS
 ----------------------------------------------------------------------
--- ANTI AFK
 local antiAfkOn = false
 local antiAfkConn = nil
 
@@ -886,7 +877,6 @@ local function StartAntiAfk()
     return true
 end
 
--- AUTO REJOIN (saat muncul layar error / disconnect)
 local arjOn = false
 local arjConn = nil
 
@@ -925,7 +915,7 @@ local function StartAutoRejoin()
     return true
 end
 
-local RefreshHub -- didefinisikan di bagian GUI
+local RefreshHub
 
 local SearchItems, ItemName, StartFarm, StopFarm, StartQuest, StopQuest, QuestReport, StartGod, StopGod, OpenNativeGrowScan, ScanWorld
 local farmOn, questOn, godOn = false, false, false
@@ -935,7 +925,7 @@ local questStatus = "Mati"
 local farmStats = { status = "Mati", placed = 0, broken = 0, picked = 0, cycles = 0 }
 do
 ----------------------------------------------------------------------
--- DATABASE ITEM (diambil langsung dari ItemDB game) + PENCARIAN
+-- DATABASE ITEM + PENCARIAN
 ----------------------------------------------------------------------
 local blockListCache = nil
 
@@ -1018,7 +1008,7 @@ function SearchItems(query, limit)
 end
 
 ----------------------------------------------------------------------
--- AKSES FUNGSI GAME: hit (pukulan), setTile (place), backpack
+-- AKSES FUNGSI GAME: hit, setTile, backpack
 ----------------------------------------------------------------------
 local gameFns = {}
 
@@ -1305,12 +1295,10 @@ function StartFarm()
         return false
     end
     local selected = 0
-    local reach = 0
     for key, on in pairs(Config.farmGrid) do
         local dx, dy = tostring(key):match("^(-?%d+),(-?%d+)$")
         if on and dx and dy then
             selected += 1
-            reach = math.max(reach, math.abs(tonumber(dx)), math.abs(tonumber(dy)))
         end
     end
     if selected < 1 then
@@ -1325,20 +1313,6 @@ function StartFarm()
     if not x then
         Notify("Posisi tidak terdeteksi!")
         return false
-    end
-
-    local inv = FindInventory()
-    local needed = reach + 0.05
-    local okRange, range = pcall(function()
-        return inv.buildRange()
-    end)
-    if okRange and type(range) == "number" and range < needed then
-        if longhandOn then
-            StopLonghand()
-        end
-        Config.longhandRange = math.max(Config.longhandRange, math.clamp(math.ceil(needed - 2.5), 1, 20))
-        ApplyLonghand()
-        Notify("Longhand otomatis aktif (" .. Config.longhandRange .. " tile) supaya target terjangkau.")
     end
 
     farmAnchor = {
@@ -1735,11 +1709,20 @@ do
 end
 
 ----------------------------------------------------------------------
--- AUTO CLEAR WORLD
+-- AUTO CLEAR WORLD (LEGIT METHOD - 1 BY 1 DARI UJUNG)
+-- Sistem Auto Clear:
+-- 1. Mulai
+-- 2. Deteksi / Scan objek-objek di world
+-- 3. Menuju ke koordinat block paling kecil (misal (1,23) -> bergerak ke (1,22) di atas block)
+-- 4. Jika block hancur, lanjut ke block selanjutnya
+-- 5. Jika yang di-break tidak hancur dalam 5 detik, skip block tersebut
+-- 6. Lakukan hingga seluruh blok yang ada di world tersebut habis
+-- 7. Selesai
 ----------------------------------------------------------------------
 do
-    local BATCH = 4
+    local BREAK_TIMEOUT = 5.0 -- detik maksimal sebelum block di-skip
 
+    -- Tile yang TIDAK boleh dipecah: lock, area, bedrock, hits <= 0, door utama
     local function Protected(db, id)
         local item = db and db[id]
         if type(item) ~= "table" then
@@ -1763,158 +1746,73 @@ do
         return TileValue(world, t.layer, t.x, t.y) == t.id
     end
 
-    local function Collect(world, db, fails)
+    -- Deteksi & kumpulkan seluruh block di world, urut dari koordinat paling kecil (y terkecil, lalu x terkecil)
+    local function Collect(world, db, skippedSet)
         local list = {}
         for y = 0, world.h - 1 do
             for x = 0, world.w - 1 do
                 local f = TileValue(world, "fg", x, y)
-                if f and f ~= 0 then
-                    if not Protected(db, f) and (fails[x .. "," .. y .. ",fg"] or 0) < 3 then
-                        table.insert(list, { x = x, y = y, id = f, layer = "fg" })
+                if f and f ~= 0 and not Protected(db, f) then
+                    local keyFg = x .. "," .. y .. ",fg"
+                    if not skippedSet[keyFg] then
+                        table.insert(list, { x = x, y = y, id = f, layer = "fg", key = keyFg })
                     end
-                else
-                    local b = TileValue(world, "bg", x, y)
-                    if b and b ~= 0 and not Protected(db, b) and (fails[x .. "," .. y .. ",bg"] or 0) < 3 then
-                        table.insert(list, { x = x, y = y, id = b, layer = "bg" })
+                end
+                local b = TileValue(world, "bg", x, y)
+                if b and b ~= 0 and not Protected(db, b) then
+                    local keyBg = x .. "," .. y .. ",bg"
+                    if not skippedSet[keyBg] then
+                        table.insert(list, { x = x, y = y, id = b, layer = "bg", key = keyBg })
                     end
                 end
             end
         end
+
+        -- Urutkan murni dari koordinat terkecil:
+        -- 1. y paling kecil (paling atas), 2. x paling kecil (paling kiri), 3. fg sebelum bg pada tile yang sama
         table.sort(list, function(p, q)
             if p.y ~= q.y then
                 return p.y < q.y
             end
-            if p.y % 2 == 0 then
+            if p.x ~= q.x then
                 return p.x < q.x
             end
-            return p.x > q.x
+            return p.layer == "fg" and q.layer == "bg"
         end)
         return list
     end
 
-    local function MakeGroups(list, reach)
-        local groups, used = {}, {}
-        for i, first in ipairs(list) do
-            if not used[i] then
-                used[i] = true
-                local g = { first }
-                for j = i + 1, math.min(#list, i + 60) do
-                    if #g >= BATCH then
-                        break
-                    end
-                    local t = list[j]
-                    if not used[j] and math.abs(t.x - first.x) <= reach and math.abs(t.y - first.y) <= reach then
-                        used[j] = true
-                        table.insert(g, t)
-                    end
-                end
-                table.insert(groups, g)
+    -- Tentukan posisi berdiri: prioritas utama di atas block yaitu (x, y - 1)
+    local function GetStandSpot(world, db, target)
+        local aboveX, aboveY = target.x, target.y - 1
+        if InBounds(world, aboveX, aboveY) then
+            local fgAbove = TileValue(world, "fg", aboveX, aboveY)
+            local itemAbove = db and fgAbove and db[fgAbove]
+            if fgAbove == 0 or (type(itemAbove) == "table" and not itemAbove.solid) then
+                return { x = aboveX, y = aboveY }
             end
         end
-        return groups
+        -- Fallback jika (x, y - 1) tertutup bedrock/lock/batas atas map: cek kiri/kanan/bawah terdekat (jarak 1 tile)
+        local fallbacks = {
+            { x = target.x - 1, y = target.y },
+            { x = target.x + 1, y = target.y },
+            { x = target.x - 1, y = target.y - 1 },
+            { x = target.x + 1, y = target.y - 1 },
+            { x = target.x,     y = target.y + 1 },
+        }
+        for _, pos in ipairs(fallbacks) do
+            if InBounds(world, pos.x, pos.y) then
+                local fg = TileValue(world, "fg", pos.x, pos.y)
+                local item = db and fg and db[fg]
+                if fg == 0 or (type(item) == "table" and not item.solid) then
+                    return pos
+                end
+            end
+        end
+        return { x = target.x, y = math.max(0, target.y - 1) }
     end
 
-    local function StandingSpot(world, group, reach)
-        local cx, cy = group[1].x, group[1].y
-        local best, bestDist = nil, math.huge
-        for dy = -reach, reach do
-            for dx = -reach, reach do
-                local x, y = cx + dx, cy + dy
-                if InBounds(world, x, y) and TileValue(world, "fg", x, y) == 0 then
-                    local ok = true
-                    for _, t in ipairs(group) do
-                        if math.abs(t.x - x) > reach or math.abs(t.y - y) > reach then
-                            ok = false
-                            break
-                        end
-                    end
-                    if ok then
-                        local d = math.abs(dx) + math.abs(dy)
-                        if d < bestDist then
-                            best, bestDist = { x = x, y = y }, d
-                        end
-                    end
-                end
-            end
-        end
-        return best
-    end
-
-    local function Nearby(world, db, reach)
-        local px, py = GetTile()
-        local list = {}
-        if not px then
-            return list
-        end
-        for y = py - reach, py + reach do
-            for x = px - reach, px + reach do
-                if InBounds(world, x, y) then
-                    local f = TileValue(world, "fg", x, y)
-                    if f and f ~= 0 then
-                        if not Protected(db, f) then
-                            table.insert(list, { x = x, y = y, id = f, layer = "fg" })
-                        end
-                    else
-                        local b = TileValue(world, "bg", x, y)
-                        if b and b ~= 0 and not Protected(db, b) then
-                            table.insert(list, { x = x, y = y, id = b, layer = "bg" })
-                        end
-                    end
-                end
-            end
-        end
-        return list
-    end
-
-    local function BreakGroup(world, db, hit, group, token, reach)
-        local started = os.clock()
-        local failed = {}
-        while Clear.token == token do
-            local any = false
-            for _, t in ipairs(group) do
-                if Alive(world, t) then
-                    any = true
-                    pcall(hit, t.x, t.y, true)
-                end
-            end
-            if any then
-                for _, t in ipairs(Nearby(world, db, reach)) do
-                    pcall(hit, t.x, t.y, true)
-                end
-            end
-            if not any then
-                break
-            end
-            if os.clock() - started > 8 then
-                for _, t in ipairs(group) do
-                    if Alive(world, t) then
-                        table.insert(failed, t)
-                    end
-                end
-                break
-            end
-            task.wait(math.max(0.03, Config.clearBreakDelay))
-        end
-
-        local sweepStart = os.clock()
-        while Clear.token == token and os.clock() - sweepStart < 5 do
-            local near = Nearby(world, db, reach)
-            if #near == 0 then
-                break
-            end
-            for _, t in ipairs(near) do
-                pcall(hit, t.x, t.y, true)
-            end
-            task.wait(math.max(0.03, Config.clearBreakDelay))
-            local count = #Nearby(world, db, reach)
-            if count == 0 then
-                break
-            end
-        end
-        return failed
-    end
-
-    local function TakeDrops(world, before, token, home)
+    local function TakeDrops(world, before, token, returnSpot)
         local ok, list = pcall(world.dropList)
         if not ok or type(list) ~= "table" then
             return 0
@@ -1926,6 +1824,9 @@ do
                 table.insert(targets, drop)
             end
         end
+        if #targets == 0 then
+            return 0
+        end
         local picked = 0
         for _, drop in ipairs(targets) do
             if Clear.token ~= token then
@@ -1935,7 +1836,7 @@ do
                 local reached = Nav.To(math.floor(drop.x), math.floor(drop.y), function() return Clear.token ~= token end)
                 task.wait(math.max(0.03, Config.clearTpDelay))
                 local waited = os.clock()
-                while reached and Clear.token == token and table.find(list, drop) and os.clock() - waited < 0.8 do
+                while reached and Clear.token == token and table.find(list, drop) and os.clock() - waited < 0.6 do
                     task.wait(0.05)
                 end
                 if not table.find(list, drop) then
@@ -1943,8 +1844,8 @@ do
                 end
             end
         end
-        if home then
-            Nav.To(home.x, home.y, function() return Clear.token ~= token end)
+        if returnSpot then
+            Nav.To(returnSpot.x, returnSpot.y, function() return Clear.token ~= token end)
             task.wait(math.max(0.03, Config.clearTpDelay))
         end
         return picked
@@ -1953,22 +1854,16 @@ do
     local function ClearLoop(token, home)
         local db = GetItemDB()
         local hit = FindGameFn("hit")
-        local inv = FindInventory()
         if not db or not hit then
             Clear.status = "Fungsi game tidak ditemukan"
             return
         end
 
-        local fails = {}
-        local function Fail(t, n)
-            local key = t.x .. "," .. t.y .. "," .. t.layer
-            fails[key] = (fails[key] or 0) + (n or 1)
-        end
-        local lastLeft = nil
-        for pass = 1, 10 do
-            if Clear.token ~= token then
-                return
-            end
+        local skippedSet = {}
+        local pass = 0
+
+        while Clear.token == token do
+            pass += 1
             local world = FindWorld()
             if not world or CurrentWorldName() ~= home.world then
                 Clear.status = "World berubah, berhenti"
@@ -1976,114 +1871,145 @@ do
                 return
             end
 
-            Clear.status = "GrowScan world..."
+            -- 2. Deteksi / Scan objek-objek di world
+            Clear.status = "Scan objek di world..."
             Clear.stats.pass = pass
-            local scan = ScanWorld()
-            local fgTotal, bgTotal = 0, 0
-            if scan then
-                for _, n in pairs(scan.fg) do fgTotal += n end
-                for _, n in pairs(scan.bg) do bgTotal += n end
-            end
-            local targets = Collect(world, db, fails)
+            local targets = Collect(world, db, skippedSet)
             Clear.stats.scanned = #targets
             Clear.stats.left = #targets
+
             if pass == 1 then
-                Notify(string.format("GrowScan: %d fg, %d bg. Target pecah: %d tile (lock & bedrock dilewati).",
-                    fgTotal, bgTotal, #targets))
+                if #targets > 0 then
+                    local first = targets[1]
+                    Notify(string.format(
+                        "Scan selesai: %d block ditemukan. Mulai dari ujung (%d, %d).",
+                        #targets, first.x, first.y
+                    ))
+                else
+                    Notify("World sudah bersih, tidak ada block untuk dihancurkan.")
+                end
             end
+
+            -- 6. Jika seluruh block yang bisa dihancurkan sudah habis -> selesai
             if #targets == 0 then
                 break
             end
 
-            local okRange, range = pcall(function() return inv.buildRange() end)
-            local reach = 2
-            if okRange and type(range) == "number" then
-                reach = math.max(1, math.floor(range - 0.05))
-            end
-            reach = math.min(reach, 6)
+            local brokeAnyInPass = false
 
-            if lastLeft and #targets >= lastLeft and pass > 3 then
-                for _, t in ipairs(targets) do
-                    Fail(t, 1)
-                end
-            end
-            lastLeft = #targets
-
-            local groups = MakeGroups(targets, math.max(1, math.floor(reach / 2)))
-            for index, group in ipairs(groups) do
+            for idx, target in ipairs(targets) do
                 if Clear.token ~= token then
                     return
                 end
-                local spot = StandingSpot(world, group, reach)
-                if not spot then
-                    for _, t in ipairs(group) do
-                        Fail(t, 1)
-                        Clear.stats.skipped += 1
-                    end
-                else
-                    Clear.status = string.format("Break grup %d/%d (pass %d)", index, #groups, pass)
-                    local px, py = GetTile()
-                    local reachable = true
-                    if px ~= spot.x or py ~= spot.y then
-                        reachable = Nav.To(spot.x, spot.y, function() return Clear.token ~= token end)
-                        task.wait(math.max(0.03, Config.clearTpDelay))
-                    end
-                    local function InReach()
-                        local cx, cy = GetTile()
-                        if not cx then
-                            return false
-                        end
-                        for _, t in ipairs(group) do
-                            if math.abs(t.x - cx) > reach or math.abs(t.y - cy) > reach then
-                                return false
-                            end
-                        end
-                        return true
-                    end
-                    if not reachable or not InReach() then
-                        pcall(world.goTo, spot.x, spot.y)
-                        task.wait(math.max(0.05, Config.clearTpDelay))
-                        reachable = InReach()
-                    end
-                    if not reachable then
-                        for _, t in ipairs(group) do
-                            Fail(t, 1)
-                        end
-                        Clear.stats.skipped += #group
-                        Clear.status = "Posisi tidak tercapai, dicoba lagi di pass berikutnya"
+                world = FindWorld()
+                if not world or CurrentWorldName() ~= home.world then
+                    Clear.status = "World berubah, berhenti"
+                    Notify("Auto Clear berhenti: kamu pindah world.")
+                    return
+                end
+
+                -- Cek apakah block masih ada di koordinat tersebut
+                if Alive(world, target) then
+                    -- Jika target adalah background namun di atasnya masih ada foreground yang belum hancur, lewati dulu
+                    if target.layer == "bg" and (TileValue(world, "fg", target.x, target.y) or 0) ~= 0 then
                         continue
                     end
-                    local before = DropSet(world)
-                    local failed = BreakGroup(world, db, hit, group, token, reach)
-                    for _, t in ipairs(failed) do
-                        Fail(t, 1)
+
+                    -- 3. Menuju ke koordinat di atas block (x, y - 1) agar tidak stuck
+                    local spot = GetStandSpot(world, db, target)
+                    Clear.status = string.format(
+                        "Menuju (%d,%d) -> Break (%d,%d) [%d/%d]",
+                        spot.x, spot.y, target.x, target.y, idx, #targets
+                    )
+
+                    local px, py = GetTile()
+                    if px ~= spot.x or py ~= spot.y then
+                        local reached = Nav.To(spot.x, spot.y, function() return Clear.token ~= token end)
+                        if not reached then
+                            pcall(world.goTo, spot.x, spot.y)
+                        end
+                        task.wait(math.max(0.03, Config.clearTpDelay))
+                    end
+
+                    if Clear.token ~= token then
+                        return
+                    end
+
+                    -- 4 & 5. Break block hingga hancur; jika > 5 detik tidak hancur, skip block tersebut
+                    local beforeDrops = Config.clearTake and DropSet(world) or nil
+                    local started = os.clock()
+                    local timedOut = false
+
+                    Clear.status = string.format(
+                        "Break %s (%d,%d) [%d/%d]",
+                        ItemName(target.id), target.x, target.y, idx, #targets
+                    )
+
+                    while Clear.token == token and Alive(world, target) do
+                        if os.clock() - started >= BREAK_TIMEOUT then
+                            timedOut = true
+                            break
+                        end
+                        -- Jaga posisi tetap di spot (di atas block) agar tidak jatuh/tersangkut
+                        local cx, cy = GetTile()
+                        if cx ~= spot.x or cy ~= spot.y then
+                            pcall(world.goTo, spot.x, spot.y)
+                        end
+                        pcall(hit, target.x, target.y, true)
+                        task.wait(math.max(0.03, Config.clearBreakDelay))
+                    end
+
+                    if Clear.token ~= token then
+                        return
+                    end
+
+                    if not Alive(world, target) then
+                        -- Block berhasil hancur -> lanjut ke block berikutnya
+                        brokeAnyInPass = true
+                        Clear.stats.broken += 1
+                        Clear.stats.left = math.max(0, Clear.stats.left - 1)
+
+                        if Config.clearTake then
+                            task.wait(0.12)
+                            Clear.stats.picked += TakeDrops(world, beforeDrops, token, nil)
+                        end
+                    elseif timedOut then
+                        -- Lebih dari 5 detik tidak hancur -> skip block ini
+                        skippedSet[target.key] = true
                         Clear.stats.skipped += 1
+                        Clear.stats.left = math.max(0, Clear.stats.left - 1)
+                        Clear.status = string.format("Skip (%d,%d) > 5 dtk", target.x, target.y)
                     end
-                    Clear.stats.broken += #group - #failed
-                    Clear.stats.left = math.max(0, Clear.stats.left - #group + #failed)
-                    if Config.clearTake and #group - #failed > 0 then
-                        task.wait(0.25)
-                        Clear.status = "Ambil item"
-                        Clear.stats.picked += TakeDrops(world, before, token, nil)
-                    end
+                else
+                    Clear.stats.left = math.max(0, Clear.stats.left - 1)
                 end
+            end
+
+            -- Jika dalam satu pass penuh tidak ada lagi block yang berhasil dihancurkan, hentikan loop
+            if not brokeAnyInPass then
+                break
             end
         end
 
+        -- Sapuan terakhir untuk mengambil sisa drop jika fitur ambil drop aktif
         if Config.clearTake and Clear.token == token then
-            Clear.status = "Ambil sisa item"
             local world = FindWorld()
             if world then
+                Clear.status = "Ambil sisa item drop..."
                 Clear.stats.picked += TakeDrops(world, nil, token, home)
             end
         end
+
+        -- 7. Selesai
         local world = FindWorld()
         if world and Clear.token == token then
             Nav.To(home.x, home.y, function() return Clear.token ~= token end)
         end
         Clear.status = "Selesai"
-        Notify(string.format("Auto Clear selesai: %d pecah, %d diambil, %d dilewati.",
-            Clear.stats.broken, Clear.stats.picked, Clear.stats.skipped))
+        Notify(string.format(
+            "Auto Clear selesai! Hancur: %d | Diambil: %d | Di-skip: %d",
+            Clear.stats.broken, Clear.stats.picked, Clear.stats.skipped
+        ))
     end
 
     function Clear.Stop()
@@ -2117,14 +2043,10 @@ do
             Notify("World tidak ditemukan.")
             return false
         end
-        local inv = FindInventory()
-        local okRange, range = pcall(function() return inv.buildRange() end)
-        if okRange and type(range) == "number" and range < 4.5 then
-            if longhandOn then
-                StopLonghand()
-            end
-            Config.longhandRange = math.max(Config.longhandRange, 3)
-            ApplyLonghand()
+
+        -- Pastikan Longhand dimatikan agar murni menggunakan metode legit
+        if longhandOn then
+            StopLonghand()
         end
 
         local home = {
@@ -3043,7 +2965,7 @@ do
     AddFeatureToggle(Tab, "Auto Rejoin", "Rejoin otomatis ke world ini kalau terputus.", "autorejoin")
     AddFeatureToggle(Tab, "God Mode", "Kebal lava, spike, api (burn), dan hazard tile lain.", "god")
     AddFeatureToggle(Tab, "Auto Farm", "Atur kecepatan, ID block, dan pola place di tab Auto Farm.", "autofarm")
-    AddFeatureToggle(Tab, "Auto Clear World", "GrowScan, break 4 block sekaligus, ambil drop (tab Auto Clear).", "autoclear")
+    AddFeatureToggle(Tab, "Auto Clear World", "Clear world legit 1 per 1 dari koordinat terkecil, berdiri di atas block, skip >5 dtk.", "autoclear")
     AddFeatureToggle(Tab, "Click TP", "Klik tujuan, jalan lewat path tapi terlihat seperti teleport.", "clicktp")
     AddFeatureToggle(Tab, "Auto Quest", "Claim dan kerjakan quest otomatis (lihat tab Auto Quest).", "autoquest")
 
@@ -3350,7 +3272,7 @@ do
                     clearStatusPara,
                     string.format("Status: %s (Pass %d)", Clear.status, st.pass),
                     string.format(
-                        "Target: %d | Sisa: %d | Dilewati: %d\nPecah: %d | Ambil: %d\nDelay Break: %.2f dtk | Delay TP: %.2f dtk",
+                        "Target: %d | Sisa: %d | Di-skip (>5s): %d\nHancur: %d | Ambil: %d\nDelay Break: %.2f dtk | Delay Gerak: %.2f dtk",
                         st.scanned, st.left, st.skipped, st.broken, st.picked,
                         Config.clearBreakDelay, Config.clearTpDelay
                     )
@@ -3359,14 +3281,14 @@ do
         end
     end)
 
-    AddFeatureToggle(Tab, "Auto Clear World", "GrowScan dulu, lalu pecah semua block (kecuali lock & bedrock).", "autoclear")
+    AddFeatureToggle(Tab, "Auto Clear World (Legit)", "Scan world, bergerak ke atas block terkecil (x, y-1), break 1-per-1, skip jika > 5 detik.", "autoclear")
 
     Tab:Space()
     Tab:Section({ Title = "Pengaturan Clear" })
 
     Tab:Input({
         Title = "Delay Break (detik)",
-        Desc = "Jeda tiap putaran pukul (0.03 - 5). 4 block dipukul sekaligus.",
+        Desc = "Jeda antar pukulan (0.03 - 5).",
         Value = tostring(Config.clearBreakDelay),
         Placeholder = "0.15",
         Callback = function(text)
@@ -3381,10 +3303,10 @@ do
     })
 
     Tab:Input({
-        Title = "Delay Teleport (detik)",
-        Desc = "Jeda setelah pindah posisi / ambil drop (0.03 - 5).",
+        Title = "Delay Gerak / Pindah (detik)",
+        Desc = "Jeda setelah bergerak ke atas block (0.03 - 5).",
         Value = tostring(Config.clearTpDelay),
-        Placeholder = "0.25",
+        Placeholder = "0.15",
         Callback = function(text)
             local value = tonumber(text)
             if value and value >= 0.03 and value <= 5 then
@@ -3398,7 +3320,7 @@ do
 
     Tab:Toggle({
         Title = "Ambil Item Otomatis",
-        Desc = "Teleport ke item drop setelah break, sapu sisa di akhir.",
+        Desc = "Ambil item drop setelah block pecah dan sapu sisa drop di akhir.",
         Value = Config.clearTake,
         Callback = function(on)
             Config.clearTake = on
@@ -3429,8 +3351,8 @@ do
     })
 
     Tab:Paragraph({
-        Title = "Catatan Auto Clear",
-        Desc = "Alur: scan isi world -> pecah per 4 block -> ambil drop -> ulang sampai bersih. Block lock, area, bedrock, dan door utama tidak disentuh.",
+        Title = "Alur Auto Clear Baru (Legit)",
+        Desc = "1. Scan seluruh objek di world.\n2. Mulai dari koordinat block paling kecil (misal (1,23)) lalu bergerak tepat ke atasnya di (1,22) agar tidak stuck.\n3. Jika hancur, lanjut ke block berikutnya.\n4. Jika dalam 5 detik tidak hancur, otomatis skip.\n5. Berjalan terus hingga seluruh block di world habis.",
     })
 end
 
@@ -4119,7 +4041,7 @@ do
             p .. "session | " .. p .. "sesi  —  Buka tab Sesi",
             p .. "af | " .. p .. "autofarm [on/off]  —  Auto Farm",
             p .. "ctp | " .. p .. "clicktp [on/off]  —  Click TP (Pathfinding)",
-            p .. "ac | " .. p .. "autoclear [on/off]  —  Auto Clear World",
+            p .. "ac | " .. p .. "autoclear [on/off]  —  Auto Clear World (Legit)",
             p .. "move | " .. p .. "mv <walk/fly/mix>  —  Ubah mode gerak",
             p .. "aq | " .. p .. "autoquest [on/off/scan]  —  Auto Quest",
             p .. "gs | " .. p .. "growscan  —  Buka GrowScan",
