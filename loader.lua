@@ -1,8 +1,8 @@
 --[[
-    ANCH HUB | GrowBlox Official Loader (Key System)
+    ANCH HUB | GrowBlox Official Loader (Key System - Single Request)
 ]]
 
-local API_BASE_URL = "https://anch-key-system.vercel.app/" -- Ganti dengan IP/Domain VPS kamu
+local API_BASE_URL = "https://anch-key-system.vercel.app" -- Pastikan TANPA garis miring (/) di paling belakang
 local DISCORD_INVITE = "https://discord.gg/linkdiscordkamu"
 local KEY_FILE = "ANCHHub_SavedKey.txt"
 
@@ -15,7 +15,8 @@ local function Trim(s)
     return (tostring(s or ""):gsub("^%s+", ""):gsub("%s+$", ""))
 end
 
--- Ambil HWID unik device pengguna
+API_BASE_URL = Trim(API_BASE_URL):gsub("/+$", "")
+
 local function GetDeviceHWID()
     local estimators = {
         gethwid,
@@ -45,7 +46,6 @@ local function Notify(title, text, dur)
     end)
 end
 
--- Fungsi Cek Key ke Server VPS Node.js
 local function VerifyAndLoadScript(inputKey, onFailCallback)
     inputKey = Trim(inputKey)
     if inputKey == "" then
@@ -65,7 +65,7 @@ local function VerifyAndLoadScript(inputKey, onFailCallback)
     end)
 
     if not ok or type(response) ~= "string" then
-        local msg = "Gagal terhubung ke server Key ANCH Hub!"
+        local msg = "Gagal terhubung ke server Key ANCH Hub! Cek API_BASE_URL."
         Notify("Koneksi Gagal", msg, 5)
         if onFailCallback then onFailCallback(msg) end
         return false
@@ -76,7 +76,7 @@ local function VerifyAndLoadScript(inputKey, onFailCallback)
     end)
 
     if not decodeOk or type(data) ~= "table" then
-        local msg = "Respon server tidak valid!"
+        local msg = "Respon server bukan JSON valid!"
         if onFailCallback then onFailCallback(msg) end
         return false
     end
@@ -92,35 +92,54 @@ local function VerifyAndLoadScript(inputKey, onFailCallback)
         return false
     end
 
-    -- Simpan Key yang valid agar ke depannya auto-login
+    -- Simpan Key yang valid untuk auto-login berikutnya
     if writefile then
         pcall(writefile, KEY_FILE, inputKey)
     end
 
-    Notify("Key Valid!", "Sisa Durasi: " .. tostring(data.remainingText) .. ". Memuat ANCH Hub...", 4)
+    -- Ambil skrip langsung dari respon JSON /api/verify (1x Request)
+    local scriptCode = data.script
 
-    -- Ambil dan jalankan Skrip Utama dari endpoint /api/script
-    local scriptUrl = string.format(
-        "%s/api/script?key=%s&hwid=%s",
-        API_BASE_URL,
-        HttpService:UrlEncode(inputKey),
-        HttpService:UrlEncode(HWID)
-    )
+    -- Cadangan jika server belum mengirim field data.script
+    if type(scriptCode) ~= "string" or #scriptCode < 50 then
+        if data.scriptError then
+            Notify("Error Server", tostring(data.scriptError), 6)
+            if onFailCallback then onFailCallback(tostring(data.scriptError)) end
+            return false
+        end
 
-    local okScript, scriptCode = pcall(function()
-        return game:HttpGet(scriptUrl)
-    end)
+        local scriptUrl = string.format(
+            "%s/api/script?key=%s&hwid=%s",
+            API_BASE_URL,
+            HttpService:UrlEncode(inputKey),
+            HttpService:UrlEncode(HWID)
+        )
+        local okScript, resScript = pcall(function()
+            return game:HttpGet(scriptUrl)
+        end)
+        if okScript and type(resScript) == "string" then
+            if resScript:sub(1, 3) == "-- " and #resScript < 150 then
+                Notify("Server Info", resScript, 6)
+                if onFailCallback then onFailCallback(resScript) end
+                return false
+            end
+            scriptCode = resScript
+        end
+    end
 
-    if not okScript or type(scriptCode) ~= "string" or #scriptCode < 50 then
-        local msg = "Gagal mengunduh skrip utama dari server!"
-        Notify("Error", msg, 5)
+    if type(scriptCode) ~= "string" or #scriptCode < 50 then
+        local msg = "File ANCHHub.lua belum ditemukan di server Vercel kamu!"
+        Notify("Gagal Memuat Skrip", msg, 6)
         if onFailCallback then onFailCallback(msg) end
         return false
     end
 
+    Notify("Key Valid!", "Sisa Durasi: " .. tostring(data.remainingText) .. ". Memuat ANCH Hub...", 4)
+
     local fn, syntaxErr = loadstring(scriptCode)
     if not fn then
-        Notify("Error Script", tostring(syntaxErr), 5)
+        Notify("Syntax Error di ANCHHub.lua", tostring(syntaxErr), 6)
+        if onFailCallback then onFailCallback("Syntax Error: " .. tostring(syntaxErr)) end
         return false
     end
 
@@ -128,17 +147,17 @@ local function VerifyAndLoadScript(inputKey, onFailCallback)
     return true
 end
 
--- 1. Coba Auto-Login jika sudah ada Key tersimpan di file
+-- 1. Cek Auto-Login dari file Key tersimpan
 if isfile and readfile and isfile(KEY_FILE) then
     local okRead, savedKey = pcall(readfile, KEY_FILE)
     if okRead and Trim(savedKey) ~= "" then
         if VerifyAndLoadScript(Trim(savedKey), nil) then
-            return -- Langsung masuk ke skrip utama tanpa buka UI Key!
+            return
         end
     end
 end
 
--- 2. Jika belum ada Key atau Key Expired/Invalid, tampilkan UI Key System (WindUI)
+-- 2. Tampilkan Window Key System (WindUI) jika belum punya key / tidak valid
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
 local KeyWindow = WindUI:CreateWindow({
@@ -185,10 +204,10 @@ KeyTab:Button({
         statusPara:SetDesc("Menghubungi server lisensi ANCH Hub...")
 
         local success = VerifyAndLoadScript(typedKey, function(failMsg)
-            statusPara:SetTitle("❌ Key Tidak Valid / Expired!")
+            statusPara:SetTitle("Verifikasi Gagal!")
             statusPara:SetDesc(failMsg .. "\n\nKlik tombol 'Join Discord' di bawah untuk mendapatkan Key baru.")
             WindUI:Notify({
-                Title = "Akses Ditolak",
+                Title = "Gagal Memuat",
                 Content = failMsg,
                 Icon = "solar:shield-warning-bold",
                 Duration = 5,
@@ -213,7 +232,7 @@ KeyTab:Button({
             pcall(copyFn, DISCORD_INVITE)
             WindUI:Notify({
                 Title = "Link Discord Disalin!",
-                Content = "Link Discord (" .. DISCORD_INVITE .. ") berhasil disalin ke clipboard. Buka browser/Discord untuk bergabung!",
+                Content = "Link Discord (" .. DISCORD_INVITE .. ") berhasil disalin ke clipboard!",
                 Icon = "solar:copy-bold",
                 Duration = 5,
             })
