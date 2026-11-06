@@ -5889,9 +5889,9 @@ local Window = WindUI:CreateWindow({
     },
 })
 
-Window::DisableTopbarButtons({
-    "Fullscreen",
-})
+--Window::DisableTopbarButtons({
+--    "Fullscreen",
+--})
 
 pcall(function()
     Window:Tag({
