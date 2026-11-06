@@ -5869,7 +5869,7 @@ local Window = WindUI:CreateWindow({
     Icon = "solar:folder-2-bold-duotone",
     NewElements = true,
     HideSearchBar = false,
-    Theme = "Indigo",
+    --Theme = "Indigo",
     OpenButton = {
         Title = "ANCH Hub",
         CornerRadius = UDim.new(1, 0),
@@ -5885,7 +5885,7 @@ local Window = WindUI:CreateWindow({
     },
     Topbar = {
         Height = 44,
-        -- ButtonsType = "Mac",
+        ButtonsType = "Mac",
     },
 })
 
