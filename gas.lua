@@ -21,9 +21,9 @@
       af|autofarm [on|off]        Auto Farm (Multi-target, Rayman, Grid 5x5)
       ac|autoclear [on|off]       Auto Clear World (Legit Walk + Pillar Climb + ModFly)
       ah|autoharvest [on|off]     Auto Harvest & Auto Plant (Farmer)
-      adf|autodf [on|off]         Auto Dirt Farm (Half DF Builder + Pillar Climb)
+      adf|autodf [on|off]         Auto Dirt Farm (Full World Builder + Smart Supply)
       guard|penjaga [on|off]      Anti-Mod / Staff & Player Detector
-      chat|autochat [on|off]      Auto Chat / Spammer
+      chat|autochat [on|off]      Auto Chat / Spammer (1 Pesan)
       ctp|clicktp [on|off]        Click TP (Legit A* / Fly / Mix)
       move|mv <legit|walk|fly|mix> Ubah mode pergerakan
       aq|autoquest [on|off|scan]  Auto Quest
@@ -151,7 +151,7 @@ local Config = {
     clearBreakDelay = 0.16,
     clearTpDelay = 0.30,
     clearTake = true,
-    clearModFly = false,        -- Default false karena kita pakai Legit Walk + Pillar
+    clearModFly = false,
     -- Farmer (Auto Harvest + Auto Plant)
     harvestDoHarvest = true,
     harvestDoPlant = false,
@@ -163,7 +163,7 @@ local Config = {
     harvestTpDelay = 0.30,
     harvestTake = true,
     harvestModFly = false,
-    -- Auto Dirt Farm (DF)
+    -- Auto Dirt Farm (DF Full World)
     dfBreakDelay = 0.15,
     dfTpDelay = 0.30,
     dfTake = true,
@@ -181,8 +181,8 @@ local Config = {
     guardAutoBack = true,
     guardBackSec = 60,
     guardCalmSec = 5,
-    -- Auto Chat
-    chatTexts = "ANCH Hub Terbaik!|Jual Dirt Murah",
+    -- Auto Chat (Hanya 1 pesan tunggal yang diatur pengguna)
+    chatText = "",
     chatInterval = 6,
     -- Bonus
     bonusAutoQuest = false,
@@ -440,7 +440,6 @@ do (function()
             end
         end
 
-        -- Fallback cari hit/setTile berdasarkan debug.info name
         if Refs.World and (not Refs.SetTile or not Refs.Punch) and debug and debug.info then
             for _, fn in ipairs(getgcFn(true)) do
                 if type(fn) == "function" then
@@ -457,7 +456,6 @@ do (function()
             end
         end
 
-        -- Fallback Inv dari world.backpackNow
         if not Refs.Inv and Refs.World and type(rawget(Refs.World, "backpackNow")) == "function" then
             for _, u in pairs(GetUpvalues(Refs.World.backpackNow)) do
                 if type(u) == "table" and type(u.slots) == "table" then
@@ -467,7 +465,6 @@ do (function()
             end
         end
 
-        -- Cari Drop List & Updater
         Drops.list, Drops.update = nil, nil
         local wd = Refs.World and rawget(Refs.World, "dropTaken")
         if type(wd) == "function" then
@@ -481,7 +478,6 @@ do (function()
             if okL and type(l) == "table" then Drops.list = l end
         end
 
-        -- Cari Tabel Pohon (Up[8] dari world.treeLook atau TreeChanged)
         Refs.Trees = nil
         if Refs.World and type(rawget(Refs.World, "treeLook")) == "function" and getupvalueFn then
             local okT, tMap = pcall(getupvalueFn, Refs.World.treeLook, 8)
@@ -582,6 +578,25 @@ local function GetDirtId()
         end
     end
     return 2
+end
+
+local cachedDirtSeedId = nil
+local function GetDirtSeedId()
+    if cachedDirtSeedId then return cachedDirtSeedId end
+    local dirtId = GetDirtId()
+    if ItemDB[dirtId + 1] and type(ItemDB[dirtId + 1]) == "table" and ItemDB[dirtId + 1].kind == "seed" then
+        cachedDirtSeedId = dirtId + 1
+        return cachedDirtSeedId
+    end
+    for id, it in pairs(ItemDB) do
+        if type(id) == "number" and type(it) == "table" and it.kind == "seed" and type(it.name) == "string" then
+            if it.name:lower() == "dirt seed" then
+                cachedDirtSeedId = id
+                return id
+            end
+        end
+    end
+    return 3
 end
 
 local function PlayerPhysicsState()
@@ -828,11 +843,7 @@ trackConn(RunService.Heartbeat:Connect(function()
 end))
 
 ----------------------------------------------------------------------
--- MESIN NAVIGASI UNIVERSAL: LEGIT WALKING (A*) + PILLAR CLIMB SKYP
--- Digunakan oleh Auto DF, Auto Clear, Auto Harvest/Farmer, Auto Farm,
--- Penjaga (Homing), dan Click TP.
--- Jika Y tujuan berada di atas karakter (ty < sy), otomatis memakai
--- metode Pillar Climb (lompat fisik asli + pasang pijakan Dirt).
+-- MESIN NAVIGASI UNIVERSAL: LEGIT WALKING (A*) + PILLAR CLIMB BERSIH
 ----------------------------------------------------------------------
 local Nav = {
     clickOn = false,
@@ -934,7 +945,6 @@ do (function()
                 end
             end
         end
-        -- Cari block solid apa pun di inventory
         if Refs.Inv and type(Refs.Inv.slots) == "table" then
             for _, slot in ipairs(Refs.Inv.slots) do
                 local it = slot.id and ItemDB[slot.id]
@@ -998,7 +1008,7 @@ do (function()
         return top, n
     end
 
-    -- Algoritma A* Fisika Game (walk, fall, jump 1-3, gap 1-2, pillar naik dengan block)
+    -- Algoritma A* Fisika Game
     function Nav.AStar(sx, sy, goals, gx, gy, R, useBlock, cancel)
         local w = FindWorld()
         if not w then return nil, false, {} end
@@ -1170,7 +1180,6 @@ do (function()
         return nil, true, closed
     end
 
-    -- Eksekutor Gerak Fisik Legit (SteerX, Walk, Fall, Jump, Gap, Pillar)
     local function steerX(s, targetX, tol)
         local dx = targetX - s.x
         local vx = s.vx or 0
@@ -1325,7 +1334,6 @@ do (function()
         return false
     end
 
-    -- Naik 1 tile pakai block (Pillar Jump SkyP): lompat fisik, pasang block di bawah kaki saat melayang, lalu mendarat
     local function execPillar(e, cancel)
         if not execWalk(e.fx, e.fy, cancel) then return false end
         if fgIdAt(e.fx, e.fy) ~= 0 then return false end
@@ -1372,7 +1380,33 @@ do (function()
         SyncGhostState()
         AutoInput.active = true
 
+        local tempScaffolds = {}
+
+        local function cleanupScaffolds()
+            if #tempScaffolds == 0 then return end
+            for idx = #tempScaffolds, 1, -1 do
+                local sc = tempScaffolds[idx]
+                local cx, cy = GetTile()
+                if not (cx == sc.x and cy == sc.y - 1) then
+                    local s = PlayerPhysicsState()
+                    if s and stateReaches(s, sc.x, sc.y, PunchReach() - 0.1) and fgIdAt(sc.x, sc.y) ~= 0 and CanBreakId(fgIdAt(sc.x, sc.y)) then
+                        WaitPlaceGuard(sc.x, sc.y)
+                        local t0 = os.clock()
+                        while fgIdAt(sc.x, sc.y) ~= 0 and os.clock() - t0 < 3.0 and alive() do
+                            if cancel and cancel() then break end
+                            TryBreakOnce(sc.x, sc.y, false)
+                            task.wait(0.15)
+                        end
+                    end
+                    if fgIdAt(sc.x, sc.y) == 0 then
+                        table.remove(tempScaffolds, idx)
+                    end
+                end
+            end
+        end
+
         local function finish(result)
+            cleanupScaffolds()
             ReleaseInput()
             AutoInput.active = false
             noclipOn = wasNoclip
@@ -1402,22 +1436,32 @@ do (function()
                         local st = path[j]
                         if st.build and not realSupport(st.x, st.y) then
                             if not placeScaffold(st.x, st.y + 1) then ok = false; break end
+                            table.insert(tempScaffolds, { x = st.x, y = st.y + 1 })
                             task.wait(0.14)
                         end
                         if not execWalk(st.x, st.y, cancel) then ok = false; break end
+                        cleanupScaffolds()
                     end
                 else
                     ok = execWalk(path[last].x, path[last].y, cancel)
+                    cleanupScaffolds()
                 end
             elseif e.kind == "pillar" then
                 ok = execPillar(e, cancel)
-                if ok then task.wait(0.08) end
+                if ok then
+                    table.insert(tempScaffolds, { x = e.fx, y = e.fy })
+                    task.wait(0.08)
+                    cleanupScaffolds()
+                end
             elseif e.kind == "fall" then
                 ok = execFall(e, cancel)
+                cleanupScaffolds()
             elseif e.kind == "jump" then
                 ok = execJump(e, cancel)
+                cleanupScaffolds()
             elseif e.kind == "gap" then
                 ok = execGap(e, cancel)
+                cleanupScaffolds()
             end
             ReleaseInput()
             if not ok then
@@ -1430,10 +1474,11 @@ do (function()
     end
 
     -- FUNGSI MEMANJAT VERTIKAL UNIVERSAL (CLIMB UP WITH DIRT / SCAFFOLD)
-    -- Dipakai kapan saja Y tujuan berada di atas karakter (targetY < currentY)
+    -- Otomatis menghancurkan pijakan saat naik & bergeser di puncak untuk membersihkan sisa pijakan
     function Nav.ClimbUpWithDirt(x, targetY, cancel, cleanBehind, stepDelayOverride)
         local world = FindWorld()
         if not world then return false end
+        if cleanBehind == nil then cleanBehind = true end
         local settleDelay = math.max(0.28, tonumber(stepDelayOverride) or tonumber(Config.moveStepDelay) or 0.30)
 
         local savedLocks = {}
@@ -1468,7 +1513,6 @@ do (function()
         local tempPlaced = {}
         local scaffoldBlock = activeScaffoldId()
 
-        -- Pastikan ada pijakan di bawah kaki sebelum mulai melompat
         if InBounds(world, x, cy + 1) and not realSupport(x, cy) then
             if fgIdAt(x, cy + 1) == 0 and placeScaffold(x, cy + 1) then
                 tempPlaced[cy + 1] = scaffoldBlock
@@ -1480,7 +1524,6 @@ do (function()
             if cancel and cancel() then restore(); return false end
             local nextY = cy - 1
 
-            -- Jika ruang di atas kepala tertutup block yang bisa dihancurkan, pecahkan dulu
             for checkY = nextY, math.max(0, nextY - 2), -1 do
                 local fgUp = fgIdAt(x, checkY)
                 if fgUp ~= 0 and CanBreakId(fgUp) then
@@ -1493,12 +1536,10 @@ do (function()
                 end
             end
 
-            -- Gunakan execPillar (lompat fisik asli + pasang pijakan di bawah kaki)
             local okPillar = execPillar({ fx = x, fy = cy, x = x, y = nextY }, cancel)
             if okPillar then
                 tempPlaced[cy] = scaffoldBlock
             else
-                -- Cadangan jika terhalang sedikit: pasang pijakan lalu melangkah
                 if fgIdAt(x, cy) == 0 then
                     placeScaffold(x, cy)
                     tempPlaced[cy] = scaffoldBlock
@@ -1516,31 +1557,65 @@ do (function()
                 cy = nextY
             end
 
-            -- Jika diminta bersih (seperti di kolom pinggir Auto DF), hancurkan pijakan lama 2 blok di bawah kaki (cy + 2)
-            -- karena kaki kita saat ini sudah menapak aman di (cy + 1)
+            -- Hancurkan pijakan 2 blok di bawah kaki (cy + 2) sambil terus naik
             if cleanBehind then
-                local oldY = cy + 2
-                if tempPlaced[oldY] and fgIdAt(x, oldY) ~= 0 and CanBreakId(fgIdAt(x, oldY)) then
-                    WaitPlaceGuard(x, oldY)
-                    local t0 = os.clock()
-                    while fgIdAt(x, oldY) ~= 0 and os.clock() - t0 < 3.5 do
-                        if cancel and cancel() then restore(); return false end
-                        TryBreakOnce(x, oldY, false)
-                        task.wait(0.16)
+                for py, _ in pairs(tempPlaced) do
+                    if py >= cy + 2 and math.abs(py - cy) <= 3 and fgIdAt(x, py) ~= 0 and CanBreakId(fgIdAt(x, py)) then
+                        WaitPlaceGuard(x, py)
+                        local t0 = os.clock()
+                        while fgIdAt(x, py) ~= 0 and os.clock() - t0 < 3.5 do
+                            if cancel and cancel() then restore(); return false end
+                            TryBreakOnce(x, py, false)
+                            task.wait(0.16)
+                        end
+                        if fgIdAt(x, py) == 0 then
+                            tempPlaced[py] = nil
+                        end
                     end
-                    tempPlaced[oldY] = nil
                 end
             end
         end
 
-        -- Jika sampai di puncak dan cleanBehind aktif, geser 1 langkah ke samping yang ada pijakan lalu hancurkan sisa pijakan terakhir
-        if cleanBehind then
-            local sideX = (x <= 2) and 2 or (world.w - 3)
-            if InBounds(world, sideX, targetY) and realSupport(sideX, targetY) then
-                execWalk(sideX, targetY, cancel)
-                task.wait(settleDelay)
-                for py, _ in pairs(tempPlaced) do
-                    if fgIdAt(x, py) ~= 0 and math.abs(py - targetY) <= 2 and CanBreakId(fgIdAt(x, py)) then
+        -- Sampai di puncak: cari pijakan di sebelah kiri/kanan, bergeser 1 langkah, lalu hancurkan sisa pijakan terakhir
+        if cleanBehind and next(tempPlaced) ~= nil then
+            local sideCandidates = {}
+            if x <= 2 then
+                sideCandidates = { x + 1, x + 2, x - 1 }
+            elseif x >= world.w - 3 then
+                sideCandidates = { x - 1, x - 2, x + 1 }
+            else
+                sideCandidates = { x + 1, x - 1, x + 2, x - 2 }
+            end
+
+            local steppedSide = false
+            for _, sx in ipairs(sideCandidates) do
+                if InBounds(world, sx, targetY) and openAt(sx, targetY) and realSupport(sx, targetY) then
+                    if not execWalk(sx, targetY, cancel) then
+                        pcall(world.goTo, sx, targetY)
+                    end
+                    task.wait(settleDelay)
+                    steppedSide = true
+                    break
+                end
+            end
+
+            if not steppedSide then
+                for _, sx in ipairs(sideCandidates) do
+                    if InBounds(world, sx, targetY + 1) and openAt(sx, targetY + 1) and realSupport(sx, targetY + 1) then
+                        pcall(world.goTo, sx, targetY + 1)
+                        task.wait(settleDelay)
+                        steppedSide = true
+                        break
+                    end
+                end
+            end
+
+            if steppedSide then
+                local sortedY = {}
+                for py in pairs(tempPlaced) do table.insert(sortedY, py) end
+                table.sort(sortedY)
+                for _, py in ipairs(sortedY) do
+                    if fgIdAt(x, py) ~= 0 and math.abs(py - targetY) <= 3 and CanBreakId(fgIdAt(x, py)) then
                         WaitPlaceGuard(x, py)
                         local t0 = os.clock()
                         while fgIdAt(x, py) ~= 0 and os.clock() - t0 < 3.5 do
@@ -1557,9 +1632,6 @@ do (function()
         return true
     end
 
-    -- FUNGSI NAVIGASI UTAMA (DIPAKAI SELURUH FITUR):
-    -- 1. Mencari jalur Legit Walking & Jump/Pillar via A*
-    -- 2. Jika target Y berada di atas player (ty < sy) dan butuh naik, otomatis menggunakan Pillar Climb
     function Nav.LegitTo(tx, ty, cancel, reachRadius, allowScaffold)
         local started = os.clock()
         local w = FindWorld()
@@ -1572,7 +1644,6 @@ do (function()
         local R = reachRadius or 0.4
         local goals = { [ty * w.w + tx] = true }
 
-        -- Coba cari rute A* Legit (sudah termasuk walk, jump, fall, gap, dan pillar naik)
         local path = Nav.AStar(sx, sy, goals, tx, ty, R, allowScaffold, cancel)
         if path and #path > 0 then
             if Nav.FollowPath(path, cancel) then
@@ -1580,10 +1651,9 @@ do (function()
             end
         end
 
-        -- Jika target Y berada di atas player (ty < sy), gunakan metode memanjat Pillar Climb!
         local cx, cy = GetTile()
         if cx and cy and ty < cy then
-            local okClimb = Nav.ClimbUpWithDirt(cx, ty, cancel, false, Config.moveStepDelay)
+            local okClimb = Nav.ClimbUpWithDirt(cx, ty, cancel, true, Config.moveStepDelay)
             if okClimb then
                 cx, cy = GetTile()
                 if cx and cx ~= tx then
@@ -1592,17 +1662,26 @@ do (function()
                     if pathAfter and #pathAfter > 0 then
                         Nav.FollowPath(pathAfter, cancel)
                     else
-                        -- Jalan bertahap sambil pasang jembatan jika bawah kosong
                         local dir = (tx > cx) and 1 or -1
                         for stepX = cx + dir, tx, dir do
                             if cancel and cancel() then return false, "cancel" end
+                            local placedBridge = false
                             if allowScaffold and not realSupport(stepX, ty) and placeOk(stepX, ty + 1) then
-                                placeScaffold(stepX, ty + 1)
+                                placedBridge = placeScaffold(stepX, ty + 1)
                                 task.wait(0.14)
                             end
                             if not execWalk(stepX, ty, cancel) then
                                 pcall(w.goTo, stepX, ty)
                                 task.wait(math.max(0.28, Config.moveStepDelay))
+                            end
+                            local prevX = stepX - dir
+                            if placedBridge and fgIdAt(prevX, ty + 1) ~= 0 and CanBreakId(fgIdAt(prevX, ty + 1)) then
+                                WaitPlaceGuard(prevX, ty + 1)
+                                local t0 = os.clock()
+                                while fgIdAt(prevX, ty + 1) ~= 0 and os.clock() - t0 < 2.5 do
+                                    TryBreakOnce(prevX, ty + 1, false)
+                                    task.wait(0.15)
+                                end
                             end
                         end
                     end
@@ -1617,7 +1696,6 @@ do (function()
         return false, "nopath"
     end
 
-    -- Fallback BFS / Fly untuk mode "walk" / "fly" / "mix"
     function Nav.StepGoTo(tx, ty, cancel, flyMode)
         local started = os.clock()
         local w = FindWorld()
@@ -1625,9 +1703,8 @@ do (function()
         local sx, sy = GetTile()
         if not sx then return false, "pos" end
 
-        -- Bahkan di mode StepGoTo, jika ty < sy (tujuan di atas player), wajib gunakan ClimbUpWithDirt agar tidak kena rollback!
         if ty < sy then
-            Nav.ClimbUpWithDirt(sx, ty, cancel, false, Config.moveStepDelay)
+            Nav.ClimbUpWithDirt(sx, ty, cancel, true, Config.moveStepDelay)
             sx, sy = GetTile()
             if not sx then return false, "pos" end
         end
@@ -1671,16 +1748,22 @@ do (function()
         return ok
     end
 
-    -- Click TP Kamera -> Tile
+    -- Click TP Kamera -> Tile (Diperbaiki berdasarkan hasil Camera Spy)
     local actFn = nil
     local function CamInfo()
         if not actFn and getgcFn and debug and debug.info then
             for _, fn in ipairs(getgcFn(true)) do
                 if type(fn) == "function" then
                     local okN, fnName = pcall(debug.info, fn, "n")
-                    if okN and fnName == "act" then
-                        local ups = GetUpvalues(fn)
-                        if ups[1] == Players and type(ups[2]) == "number" and type(ups[4]) == "number" and type(ups[5]) == "number" then
+                    if okN and fnName == "act" and getupvalueFn then
+                        local ok1, u1 = pcall(getupvalueFn, fn, 1)
+                        local ok2, u2 = pcall(getupvalueFn, fn, 2)
+                        local ok4, u4 = pcall(getupvalueFn, fn, 4)
+                        local ok5, u5 = pcall(getupvalueFn, fn, 5)
+                        if ok1 and typeof(u1) == "Instance" and u1.ClassName == "Players"
+                            and ok2 and type(u2) == "number"
+                            and ok4 and type(u4) == "number"
+                            and ok5 and type(u5) == "number" then
                             actFn = fn
                             break
                         end
@@ -1688,12 +1771,25 @@ do (function()
                 end
             end
         end
-        if not actFn then return nil end
-        local okX, camX = pcall(getupvalueFn, actFn, 2)
-        local okT, tile = pcall(getupvalueFn, actFn, 4)
-        local okY, camY = pcall(getupvalueFn, actFn, 5)
-        if okX and okT and okY and type(camX) == "number" and type(tile) == "number" and type(camY) == "number" and tile > 0 then
-            return camX, camY, tile
+        if actFn and getupvalueFn then
+            local okX, camX = pcall(getupvalueFn, actFn, 2)
+            local okT, tile = pcall(getupvalueFn, actFn, 4)
+            local okY, camY = pcall(getupvalueFn, actFn, 5)
+            if okX and okT and okY and type(camX) == "number" and type(tile) == "number" and type(camY) == "number" and tile > 0 then
+                return camX, camY, tile
+            end
+        end
+
+        -- Fallback langsung dari GUI GameGui.World.Camera.Tiles
+        local gg = PlayerGui:FindFirstChild("GameGui")
+        local worldGui = gg and gg:FindFirstChild("World")
+        local camGui = worldGui and worldGui:FindFirstChild("Camera")
+        local tilesFrame = camGui and camGui:FindFirstChild("Tiles")
+        if tilesFrame and tilesFrame:IsA("GuiObject") then
+            local tileSize = 64
+            local camX = -tilesFrame.Position.X.Offset / tileSize
+            local camY = -tilesFrame.Position.Y.Offset / tileSize
+            return camX, camY, tileSize
         end
         return nil
     end
@@ -1701,7 +1797,8 @@ do (function()
     function Nav.ScreenToTile(pos)
         local camX, camY, tile = CamInfo()
         if not camX then return nil end
-        local worldGui = PlayerGui:FindFirstChild("World", true)
+        local gg = PlayerGui:FindFirstChild("GameGui")
+        local worldGui = (gg and gg:FindFirstChild("World")) or PlayerGui:FindFirstChild("World", true)
         if not worldGui or not worldGui:IsA("GuiObject") then return nil end
         local scaleObj = worldGui:FindFirstChildWhichIsA("UIScale", true)
         local scale = scaleObj and scaleObj.Scale or 1
@@ -1764,6 +1861,117 @@ do (function()
         return true
     end
 end)() end
+
+----------------------------------------------------------------------
+-- UTILITAS AKSI CEPAT: DROP WL, WARP, POS 1/2, REJOIN
+----------------------------------------------------------------------
+local lastDropClock = 0
+
+local function DropWorldLock(amount)
+    amount = math.floor(tonumber(amount) or 0)
+    if amount < 1 or amount > MAX_AMOUNT then
+        Notify("Jumlah WL tidak valid!")
+        return false
+    end
+    local now = os.clock()
+    if now - lastDropClock < COOLDOWN then
+        task.wait(COOLDOWN - (now - lastDropClock))
+    end
+    lastDropClock = os.clock()
+
+    local id = Config.dropId or 242
+    if DropEvent then
+        pcall(function() DropEvent:FireServer(id, amount) end)
+        Notify(string.format("Drop %d %s dikirim!", amount, ItemName(id)))
+        return true
+    elseif NetOk and type(Net) == "table" and Net.drop then
+        pcall(Net.drop.send, { id = id, n = amount })
+        Notify(string.format("Drop %d %s dikirim!", amount, ItemName(id)))
+        return true
+    end
+    Notify("Remote DropItem tidak ditemukan!")
+    return false
+end
+
+local function WarpToWorld(worldName)
+    worldName = Trim(worldName):upper()
+    if worldName == "" then
+        Notify("Nama world tidak boleh kosong!")
+        return false
+    end
+    Config.lastWorld = worldName
+    SaveConfig()
+    local m = Refs.Menu
+    if m and type(rawget(m, "enter")) == "function" then
+        pcall(m.enter, worldName)
+        Notify("Memasuki world: " .. worldName)
+        return true
+    end
+    local w = FindWorld()
+    if w and type(rawget(w, "enter")) == "function" then
+        pcall(w.enter, worldName)
+        Notify("Memasuki world: " .. worldName)
+        return true
+    end
+    Notify("Fungsi enter world tidak ditemukan.")
+    return false
+end
+
+local QueueReload
+local function Rejoin()
+    local wName = CurrentWorldName()
+    if wName ~= "" then
+        Config.lastWorld = wName
+        SaveConfig()
+    end
+    if QueueReload then pcall(QueueReload) end
+    pcall(function()
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Player)
+    end)
+end
+
+local function SetPos(slot)
+    local tx, ty = GetTile()
+    if not tx then
+        Notify("Posisi karakter belum terbaca!")
+        return false
+    end
+    local key = "pos" .. tostring(slot)
+    Config[key] = { x = tx, y = ty, world = CurrentWorldName() }
+    SaveConfig()
+    Notify(string.format("Pos %d disimpan di (%d, %d) [%s]", slot, tx, ty, CurrentWorldName()))
+    return true
+end
+
+local function ShowPos()
+    local tx, ty = GetTile()
+    local p1, p2 = Config.pos1 or {}, Config.pos2 or {}
+    local msg = string.format(
+        "Sekarang: (%s, %s) | Pos1: (%s, %s) | Pos2: (%s, %s)",
+        tx and tostring(tx) or "-", ty and tostring(ty) or "-",
+        p1.x and tostring(p1.x) or "-", p1.y and tostring(p1.y) or "-",
+        p2.x and tostring(p2.x) or "-", p2.y and tostring(p2.y) or "-"
+    )
+    Notify(msg, "Info Posisi")
+end
+
+local function GoToPos(slot, dropAmount)
+    local key = "pos" .. tostring(slot)
+    local p = Config[key]
+    if type(p) ~= "table" or type(p.x) ~= "number" or type(p.y) ~= "number" then
+        Notify("Pos " .. tostring(slot) .. " belum disimpan!")
+        return false
+    end
+    local ok = Nav.To(p.x, p.y, nil, 0.3, true)
+    if ok then
+        local amt = tonumber(dropAmount) or tonumber(Config.winDrop) or 0
+        if amt >= 1 then
+            task.wait(0.15)
+            DropWorldLock(amt)
+        end
+    end
+    return ok
+end
 
 ----------------------------------------------------------------------
 -- FAST PARALLEL AUTO-COLLECT (SKYP ENGINE: world.takeDrop TIAP FRAME)
@@ -1975,7 +2183,6 @@ do (function()
                 break
             end
 
-            -- Pastikan karakter berada di titik anchor farm
             local px, py = GetTile()
             if not px then break end
             if px ~= anchor.x or py ~= anchor.y then
@@ -1994,7 +2201,6 @@ do (function()
 
             local acted, outOfBlock = false, false
 
-            -- 1) Place semua tile kosong
             if doPlace then
                 Farm.stats.status = "Place " .. ItemName(id)
                 local layer = LayerOf(id)
@@ -2018,7 +2224,6 @@ do (function()
 
             if not Farm.on or Farm.token ~= token then break end
 
-            -- 2) Break (Mendukung Multi-Target 1-5 & Rayman's Fist)
             if doBreak then
                 Farm.stats.status = "Break (" .. (raymanOn() and "Rayman" or ("Multi " .. Config.farmMultiTarget)) .. ")"
                 local K = math.clamp(math.floor(Config.farmMultiTarget or 1), 1, 5)
@@ -2148,7 +2353,7 @@ do (function()
 end)() end
 
 ----------------------------------------------------------------------
--- 2. AUTO CLEAR WORLD (LEGIT WALKING + PILLAR CLIMB + MODFLY OPTION)
+-- 2. AUTO CLEAR WORLD (LEGIT WALKING + PILLAR CLIMB BERSIH + MODFLY)
 ----------------------------------------------------------------------
 do (function()
     local BREAK_TIMEOUT = 5.0
@@ -2202,7 +2407,6 @@ do (function()
     end
 
     local function GetStandSpot(w, target)
-        -- Prioritas berdiri di atas block (x, y - 1) atau di sampingnya (x - 1, y) / (x + 1, y)
         local candidates = {
             { x = target.x,     y = target.y - 1 },
             { x = target.x - 1, y = target.y },
@@ -2264,12 +2468,10 @@ do (function()
                     local s = PlayerPhysicsState()
                     local R = PunchReach() - 0.15
 
-                    -- Jika target berada di luar jangkauan pukulan, bergerak dengan Legit Walk + Pillar Climb
                     if not (s and Nav.StateReaches(s, target.x, target.y, R)) then
                         Clear.status = string.format("Jalan ke (%d,%d) -> Break (%d,%d) [%d/%d]", spot.x, spot.y, target.x, target.y, idx, #targets)
-                        -- Jika tujuan Y berada di atas posisi karakter sekarang (spot.y < py), otomatis gunakan Pillar Climb!
                         if py and spot.y < py then
-                            Nav.ClimbUpWithDirt(px, spot.y, function() return Clear.token ~= token end, false, Config.clearTpDelay)
+                            Nav.ClimbUpWithDirt(px, spot.y, function() return Clear.token ~= token end, true, Config.clearTpDelay)
                         end
                         Nav.To(spot.x, spot.y, function() return Clear.token ~= token end, R, Config.clearUseBlock)
                         task.wait(math.max(0.10, Config.clearTpDelay))
@@ -2294,7 +2496,7 @@ do (function()
                         if r == "broke" then
                             brokeAny = true
                             Clear.stats.broken += 1
-                            started = os.clock() -- reset timer jika berhasil memecahkan fg dan lanjut ke bg
+                            started = os.clock()
                         end
                         task.wait(math.max(0.04, Config.clearBreakDelay))
                     end
@@ -2365,7 +2567,7 @@ do (function()
 end)() end
 
 ----------------------------------------------------------------------
--- 3. FARMER: AUTO HARVEST + AUTO PLANT (GABUNGAN SKYP FARMER & HARVEST)
+-- 3. FARMER: AUTO HARVEST + AUTO PLANT (BERSIH PIJAKAN)
 ----------------------------------------------------------------------
 do (function()
     local function IsSeedId(id)
@@ -2472,7 +2674,6 @@ do (function()
             local actedInPass = false
             local R = math.min(PunchReach(), BuildReach()) - 0.15
 
-            -- 1) Panen seluruh pohon yang siap
             for idx, tree in ipairs(readyTrees) do
                 if not Farmer.on or Farmer.token ~= token or not alive() then return end
                 w = FindWorld()
@@ -2484,7 +2685,7 @@ do (function()
                     if not (s and Nav.StateReaches(s, tree.x, tree.y, R)) then
                         Farmer.status = string.format("Menuju pohon (%d,%d) [%d/%d]", tree.x, tree.y, idx, #readyTrees)
                         if py and tree.y < py then
-                            Nav.ClimbUpWithDirt(px, tree.y, function() return Farmer.token ~= token end, false, Config.harvestTpDelay)
+                            Nav.ClimbUpWithDirt(px, tree.y, function() return Farmer.token ~= token end, true, Config.harvestTpDelay)
                         end
                         Nav.To(tree.x, tree.y, function() return Farmer.token ~= token end, R, Config.harvestUseBlock)
                         task.wait(math.max(0.10, Config.harvestTpDelay))
@@ -2501,7 +2702,6 @@ do (function()
                         actedInPass = true
                         Farmer.stats.harvested += 1
                         Farmer.stats.ready = math.max(0, Farmer.stats.ready - 1)
-                        -- Jika Auto Plant aktif dan ada seed, langsung tanam di tile yang baru dipanen!
                         if Config.harvestDoPlant and Config.harvestSeedId and CountItem(Config.harvestSeedId) > 0 and CanPlantAt(w, tree.x, tree.y) then
                             task.wait(0.08)
                             if PlaceCell(Config.harvestSeedId, { x = tree.x, y = tree.y }, 1) then
@@ -2516,7 +2716,6 @@ do (function()
                 end
             end
 
-            -- 2) Tanam seed di lahan yang kosong (jika Auto Plant aktif)
             if Config.harvestDoPlant and Config.harvestSeedId and CountItem(Config.harvestSeedId) > 0 then
                 for idx, spot in ipairs(plantSpots) do
                     if not Farmer.on or Farmer.token ~= token or not alive() then return end
@@ -2530,7 +2729,7 @@ do (function()
                         if not (s and Nav.StateReaches(s, spot.x, spot.y, R)) then
                             Farmer.status = string.format("Menuju tanam (%d,%d) [%d/%d]", spot.x, spot.y, idx, #plantSpots)
                             if py and spot.y < py then
-                                Nav.ClimbUpWithDirt(px, spot.y, function() return Farmer.token ~= token end, false, Config.harvestTpDelay)
+                                Nav.ClimbUpWithDirt(px, spot.y, function() return Farmer.token ~= token end, true, Config.harvestTpDelay)
                             end
                             Nav.To(spot.x, spot.y, function() return Farmer.token ~= token end, R, Config.harvestUseBlock)
                             task.wait(math.max(0.10, Config.harvestTpDelay))
@@ -2599,7 +2798,7 @@ do (function()
 end)() end
 
 ----------------------------------------------------------------------
--- 4. AUTO DIRT FARM (AUTO DF - LEGIT WALK + PILLAR CLIMB)
+-- 4. AUTO DIRT FARM (FULL WORLD: BAWAH + ATAS + SMART SUPPLY + NO MODFLY)
 ----------------------------------------------------------------------
 do (function()
     local DF_BREAK_TIMEOUT = 5.0
@@ -2607,6 +2806,30 @@ do (function()
     local function IsBedrockId(id)
         local it = ItemDB and ItemDB[id]
         return type(it) == "table" and type(it.name) == "string" and it.name:lower():find("bedrock", 1, true) ~= nil
+    end
+
+    local function IsSeedReadyAt(w, x, y, seedId)
+        local it = ItemDB[seedId]
+        local growTime = (it and (tonumber(it.grow) or tonumber(it.baseGrow))) or 31
+        local idx = y * w.w + x
+        if type(w.treeLook) == "function" then pcall(w.treeLook, x, y) end
+        if not Refs.Trees then Refs.Scan() end
+        local entry = Refs.Trees and Refs.Trees[idx]
+        if type(entry) == "table" then
+            if entry.ripe == true or entry.fruitMade == true or entry.step == 1 then return true end
+            if type(entry.tree) == "table" and type(entry.tree.p) == "number" then
+                return workspace:GetServerTimeNow() >= (entry.tree.p + growTime)
+            end
+            if type(entry.p) == "number" then
+                return workspace:GetServerTimeNow() >= (entry.p + growTime)
+            end
+            if entry.ripe == false or (type(entry.step) == "number" and entry.step < 1) then return false end
+        end
+        local placedFg = w.placedAt and w.placedAt.fg
+        if placedFg and type(placedFg[idx]) == "number" then
+            return (os.clock() - placedFg[idx]) >= growTime
+        end
+        return false
     end
 
     local function DetectWorldLayers(w)
@@ -2637,6 +2860,18 @@ do (function()
         return topDirtY, bedrockY
     end
 
+    local function WalkOrClimbTo(standX, standY, token)
+        local px, py = GetTile()
+        if not px or (px == standX and py == standY) then return true end
+        if py and standY < py and math.abs(px - standX) <= 1 then
+            return Nav.ClimbUpWithDirt(standX, standY, function() return DF.token ~= token or not DF.on end, true, Config.dfTpDelay)
+        elseif py == standY and Nav.ExecWalk(standX, standY, function() return DF.token ~= token or not DF.on end) then
+            return true
+        else
+            return Nav.To(standX, standY, function() return DF.token ~= token or not DF.on end, 0.3, true)
+        end
+    end
+
     local function BreakTotalAt(w, tx, ty, standX, standY, token)
         if not InBounds(w, tx, ty) then return false end
         local fg = TileValue(w, "fg", tx, ty) or 0
@@ -2645,14 +2880,7 @@ do (function()
             return true
         end
 
-        local px, py = GetTile()
-        if px ~= standX or py ~= standY then
-            if py and standY < py then
-                Nav.ClimbUpWithDirt(standX, standY, function() return DF.token ~= token end, false, Config.dfTpDelay)
-            elseif not Nav.ExecWalk(standX, standY, function() return DF.token ~= token end) then
-                Nav.To(standX, standY, function() return DF.token ~= token end, 0.3, true)
-            end
-        end
+        WalkOrClimbTo(standX, standY, token)
 
         local startT = os.clock()
         while DF.on and DF.token == token and alive() do
@@ -2673,19 +2901,206 @@ do (function()
         return true
     end
 
-    local function EnsurePlatformDirtAt(w, tx, ty, standX, standY, token)
+    local function FindWorldDirtDrop(dirtId, seedId)
+        local list = Drops.list
+        if not list then Refs.Scan(); list = Drops.list end
+        if type(list) ~= "table" then return nil end
+        local px, py = GetTile()
+        px, py = px or 50, py or 30
+        local best, bestDist = nil, math.huge
+        for _, d in ipairs(list) do
+            if type(d) == "table" and (d.id == dirtId or d.id == seedId) and (d.n or 0) > 0 and type(d.x) == "number" then
+                local dist = math.abs(d.x - px) + math.abs(d.y - py)
+                if dist < bestDist then
+                    best, bestDist = d, dist
+                end
+            end
+        end
+        return best
+    end
+
+    local function PlantAndHarvestDirtSeeds(w, platformY, token, maxPlant)
+        local dirtId = GetDirtId()
+        local seedId = GetDirtSeedId()
+        local plantY = platformY - 1
+        if plantY < 0 then return false end
+
+        local plantedSpots = {}
+        local count = 0
+        for x = 3, w.w - 4 do
+            if not DF.on or DF.token ~= token then break end
+            if CountItem(seedId) <= 0 or count >= (maxPlant or 20) then break end
+            if (TileValue(w, "fg", x, platformY) or 0) == dirtId and (TileValue(w, "fg", x, plantY) or 0) == 0 then
+                WalkOrClimbTo(x, plantY, token)
+                if PlaceCell(seedId, { x = x, y = plantY }, 1) then
+                    table.insert(plantedSpots, { x = x, y = plantY, plantedTime = os.clock() })
+                    count += 1
+                    task.wait(0.18)
+                end
+            end
+        end
+
+        for x = 2, w.w - 3 do
+            if (TileValue(w, "fg", x, plantY) or 0) == seedId then
+                local exists = false
+                for _, p in ipairs(plantedSpots) do
+                    if p.x == x and p.y == plantY then exists = true; break end
+                end
+                if not exists then
+                    table.insert(plantedSpots, { x = x, y = plantY, plantedTime = os.clock() - 25 })
+                end
+            end
+        end
+
+        if #plantedSpots == 0 then return false end
+
+        local it = ItemDB[seedId]
+        local growTime = (it and (tonumber(it.grow) or tonumber(it.baseGrow))) or 31
+
+        for idx, spot in ipairs(plantedSpots) do
+            if not DF.on or DF.token ~= token then return false end
+            while DF.on and DF.token == token and alive() do
+                if (TileValue(w, "fg", spot.x, spot.y) or 0) ~= seedId then break end
+                local elapsed = os.clock() - spot.plantedTime
+                if IsSeedReadyAt(w, spot.x, spot.y, seedId) or elapsed >= (growTime + 1.5) then
+                    break
+                end
+                local left = math.max(0, math.ceil(growTime - elapsed))
+                DF.status = string.format("Menunggu Dirt Tree matang (%ds) [%d/%d]...", left, idx, #plantedSpots)
+                task.wait(0.5)
+            end
+
+            if (TileValue(w, "fg", spot.x, spot.y) or 0) == seedId then
+                DF.status = string.format("Harvest Dirt Tree (%d,%d) [%d/%d]", spot.x, spot.y, idx, #plantedSpots)
+                WalkOrClimbTo(spot.x, spot.y, token)
+                local t0 = os.clock()
+                while DF.on and DF.token == token and (TileValue(w, "fg", spot.x, spot.y) or 0) == seedId and os.clock() - t0 < 3.5 do
+                    TryBreakOnce(spot.x, spot.y, false)
+                    task.wait(math.max(0.05, Config.dfBreakDelay))
+                end
+                task.wait(0.25)
+            end
+        end
+        return true
+    end
+
+    local function FindFarmablePlatformRow(w, topDirtY, bedrockY)
+        local dirtId = GetDirtId()
+        for y = topDirtY, bedrockY - 1, 2 do
+            local dirtCount = 0
+            for x = 3, w.w - 4 do
+                if (TileValue(w, "fg", x, y) or 0) == dirtId and (TileValue(w, "fg", x, y - 1) or 0) == 0 then
+                    dirtCount += 1
+                    if dirtCount >= 12 then return y end
+                end
+            end
+        end
+        return topDirtY
+    end
+
+    -- MANAJEMEN PERSEDIAAN DIRT OTOMATIS (SESUAI 7 LANGKAH INSTRUKSI)
+    local function EnsureDirtSupply(w, returnX, returnY, refPlatformY, topDirtY, bedrockY, token)
+        local dirtId = GetDirtId()
+        local seedId = GetDirtSeedId()
+
+        if CountItem(dirtId) > 0 then
+            return true
+        end
+
+        DF.stats.step = "Restock Dirt"
+        local workPlatformY = FindFarmablePlatformRow(w, topDirtY, bedrockY)
+
+        while DF.on and DF.token == token and alive() and CountItem(dirtId) < 15 do
+            -- Cek apakah ada Dirt Seed di inventory -> tanam, tunggu, harvest
+            if CountItem(seedId) > 0 then
+                DF.status = "Stok Dirt habis! Menanam & memanen Dirt Seed..."
+                PlantAndHarvestDirtSeeds(w, workPlatformY, token, 20)
+                if CountItem(dirtId) >= 15 then break end
+            end
+
+            -- Cek apakah ada dropped Dirt / Dirt Seed di world -> jalan & ambil
+            local drop = FindWorldDirtDrop(dirtId, seedId)
+            if drop then
+                local dx, dy = math.floor(drop.x), math.floor(drop.y)
+                DF.status = string.format("Mengambil drop Dirt/Seed di (%d, %d)...", dx, dy)
+                WalkOrClimbTo(dx, dy, token)
+                task.wait(0.5)
+                if CountItem(dirtId) >= 15 then break end
+                if CountItem(seedId) > 0 then
+                    PlantAndHarvestDirtSeeds(w, workPlatformY, token, 20)
+                    if CountItem(dirtId) >= 15 then break end
+                end
+            end
+
+            -- Jika tidak ada seed & drop, hancurkan Dirt pada world untuk mendapatkan seed,
+            -- lalu tanam, harvest, dan pasang kembali Dirt yang tadi dihancurkan!
+            if CountItem(dirtId) == 0 and CountItem(seedId) == 0 then
+                DF.status = "Break Dirt di world untuk mencari Seed..."
+                local brokenList = {}
+                for x = 4, w.w - 5 do
+                    if not DF.on or DF.token ~= token then break end
+                    if #brokenList >= 14 or CountItem(seedId) >= 6 then break end
+                    if (TileValue(w, "fg", x, workPlatformY) or 0) == dirtId
+                        and (TileValue(w, "fg", x - 1, workPlatformY) or 0) == dirtId then
+                        local standX, standY = x - 1, workPlatformY - 1
+                        WalkOrClimbTo(standX, standY, token)
+                        BreakTotalAt(w, x, workPlatformY, standX, standY, token)
+                        if (TileValue(w, "fg", x, workPlatformY) or 0) == 0 then
+                            table.insert(brokenList, { x = x, y = workPlatformY, standX = standX, standY = standY })
+                        end
+                        task.wait(0.2)
+                    end
+                end
+
+                if CountItem(seedId) > 0 then
+                    PlantAndHarvestDirtSeeds(w, workPlatformY, token, 20)
+                end
+
+                -- Pasang kembali semua Dirt platform yang tadi dihancurkan
+                for _, item in ipairs(brokenList) do
+                    if not DF.on or DF.token ~= token then break end
+                    while DF.on and DF.token == token and CountItem(dirtId) == 0 and CountItem(seedId) > 0 do
+                        PlantAndHarvestDirtSeeds(w, workPlatformY, token, 15)
+                    end
+                    if (TileValue(w, "fg", item.x, item.y) or 0) == 0 and CountItem(dirtId) > 0 then
+                        WalkOrClimbTo(item.standX, item.standY, token)
+                        if PlaceCell(dirtId, { x = item.x, y = item.y }, 1) then
+                            DF.stats.placed += 1
+                            task.wait(0.14)
+                        end
+                    end
+                end
+            elseif CountItem(dirtId) > 0 and CountItem(dirtId) < 15 and CountItem(seedId) == 0 then
+                local testX = 5
+                local standX, standY = 4, workPlatformY - 1
+                WalkOrClimbTo(standX, standY, token)
+                while DF.on and DF.token == token and CountItem(seedId) < 4 and CountItem(dirtId) > 0 do
+                    if (TileValue(w, "fg", testX, standY) or 0) == 0 then
+                        PlaceCell(dirtId, { x = testX, y = standY }, 1)
+                        task.wait(PLACE_GUARD)
+                    end
+                    BreakTotalAt(w, testX, standY, standX, standY, token)
+                    task.wait(0.2)
+                end
+            else
+                break
+            end
+        end
+
+        if returnX and returnY then
+            WalkOrClimbTo(returnX, returnY, token)
+        end
+        return CountItem(dirtId) > 0
+    end
+
+    local function EnsurePlatformDirtAt(w, tx, ty, standX, standY, topDirtY, bedrockY, token)
         if not InBounds(w, tx, ty) then return end
         local dirtId = GetDirtId()
         local fg = TileValue(w, "fg", tx, ty) or 0
         if fg == dirtId then return end
         if fg ~= 0 and not CanBreakId(fg) then return end
 
-        local px, py = GetTile()
-        if px ~= standX or py ~= standY then
-            if not Nav.ExecWalk(standX, standY, function() return DF.token ~= token end) then
-                Nav.To(standX, standY, function() return DF.token ~= token end, 0.3, true)
-            end
-        end
+        WalkOrClimbTo(standX, standY, token)
 
         if fg ~= 0 and fg ~= dirtId then
             local t0 = os.clock()
@@ -2696,10 +3111,15 @@ do (function()
             end
         end
 
-        if DF.on and DF.token == token and (TileValue(w, "fg", tx, ty) or 0) == 0 and CountItem(dirtId) > 0 then
-            if PlaceCell(dirtId, { x = tx, y = ty }, (tx >= standX) and 1 or -1) then
-                DF.stats.placed += 1
-                task.wait(0.14)
+        if DF.on and DF.token == token and (TileValue(w, "fg", tx, ty) or 0) == 0 then
+            if CountItem(dirtId) <= 0 then
+                EnsureDirtSupply(w, standX, standY, ty, topDirtY, bedrockY, token)
+            end
+            if CountItem(dirtId) > 0 then
+                if PlaceCell(dirtId, { x = tx, y = ty }, (tx >= standX) and 1 or -1) then
+                    DF.stats.placed += 1
+                    task.wait(0.14)
+                end
             end
         end
     end
@@ -2729,20 +3149,23 @@ do (function()
         end
 
         if DF.on and DF.token == token and lastY > startY then
-            DF.status = string.format("Panjat naik %s (Pillar Climb)...", label)
+            DF.status = string.format("Panjat naik %s (Bersih Pijakan)...", label)
             Nav.ClimbUpWithDirt(colB, startY, function() return DF.token ~= token end, true, Config.dfTpDelay)
         end
         return true
     end
 
     local function DFLoop(token, home)
+        -- Tidak menggunakan ModFly karena selalu mem-break dari samping di atas pijakan
+        SetAutoFly("autodf", false)
+
         local w = FindWorld()
         if not w then return end
 
         local topDirtY, bedrockY = DetectWorldLayers(w)
         DF.stats.topDirtY = topDirtY
         DF.stats.bedrockY = bedrockY
-        Notify(string.format("Auto DF: Lapisan Dirt di Y=%d, Bedrock di Y=%d.", topDirtY, bedrockY))
+        Notify(string.format("Auto DF Full World: Dirt Y=%d, Bedrock Y=%d.", topDirtY, bedrockY))
 
         local W = w.w
         if not ClearVerticalEdge(w, 0, 1, topDirtY, bedrockY, "Kiri (1-2)", token) then return end
@@ -2750,8 +3173,8 @@ do (function()
         if not ClearVerticalEdge(w, W - 2, W - 1, topDirtY, bedrockY, "Kanan (99-100)", token) then return end
         if not DF.on or DF.token ~= token then return end
 
+        -- BAGIAN BAWAH WORLD (topDirtY + 1 sampai bedrockY - 1)
         local leftToRight = false
-
         for emptyY = topDirtY + 1, bedrockY - 1, 2 do
             if not DF.on or DF.token ~= token or not alive() then return end
             w = FindWorld()
@@ -2759,21 +3182,14 @@ do (function()
 
             local platformAboveY = emptyY - 1
             local platformBelowY = emptyY + 1
-            DF.stats.step = string.format("Baris Kosong Y=%d", emptyY)
+            DF.stats.step = string.format("Bawah: Baris Y=%d", emptyY)
 
             local startX = leftToRight and 2 or (W - 3)
             local endX   = leftToRight and (W - 3) or 2
             local stepX  = leftToRight and 1 or -1
             local entryStandX = leftToRight and 1 or (W - 2)
 
-            local px, py = GetTile()
-            if px ~= entryStandX or py ~= emptyY then
-                if py and emptyY < py then
-                    Nav.ClimbUpWithDirt(entryStandX, emptyY, function() return DF.token ~= token end, true, Config.dfTpDelay)
-                else
-                    Nav.To(entryStandX, emptyY, function() return DF.token ~= token end, 0.3, true)
-                end
-            end
+            WalkOrClimbTo(entryStandX, emptyY, token)
 
             for x = startX, endX, stepX do
                 if not DF.on or DF.token ~= token or not alive() then return end
@@ -2784,21 +3200,21 @@ do (function()
                 local standY = emptyY
 
                 if Config.dfReplacePlatform and platformBelowY < bedrockY then
-                    EnsurePlatformDirtAt(w, standX, platformBelowY, standX, standY, token)
+                    EnsurePlatformDirtAt(w, standX, platformBelowY, standX, standY, topDirtY, bedrockY, token)
                 end
                 if Config.dfReplacePlatform and platformAboveY >= topDirtY then
-                    EnsurePlatformDirtAt(w, standX, platformAboveY, standX, standY, token)
+                    EnsurePlatformDirtAt(w, standX, platformAboveY, standX, standY, topDirtY, bedrockY, token)
                 end
 
-                DF.status = string.format("Clear Baris Y=%d | Break (%d,%d)", emptyY, x, emptyY)
+                DF.status = string.format("Bawah Y=%d | Break (%d,%d)", emptyY, x, emptyY)
                 BreakTotalAt(w, x, emptyY, standX, standY, token)
 
                 if Config.dfReplacePlatform then
                     if platformAboveY >= topDirtY then
-                        EnsurePlatformDirtAt(w, x, platformAboveY, standX, standY, token)
+                        EnsurePlatformDirtAt(w, x, platformAboveY, standX, standY, topDirtY, bedrockY, token)
                     end
                     if platformBelowY < bedrockY then
-                        EnsurePlatformDirtAt(w, x, platformBelowY, standX, standY, token)
+                        EnsurePlatformDirtAt(w, x, platformBelowY, standX, standY, topDirtY, bedrockY, token)
                     end
                 end
 
@@ -2811,12 +3227,62 @@ do (function()
             leftToRight = not leftToRight
         end
 
+        -- Pastikan baris topDirtY terisi rapi sebelum lanjut ke bagian atas world
+        for x = 2, W - 3 do
+            if not DF.on or DF.token ~= token then return end
+            EnsurePlatformDirtAt(w, x, topDirtY, x, topDirtY - 1, topDirtY, bedrockY, token)
+        end
+
+        -- BAGIAN ATAS WORLD (topDirtY - 2 naik ke atas hingga Y = 2, menyisakan Y paling atas kosong)
+        local upperLeftToRight = true
+        for platformY = topDirtY - 2, 2, -2 do
+            if not DF.on or DF.token ~= token or not alive() then return end
+            w = FindWorld()
+            if not w or CurrentWorldName() ~= home.world then return end
+
+            local walkY = platformY - 1
+            DF.stats.step = string.format("Atas: Platform Y=%d", platformY)
+
+            local startX = upperLeftToRight and 2 or (W - 3)
+            local endX   = upperLeftToRight and (W - 3) or 2
+            local stepX  = upperLeftToRight and 1 or -1
+
+            local prevWalkY = platformY + 1
+            WalkOrClimbTo(startX, prevWalkY, token)
+            EnsurePlatformDirtAt(w, startX, platformY, startX, prevWalkY, topDirtY, bedrockY, token)
+
+            local climbCol = upperLeftToRight and 1 or (W - 2)
+            Nav.ClimbUpWithDirt(climbCol, walkY, function() return DF.token ~= token end, true, Config.dfTpDelay)
+            WalkOrClimbTo(startX, walkY, token)
+
+            for x = startX + stepX, endX, stepX do
+                if not DF.on or DF.token ~= token or not alive() then return end
+                w = FindWorld()
+                if not w or CurrentWorldName() ~= home.world then return end
+
+                local standX = x - stepX
+                if (TileValue(w, "fg", x, walkY) or 0) ~= 0 or (TileValue(w, "bg", x, walkY) or 0) ~= 0 then
+                    BreakTotalAt(w, x, walkY, standX, walkY, token)
+                end
+
+                DF.status = string.format("Atas Y=%d | Pasang Dirt (%d,%d)", platformY, x, platformY)
+                EnsurePlatformDirtAt(w, x, platformY, standX, walkY, topDirtY, bedrockY, token)
+
+                if not Nav.ExecWalk(x, walkY, function() return DF.token ~= token end) then
+                    pcall(w.goTo, x, walkY)
+                    task.wait(math.max(0.22, Config.dfTpDelay))
+                end
+            end
+
+            upperLeftToRight = not upperLeftToRight
+        end
+
         SetAutoFly("autodf", false)
         ReleaseInput()
         AutoInput.active = false
         DF.stats.step = "Selesai"
         DF.status = "Selesai"
-        Notify(string.format("Half Dirt Farm selesai! Hancur: %d | Dirt dipasang: %d | Drop: %d", DF.stats.broken, DF.stats.placed, DF.stats.picked))
+        Notify(string.format("Full World Dirt Farm selesai! Hancur: %d | Dirt dipasang: %d | Drop: %d", DF.stats.broken, DF.stats.placed, DF.stats.picked))
     end
 
     function DF.Stop()
@@ -2867,7 +3333,7 @@ end)() end
 ----------------------------------------------------------------------
 local Guard = {
     on = false,
-    mode = "idle", -- idle | pause | away | out | back
+    mode = "idle",
     allow = {},
     alerted = {},
     saved = nil,
@@ -2881,7 +3347,7 @@ local Guard = {
     staffServerText = "tidak ada",
 }
 
-local Spam = { on = false, texts = {}, index = 1, sent = 0, last = "-", nextAt = 0 }
+local Spam = { on = false, sent = 0, last = "-", nextAt = 0 }
 
 do (function()
     local function strip(s) return (tostring(s or ""):gsub("`.", "")) end
@@ -3044,7 +3510,6 @@ do (function()
     task.spawn(function()
         while alive() do
             pcall(function()
-                -- Cek staff di seluruh server
                 local stList = {}
                 for _, plr in ipairs(Players:GetPlayers()) do
                     if plr ~= Player then
@@ -3161,7 +3626,7 @@ do (function()
 end)() end
 
 ----------------------------------------------------------------------
--- 6. AUTO CHAT, BONUS (NET.CALL QUEST & REDEEM), LITE MODE, WATERMARK
+-- 6. AUTO CHAT (1 PESAN), BONUS (QUEST & REDEEM), LITE MODE, WATERMARK
 ----------------------------------------------------------------------
 local Bonus = {
     claimed = 0,
@@ -3177,18 +3642,7 @@ local Bonus = {
 local LiteMode = { saved = {} }
 
 do (function()
-    -- Auto Chat
-    local function parseChatTexts(raw)
-        local out = {}
-        for part in string.gmatch(raw or "", "[^|\n]+") do
-            part = Trim(part)
-            if part ~= "" then table.insert(out, part) end
-        end
-        return out
-    end
-    Spam. parse = parseChatTexts
-    Spam.texts = parseChatTexts(Config.chatTexts)
-
+    -- Auto Chat (Hanya mengirim 1 pesan tunggal yang telah di-setting)
     local function getWorldChannel()
         local folder = TextChatService:FindFirstChild("WorldChannels")
         if not folder then return nil end
@@ -3207,8 +3661,9 @@ do (function()
     end
 
     function Spam.SendNext()
-        if #Spam.texts == 0 then
-            Spam.last = "Daftar pesan kosong"
+        local msg = Trim(Config.chatText)
+        if msg == "" then
+            Spam.last = "Pesan chat belum diisi"
             return false
         end
         local ch = getWorldChannel()
@@ -3216,9 +3671,6 @@ do (function()
             Spam.last = "Channel chat belum ada"
             return false
         end
-        if Spam.index > #Spam.texts then Spam.index = 1 end
-        local msg = Spam.texts[Spam.index]
-        Spam.index = (Spam.index % #Spam.texts) + 1
         local ok, err = pcall(ch.SendAsync, ch, msg)
         if ok then
             Spam.sent += 1
@@ -3571,7 +4023,7 @@ do (function()
         return true
     end
 
-    -- Unlimited Jump (Gabungan Jammer 4992 SkyP + Upvalue RenderStepped)
+    -- Unlimited Jump
     local origJammerOn = nil
     local ujumpConn = nil
     local function jammerWrapper(id, ...)
@@ -3828,7 +4280,7 @@ do (function()
         return result
     end
 
-    -- Auto Quest (Klaim + Kerjakan Quest)
+    -- Auto Quest
     function QuestReport()
         Bonus.CheckQuests()
         Notify(Bonus.questText, "Info Quest")
@@ -4276,9 +4728,9 @@ do (function()
     Tab:Section({ Title = "Kontrol Bot & Karakter" })
 
     AddFeatureToggle(Tab, "Auto Farm (Grid 5x5 + Rayman)", "Place & break otomatis di sekitar karakter.", "autofarm")
-    AddFeatureToggle(Tab, "Auto Clear World (Legit A* + Pillar)", "Bersihkan seluruh blok world dari ujung.", "autoclear")
+    AddFeatureToggle(Tab, "Auto Clear World (Legit A* + Bersih Pijakan)", "Bersihkan seluruh blok world tanpa menyisakan pijakan.", "autoclear")
     AddFeatureToggle(Tab, "Farmer (Auto Harvest + Auto Plant)", "Panen pohon siap & tanam seed otomatis.", "autoharvest")
-    AddFeatureToggle(Tab, "Auto Dirt Farm (Half DF)", "Buat Dirt Farm otomatis dengan Pillar Climb.", "autodf")
+    AddFeatureToggle(Tab, "Auto Dirt Farm (Full World + Smart Supply)", "Buat Dirt Farm bagian bawah & atas otomatis.", "autodf")
     AddFeatureToggle(Tab, "Penjaga (Anti-Mod / Staff Detector)", "Otomatis jeda / keluar world saat Mod atau pemain masuk.", "guard")
     AddFeatureToggle(Tab, "Click TP (Legit Pathfinding)", "Klik di layar untuk berjalan & memanjat otomatis ke tujuan.", "clicktp")
     AddFeatureToggle(Tab, "Noclip + FlyPad (▲/▼)", "Terbang menembus blok dan munculkan tombol naik/turun di layar.", "noclip")
@@ -4509,7 +4961,7 @@ do (function()
         end
     end)
 
-    AddFeatureToggle(Tab, "Auto Clear World (Legit A* + Pillar)", "Bersihkan world dengan Legit Walking & otomatis memanjat pakai pijakan jika Y di atas player.", "autoclear")
+    AddFeatureToggle(Tab, "Auto Clear World (Legit A* + Bersih Pijakan)", "Bersihkan world dengan Legit Walking & otomatis menghancurkan kembali pijakan setelah memanjat.", "autoclear")
 
     Tab:Dropdown({
         Title = "Arah Sapuan (Sweep)",
@@ -4520,7 +4972,7 @@ do (function()
 
     Tab:Toggle({
         Title = "Gunakan Block Pijakan (Pillar & Jembatan)",
-        Desc = "Otomatis menaruh block saat melewati jurang atau memanjat ke Y yang lebih tinggi.",
+        Desc = "Otomatis menaruh & membersihkan kembali pijakan saat memanjat ke Y yang lebih tinggi.",
         Value = Config.clearUseBlock,
         Callback = function(on) Config.clearUseBlock = on; SaveConfig() end,
     })
@@ -4579,7 +5031,7 @@ do (function()
         end
     end)
 
-    AddFeatureToggle(Tab, "Jalankan Farmer", "Otomatis panen pohon siap & tanam seed dengan Legit Walking + Pillar Climb.", "autoharvest")
+    AddFeatureToggle(Tab, "Jalankan Farmer", "Otomatis panen pohon siap & tanam seed dengan Legit Walking + Bersih Pijakan.", "autoharvest")
 
     Tab:Toggle({
         Title = "Auto Harvest (Panen Pohon Siap)",
@@ -4621,7 +5073,7 @@ do (function()
     })
 end)() end
 
--- 5. Tab: Auto DF (Dirt Farm) ----------------------------------------
+-- 5. Tab: Auto DF (Dirt Farm Full World) -----------------------------
 do (function()
     local Tab = AutoSection:Tab({
         Title = "Auto DF",
@@ -4632,25 +5084,27 @@ do (function()
     })
     hub.tabs.df = Tab
 
-    local dfPara = Tab:Paragraph({ Title = "Status Auto Dirt Farm", Desc = "Memuat..." })
+    local dfPara = Tab:Paragraph({ Title = "Status Auto Dirt Farm (Full World)", Desc = "Memuat..." })
 
     task.spawn(function()
         while alive() and task.wait(0.4) do
             pcall(function()
                 local st = DF.stats
+                local dirtId = GetDirtId()
+                local seedId = GetDirtSeedId()
                 SetElementText(
                     dfPara,
                     "Status: " .. DF.status .. " (" .. tostring(st.step) .. ")",
                     string.format(
-                        "Lapisan Dirt Atas: Y=%d | Batas Bedrock: Y=%d\nBlock Dihancurkan: %d | Dirt Dipasang: %d | Drop Diambil: %d",
-                        st.topDirtY, st.bedrockY, st.broken, st.placed, st.picked
+                        "Lapisan Dirt: Y=%d | Bedrock: Y=%d\nStok Dirt: %d | Stok Dirt Seed: %d\nHancur: %d | Dirt Dipasang: %d | Drop Diambil: %d",
+                        st.topDirtY, st.bedrockY, CountItem(dirtId), CountItem(seedId), st.broken, st.placed, st.picked
                     )
                 )
             end)
         end
     end)
 
-    AddFeatureToggle(Tab, "Jalankan Auto Dirt Farm (Half DF)", "Bersihkan 2 kolom vertikal ujung, panjat dengan Pillar Climb, dan buat baris platform Dirt.", "autodf")
+    AddFeatureToggle(Tab, "Jalankan Auto Dirt Farm (Full World)", "Bangun DF bawah & atas otomatis + Smart Supply (tanam/panen/break Dirt otomatis saat stok habis, tanpa ModFly).", "autodf")
 
     Tab:Toggle({
         Title = "Ganti Lava/Rock dengan Dirt di Platform",
@@ -4708,7 +5162,7 @@ do (function()
 
     Tab:Dropdown({
         Title = "Mode Pergerakan Universal",
-        Desc = "legit = Legit Walking A* + Pillar Climb otomatis saat Y di atas player.",
+        Desc = "legit = Legit Walking A* + Pillar Climb Bersih otomatis saat Y di atas player.",
         Values = { "legit", "walk", "fly", "mix" },
         Value = Config.moveMode,
         Callback = function(v)
@@ -4811,7 +5265,7 @@ do (function()
     })
 end)() end
 
--- 8. Tab: Auto Chat & Bonus (Quest/Redeem/Staff) ---------------------
+-- 8. Tab: Auto Chat (1 Pesan) & Bonus (Quest/Redeem/Staff) -----------
 do (function()
     local Tab = SecuritySection:Tab({
         Title = "Chat, Bonus & Staff",
@@ -4830,24 +5284,22 @@ do (function()
                 SetElementText(
                     bonusPara,
                     string.format("Auto Chat: %s (Terkirim: %d)", Spam.on and "AKTIF" or "MATI", Spam.sent),
-                    string.format("Pesan Terakhir: %s\nQuest: %s\nRedeem: %s", Spam.last, Bonus.questText, Bonus.codeText)
+                    string.format("Pesan Disetting: %s\nTerakhir Terkirim: %s\nQuest: %s\nRedeem: %s", Config.chatText ~= "" and Config.chatText or "(Belum diisi)", Spam.last, Bonus.questText, Bonus.codeText)
                 )
             end)
         end
     end)
 
-    Tab:Section({ Title = "Auto Chat / Spammer" })
+    Tab:Section({ Title = "Auto Chat / Spammer (1 Pesan)" })
 
-    AddFeatureToggle(Tab, "Aktifkan Auto Chat", "Kirim daftar pesan secara bergantian ke channel world.", "autochat")
+    AddFeatureToggle(Tab, "Aktifkan Auto Chat", "Kirim 1 pesan yang telah disetting secara otomatis ke channel world.", "autochat")
 
     Tab:Input({
-        Title = "Daftar Pesan (Pisahkan dengan |)",
-        Value = Config.chatTexts,
-        Placeholder = "pesan 1|pesan 2|pesan 3",
+        Title = "Pesan Auto Chat",
+        Value = Config.chatText,
+        Placeholder = "Ketik 1 pesan yang akan dikirim otomatis...",
         Callback = function(text)
-            Config.chatTexts = text or ""
-            Spam.texts = Spam.parse(Config.chatTexts)
-            Spam.index = 1
+            Config.chatText = Trim(text or "")
             SaveConfig()
         end,
     })
@@ -5155,14 +5607,14 @@ do (function()
         Title = "Daftar Perintah Chat ANCH Hub Ultimate",
         Desc = table.concat({
             "/af [on/off]  —  Auto Farm (Multi-Target + Rayman)",
-            "/ac [on/off]  —  Auto Clear World (Legit Walk + Pillar Climb)",
+            "/ac [on/off]  —  Auto Clear World (Legit Walk + Bersih Pijakan)",
             "/ah [on/off]  —  Farmer (Auto Harvest + Auto Plant)",
-            "/adf [on/off] —  Auto Dirt Farm (Half DF Builder)",
+            "/adf [on/off] —  Auto Dirt Farm (Full World + Smart Supply)",
             "/guard [on/off] — Penjaga Anti-Mod / Staff Detector",
-            "/chat [on/off]  — Auto Chat / Spammer",
+            "/chat [on/off]  — Auto Chat / Spammer (1 Pesan)",
             "/ctp [on/off] —  Click TP (Legit A* / Pillar)",
             "/move <legit|walk|fly|mix> — Ubah mode gerak",
-            "/noclip | /uj | /god | /lite | /blink | /lh",
+            "/noclip | /uj | /god | /lite | /blink | /lh [n|off] | /aq [on|off|scan]",
             "/wld <jumlah> | /tp <world> | /pos1 | /pos2 | /win1 | /win2",
         }, "\n"),
     })
@@ -5227,6 +5679,23 @@ local function HandleMessage(text)
         SetFeature("autorejoin", WantedState(args, arjOn)); return true
     elseif command == "blink" then
         SetFeature("blink", WantedState(args, blinkOn)); return true
+    elseif command == "longhand" or command == "lh" then
+        local rangeNum = tonumber(args)
+        if rangeNum and rangeNum > 0 then
+            Config.longhandRange = rangeNum
+            SaveConfig()
+            SetFeature("longhand", true)
+        else
+            SetFeature("longhand", WantedState(args, longhandOn))
+        end
+        return true
+    elseif command == "autoquest" or command == "aq" then
+        if args == "scan" then
+            task.spawn(QuestReport)
+        else
+            SetFeature("autoquest", WantedState(args, questOn))
+        end
+        return true
     elseif command == "god" or command == "godmode" then
         SetFeature("god", WantedState(args, godOn)); return true
     elseif command == "lite" then
@@ -5353,5 +5822,5 @@ task.spawn(function()
         end
         if RefreshHub then RefreshHub() end
     end
-    Notify("ANCH HUB v10 Ultimate Loaded! Mode gerak: LEGIT (A* + Pillar Climb).")
+    Notify("ANCH HUB v10 Ultimate Loaded! Mode gerak: LEGIT (A* + Bersih Pijakan).")
 end)
