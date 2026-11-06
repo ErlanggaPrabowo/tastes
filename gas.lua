@@ -5869,7 +5869,6 @@ local Window = WindUI:CreateWindow({
     Icon = "solar:folder-2-bold-duotone",
     NewElements = true,
     HideSearchBar = false,
-    Theme = "Indigo",
     OpenButton = {
         Title = "ANCH Hub",
         CornerRadius = UDim.new(1, 0),
@@ -5883,10 +5882,10 @@ local Window = WindUI:CreateWindow({
             Color3.fromHex("#e7ff2f")
         ),
     },
-})
-
-Window::DisableTopbarButtons({
-    "Fullscreen",
+    Topbar = {
+        Height = 44,
+        ButtonsType = "Mac",
+    },
 })
 
 pcall(function()
