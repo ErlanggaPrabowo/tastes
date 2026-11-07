@@ -109,6 +109,7 @@ local MenuModOk, MenuModule = pcall(function() return require(GameGui:WaitForChi
 ----------------------------------------------------------------------
 local CONFIG_FILE = "ANCHHub_GrowBlox.json"
 local REJOIN_FILE = "ANCHHub_Rejoin_" .. tostring(Player.UserId) .. ".json"
+local PABRIK_STATE_FILE = "ANCHHub_Pabrik_" .. tostring(Player.UserId) .. ".json"
 local SCRIPT_FILE = "ANCHHub_GrowBlox.lua"
 local MAX_AMOUNT = 10000
 local COOLDOWN = 0.3
@@ -195,10 +196,11 @@ local Config = {
     pabrikTiles = { ["1,0"] = true },
     pabrikBreakX = -1,
     pabrikBreakY = -1,
-    pabrikBreakSec = 60,
+    pabrikBreakSec = 120,
     pabrikDrop = true,
-    pabrikKeep = 50,
-    pabrikDropAt = 200,
+    pabrikKeep = 80,
+    pabrikDropAt = 180,
+    pabrikDropAmount = 100,
     pabrikDropWorld = "",
     pabrikDropX = -1,
     pabrikDropY = -1,
@@ -3871,9 +3873,22 @@ do (function()
 end)() end
 
 ----------------------------------------------------------------------
--- 6. PABRIK / FACTORY (PANEN -> TANAM -> BREAK -> AUTO DROP SEED)
+-- 6. PABRIK / FACTORY (11 LANGKAH LENGKAP + RESUME SAAT PINDAH WORLD)
 ----------------------------------------------------------------------
 do (function()
+    local function SavePabrikState(stateTbl)
+        if writefile then
+            stateTbl.updatedAt = os.time()
+            pcall(writefile, PABRIK_STATE_FILE, HttpService:JSONEncode(stateTbl))
+        end
+    end
+
+    local function ClearPabrikState()
+        if isfile and delfile and isfile(PABRIK_STATE_FILE) then
+            pcall(delfile, PABRIK_STATE_FILE)
+        end
+    end
+
     function Pabrik.ParseDropTarget()
         local raw = tostring(Config.pabrikDropWorld or ""):gsub("%s", "")
         local wName, doorId = string.match(raw, "^([^:]*):(.+)$")
@@ -3896,8 +3911,13 @@ do (function()
     end
 
     local function EnterTargetWorld(name, doorId)
+        name = Trim(name):upper()
+        if name == "" then return false, "nama world kosong" end
+        if CurrentWorldName():upper() == name then return true end
+
+        if QueueReload then pcall(QueueReload) end
+
         local w = FindWorld()
-        if not w or name == "" then return false, "nama world kosong" end
         if CurrentWorldName() ~= "" then
             LeaveCurrentWorld()
             task.wait(1.8)
@@ -3915,17 +3935,63 @@ do (function()
         else
             return false, "fungsi enter tidak ditemukan"
         end
+
         local t0 = os.clock()
-        while alive() and os.clock() - t0 < 8 do
+        while alive() and os.clock() - t0 < 10 do
             local cw = FindWorld()
-            if cw and rawget(cw, "fg") ~= oldFg and CurrentWorldName() == name then
+            if cw and rawget(cw, "fg") ~= oldFg and CurrentWorldName():upper() == name then
                 Refs.Scan()
                 task.wait(1.2)
                 return true
             end
             task.wait(0.25)
         end
-        return false, "timeout / terkunci"
+        return false, "sedang teleport / terkunci"
+    end
+
+    -- Cek apakah masih ada dropped block/seed di world (di luar zona drop seed)
+    local function FindDroppedItemInWorld(targetId)
+        local list = Drops.list
+        if not list then Refs.Scan(); list = Drops.list end
+        if type(list) ~= "table" then return nil end
+        local px, py = GetTile()
+        px, py = px or 50, py or 30
+        local dropZone = Pabrik.Zone
+        if dropZone and dropZone.world ~= CurrentWorldName() then
+            dropZone = nil
+        end
+        local best, bestDist = nil, math.huge
+        for _, d in ipairs(list) do
+            if type(d) == "table" and d.id == targetId and (d.n or 0) > 0 and type(d.x) == "number" then
+                if not (dropZone and math.abs(d.x - dropZone.x) <= 2.5 and math.abs(d.y - dropZone.y) <= 2.5) then
+                    local dist = math.abs(d.x - px) + math.abs(d.y - py)
+                    if dist < bestDist then
+                        best, bestDist = d, dist
+                    end
+                end
+            end
+        end
+        return best
+    end
+
+    -- Ambil semua dropped block yang tersisa di world sampai habis atau tas penuh (200)
+    local function CollectAllDroppedBlocks(blockId, liveFn)
+        local collectedAny = false
+        while liveFn() and CountItem(blockId) < 200 do
+            local drop = FindDroppedItemInWorld(blockId)
+            if not drop then break end
+            local dx, dy = math.floor(drop.x), math.floor(drop.y)
+            Pabrik.phase = "COLLECT BLOCK"
+            Pabrik.status = string.format("Mengambil drop %s di (%d,%d)...", ItemName(blockId), dx, dy)
+            local px, py = GetTile()
+            if py and dy < py then
+                Nav.ClimbUpWithDirt(px, dy, function() return not liveFn() end, true, Config.harvestTpDelay)
+            end
+            Nav.To(dx, dy, function() return not liveFn() end, 0.4, true)
+            collectedAny = true
+            task.wait(0.45)
+        end
+        return collectedAny
     end
 
     local function DropSeedItem(seedId, amount, liveFn)
@@ -3933,29 +3999,29 @@ do (function()
         local onDrop = hud and rawget(hud, "onDrop")
         local rem = amount
         local nudged = false
-        while rem > 0 and liveFn() do
+        while rem > 0 and liveFn() and CountItem(seedId) > 0 do
             local before = CountItem(seedId)
-            local dropNow = math.min(rem, 200)
+            local dropNow = math.min(rem, before, 200)
             if type(onDrop) == "function" then
                 pcall(onDrop, seedId, dropNow)
             elseif DropEvent then
                 pcall(function() DropEvent:FireServer(seedId, dropNow) end)
             end
-            task.wait(0.7)
+            task.wait(0.8)
             local diff = before - CountItem(seedId)
             if diff > 0 then
-                rem -= diff
-                Pabrik.dropped += diff
+                rem = rem - diff
+                Pabrik.dropped = Pabrik.dropped + diff
             elseif not nudged then
                 nudged = true
                 local s = PlayerPhysicsState()
                 local faceLeft = s and (s.facing or 1) < 0
                 AutoInput.active = true
                 AutoInput.right, AutoInput.left = faceLeft, not faceLeft
-                task.wait(0.06)
+                task.wait(0.08)
                 ReleaseInput()
                 AutoInput.active = false
-                task.wait(0.3)
+                task.wait(0.35)
             else
                 return amount - rem, "tile drop penuh"
             end
@@ -3963,10 +4029,12 @@ do (function()
         return amount - rem, nil
     end
 
-    local function ExecuteDropCycle(seedId, amount, liveFn)
+    -- Langkah 9: Jika seed mencapai >= 180, tuju world penyimpanan & drop 100 seed
+    local function ExecuteDropCycle(seedId, dropAmount, liveFn)
         local targetW, doorId = Pabrik.ParseDropTarget()
-        local homeW = CurrentWorldName()
+        local homeW = Pabrik.home ~= "" and Pabrik.home or CurrentWorldName()
         if targetW == "" then targetW = homeW end
+
         if Config.pabrikDropX < 0 and not doorId and targetW == homeW then
             Pabrik.status = "Posisi drop belum diatur (drop dilewati)"
             Pabrik.dropOffUntil = os.clock() + 60
@@ -3974,11 +4042,22 @@ do (function()
         end
 
         Pabrik.traveling = true
-        local diffWorld = targetW ~= homeW
-        local okTravel, errMsg = true, nil
+        local diffWorld = targetW:upper() ~= CurrentWorldName():upper()
 
+        -- Simpan state sebelum pindah world agar jika script ke-reload, otomatis lanjut drop & balik!
+        SavePabrikState({
+            active = true,
+            stage = "dropping",
+            homeWorld = homeW,
+            targetWorld = targetW,
+            doorId = doorId,
+            seedId = seedId,
+            dropAmount = dropAmount,
+        })
+
+        local okTravel, errMsg = true, nil
         if diffWorld or doorId then
-            Pabrik.status = "Pergi ke " .. targetW .. (doorId and (":" .. doorId) or "") .. " untuk drop..."
+            Pabrik.status = "Menuju world penyimpanan " .. targetW .. (doorId and (":" .. doorId) or "") .. "..."
             local okE, why = EnterTargetWorld(targetW, doorId)
             if not okE then
                 okTravel, errMsg = false, "Gagal masuk " .. targetW .. " (" .. tostring(why) .. ")"
@@ -3987,6 +4066,10 @@ do (function()
 
         if okTravel and liveFn() and Config.pabrikDropX >= 0 and Config.pabrikDropY >= 0 then
             Pabrik.status = string.format("Jalan ke posisi drop (%d,%d)...", Config.pabrikDropX, Config.pabrikDropY)
+            local px, py = GetTile()
+            if py and Config.pabrikDropY < py then
+                Nav.ClimbUpWithDirt(px, Config.pabrikDropY, function() return not liveFn() end, true, Config.harvestTpDelay)
+            end
             if not Nav.To(Config.pabrikDropX, Config.pabrikDropY, function() return not liveFn() end, 0.3, true) then
                 okTravel, errMsg = false, "Tidak bisa jalan ke posisi drop"
             end
@@ -3997,9 +4080,9 @@ do (function()
             if s then
                 Pabrik.Zone = { world = CurrentWorldName(), x = s.x, y = s.y - 0.475 }
             end
-            local droppedN, dropErr = DropSeedItem(seedId, amount, liveFn)
+            local droppedN, dropErr = DropSeedItem(seedId, dropAmount, liveFn)
             if droppedN > 0 then
-                local msg = string.format("Pabrik Drop %s x%d di %s", ItemName(seedId), droppedN, CurrentWorldName())
+                local msg = string.format("Berhasil Drop %s x%d di %s", ItemName(seedId), droppedN, CurrentWorldName())
                 Pabrik.status = msg
                 Notify(msg, "Pabrik ANCH")
                 Webhook.Send("pabrik", msg)
@@ -4008,65 +4091,194 @@ do (function()
         end
 
         if not okTravel then
-            Pabrik.dropOffUntil = os.clock() + 120
+            Pabrik.dropOffUntil = os.clock() + 90
             Pabrik.status = "Drop gagal: " .. tostring(errMsg)
-            Webhook.Send("pabrik", Pabrik.status)
         end
 
-        if diffWorld and homeW ~= "" and liveFn() then
-            Pabrik.status = "Pulang ke world pabrik " .. homeW .. "..."
+        -- Ubah state ke returning sebelum pulang ke world pabrik
+        SavePabrikState({
+            active = true,
+            stage = "farming",
+            homeWorld = homeW,
+            targetWorld = targetW,
+            seedId = seedId,
+        })
+
+        if homeW ~= "" and CurrentWorldName():upper() ~= homeW:upper() and liveFn() then
+            Pabrik.status = "Kembali ke world pabrik " .. homeW .. "..."
             if not EnterTargetWorld(homeW, nil) and liveFn() then
                 task.wait(4)
                 EnterTargetWorld(homeW, nil)
             end
         end
+
         Pabrik.traveling = false
     end
 
-    local function RunBreakSession(seedId, blockId, liveFn)
-        if Config.pabrikBreakX < 0 or Config.pabrikBreakY < 0 or next(Config.pabrikTiles) == nil then
+    local function CheckAndDropSeedIfReady(seedId, liveFn)
+        if not Config.pabrikDrop then return false end
+        local sCount = CountItem(seedId)
+        local threshold = tonumber(Config.pabrikDropAt) or 180
+        if sCount >= threshold and os.clock() >= (Pabrik.dropOffUntil or 0) then
+            local dropAmt = tonumber(Config.pabrikDropAmount) or 100
+            dropAmt = math.min(dropAmt, sCount)
+            if dropAmt > 0 then
+                Pabrik.phase = "DROP SEED"
+                ExecuteDropCycle(seedId, dropAmt, liveFn)
+                return true
+            end
+        end
+        return false
+    end
+
+    -- Langkah 2, 6, 7: Menuju ke Posisi Break dan lakukan break hingga blok habis
+    local function RunBreakUntilEmpty(seedId, blockId, liveFn)
+        if Config.pabrikBreakX < 0 or Config.pabrikBreakY < 0 then
+            Pabrik.status = "Posisi Break belum diatur! Tekan tombol SetPos Break dulu."
+            Notify("Pabrik: Tekan tombol 'SetPos Break' di tab Pabrik terlebih dahulu!")
+            task.wait(2.5)
             return false
         end
-        local px, py = GetTile()
-        if px ~= Config.pabrikBreakX or py ~= Config.pabrikBreakY then
-            Pabrik.status = string.format("Jalan ke posisi break (%d,%d)...", Config.pabrikBreakX, Config.pabrikBreakY)
-            if not Nav.To(Config.pabrikBreakX, Config.pabrikBreakY, function() return not liveFn() end, 0.3, true) then
-                return false
-            end
+        if next(Config.pabrikTiles) == nil then
+            Config.pabrikTiles = { ["1,0"] = true }
         end
-        if not liveFn() then return false end
 
-        local x, y, facing = GetGridState()
-        if not x then return false end
-        local anchor = { x = math.floor(x), y = math.floor(y - 0.475), facing = facing, world = CurrentWorldName() }
+        -- Ulangi selama ada blok di tas ATAU masih ada dropped blok di world (Langkah 7)
+        while liveFn() do
+            CheckAndDropSeedIfReady(seedId, liveFn)
+            if not liveFn() then break end
 
-        Farm.Override = { offsets = Config.pabrikTiles, block = blockId, mode = "Place + Break" }
-        Farm.Quiet = true
-        Farm.token += 1
-        local fToken = Farm.token
-        Farm.on = true
-        local t0 = os.clock()
-
-        task.spawn(function()
-            while Farm.on and Farm.token == fToken do
-                task.wait(0.8)
-                local sCount = CountItem(seedId)
-                if not liveFn()
-                    or (os.clock() - t0) > Config.pabrikBreakSec
-                    or sCount >= 190
-                    or (Config.pabrikDrop and sCount >= Config.pabrikDropAt)
-                    or CountItem(blockId) <= 0 then
-                    Farm.on = false
+            if CountItem(blockId) <= 0 then
+                -- Langkah 7: Cek apakah masih ada dropped blok di world, ambil dulu lalu ulangi break
+                if not CollectAllDroppedBlocks(blockId, liveFn) or CountItem(blockId) <= 0 then
+                    break
                 end
             end
-        end)
 
-        Pabrik.status = "Break " .. ItemName(blockId) .. " di posisi pabrik..."
-        pcall(RunFarmLoopDirect, fToken, anchor)
-        Farm.on = false
-        Farm.Override = nil
-        Farm.Quiet = false
+            Pabrik.phase = "BREAK BLOCK"
+            local px, py = GetTile()
+            if px ~= Config.pabrikBreakX or py ~= Config.pabrikBreakY then
+                Pabrik.status = string.format("Menuju Posisi Break (%d,%d)...", Config.pabrikBreakX, Config.pabrikBreakY)
+                if py and Config.pabrikBreakY < py then
+                    Nav.ClimbUpWithDirt(px, Config.pabrikBreakY, function() return not liveFn() end, true, Config.harvestTpDelay)
+                end
+                if not Nav.To(Config.pabrikBreakX, Config.pabrikBreakY, function() return not liveFn() end, 0.3, true) then
+                    Pabrik.status = "Gagal jalan ke Posisi Break, mencoba ulang..."
+                    task.wait(2)
+                    break
+                end
+            end
+            if not liveFn() then break end
+
+            local x, y, facing = GetGridState()
+            if not x then break end
+            local anchor = {
+                x = Config.pabrikBreakX,
+                y = Config.pabrikBreakY,
+                facing = facing,
+                world = CurrentWorldName(),
+            }
+
+            Farm.Override = { offsets = Config.pabrikTiles, block = blockId, mode = "Place + Break" }
+            Farm.Quiet = true
+            Farm.token = Farm.token + 1
+            local fToken = Farm.token
+            Farm.on = true
+
+            task.spawn(function()
+                while Farm.on and Farm.token == fToken do
+                    task.wait(0.4)
+                    local sCount = CountItem(seedId)
+                    local bCount = CountItem(blockId)
+                    local w = FindWorld()
+                    local anyTileLeft = false
+                    if w then
+                        for key, on in pairs(Config.pabrikTiles) do
+                            if on then
+                                local dx, dy = tostring(key):match("^(-?%d+),(-?%d+)$")
+                                if dx and dy then
+                                    local tx, ty = anchor.x + tonumber(dx), anchor.y + tonumber(dy)
+                                    local fg = TileValue(w, "fg", tx, ty) or 0
+                                    local bg = TileValue(w, "bg", tx, ty) or 0
+                                    if (fg ~= 0 and CanBreakId(fg)) or (Config.farmBreakBg and bg ~= 0 and CanBreakId(bg)) then
+                                        anyTileLeft = true
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    -- Berhenti sesi break jika blok sudah benar-benar habis (0 di tas & 0 terpasang) atau seed mencapai >= 180
+                    if not liveFn()
+                        or (bCount <= 0 and not anyTileLeft)
+                        or (Config.pabrikDrop and sCount >= (tonumber(Config.pabrikDropAt) or 180)) then
+                        Farm.on = false
+                    end
+                end
+            end)
+
+            Pabrik.status = string.format("Break %s di (%d,%d) [Sisa: %d]...", ItemName(blockId), anchor.x, anchor.y, CountItem(blockId))
+            pcall(RunFarmLoopDirect, fToken, anchor)
+            Farm.on = false
+            Farm.Override = nil
+            Farm.Quiet = false
+            task.wait(0.3)
+        end
         return true
+    end
+
+    -- Cek apakah koordinat (x,y) adalah titik break atau tile target break pabrik
+    local function IsReservedBreakSpot(x, y)
+        if Config.pabrikBreakX < 0 or Config.pabrikBreakY < 0 then return false end
+        if x == Config.pabrikBreakX and y == Config.pabrikBreakY then return true end
+        for key, on in pairs(Config.pabrikTiles) do
+            if on then
+                local dx, dy = tostring(key):match("^(-?%d+),(-?%d+)$")
+                if dx and dy then
+                    if x == (Config.pabrikBreakX + tonumber(dx)) and y == (Config.pabrikBreakY + tonumber(dy)) then
+                        return true
+                    end
+                end
+            end
+        end
+        return false
+    end
+
+    -- Pindai semua pohon di world (mengembalikan daftar pohon siap panen, total pohon tumbuh, dan estimasi waktu tercepat)
+    local function ScanWorldTrees(w, seedId)
+        local readyTrees = {}
+        local growingCount = 0
+        local soonestWait = nil
+        local nowSrv = workspace:GetServerTimeNow()
+        local it = ItemDB[seedId]
+        local defaultGrow = (it and (tonumber(it.grow) or tonumber(it.baseGrow))) or 31
+
+        for y = 0, w.h - 1 do
+            for x = 0, w.w - 1 do
+                local fg = TileValue(w, "fg", x, y) or 0
+                if fg == seedId then
+                    local rAt = TreeReadyAt(w, x, y, fg)
+                    if rAt then
+                        if nowSrv >= rAt then
+                            table.insert(readyTrees, { x = x, y = y })
+                        else
+                            growingCount = growingCount + 1
+                            local rem = rAt - nowSrv
+                            if not soonestWait or rem < soonestWait then
+                                soonestWait = rem
+                            end
+                        end
+                    else
+                        -- Jika pohon baru saja ditanam dan rAt belum terbaca dari tabel Trees, tetap hitung sebagai pohon tumbuh!
+                        growingCount = growingCount + 1
+                        if not soonestWait or defaultGrow < soonestWait then
+                            soonestWait = defaultGrow
+                        end
+                    end
+                end
+            end
+        end
+        return readyTrees, growingCount, soonestWait
     end
 
     local function PabrikLoop(token, blockId)
@@ -4077,80 +4289,43 @@ do (function()
 
         while liveFn() do
             local w = FindWorld()
-            if not w then task.wait(1); continue end
-            local seedId = Config.pabrikSeedId
-            local sCount = CountItem(seedId)
-            local bCount = CountItem(blockId)
+            while not w and liveFn() do
+                task.wait(1)
+                w = FindWorld()
+            end
+            if not liveFn() then break end
 
-            -- 1. Cek Auto Drop Seed
-            if Config.pabrikDrop and sCount >= Config.pabrikDropAt and sCount > Config.pabrikKeep and os.clock() >= (Pabrik.dropOffUntil or 0) then
-                Pabrik.phase = "DROP"
-                ExecuteDropCycle(seedId, sCount - Config.pabrikKeep, liveFn)
+            local seedId = Config.pabrikSeedId
+
+            -- LANGKAH 9: Cek apakah seed sudah mencapai >= 180 -> ke world penyimpanan & drop 100 seed
+            CheckAndDropSeedIfReady(seedId, liveFn)
+            if not liveFn() then break end
+            w = FindWorld()
+
+            -- LANGKAH 2 & 7: Cek ketersediaan blok di tas atau dropped di world; jika ada, break dulu hingga habis!
+            if CountItem(blockId) > 0 or FindDroppedItemInWorld(blockId) ~= nil then
+                RunBreakUntilEmpty(seedId, blockId, liveFn)
                 if not liveFn() then break end
                 w = FindWorld()
             end
 
-            -- 2. Fase PANEN (Harvest pohon siap)
-            Pabrik.phase = "PANEN"
-            local readyTrees = {}
-            local soonestWait = nil
-            local nowSrv = workspace:GetServerTimeNow()
-            for y = 0, w.h - 1 do
-                for x = 0, w.w - 1 do
-                    local fg = TileValue(w, "fg", x, y) or 0
-                    if fg == seedId then
-                        local rAt = TreeReadyAt(w, x, y, fg)
-                        if rAt then
-                            if nowSrv >= rAt then
-                                table.insert(readyTrees, { x = x, y = y })
-                            elseif not soonestWait or (rAt - nowSrv) < soonestWait then
-                                soonestWait = rAt - nowSrv
-                            end
-                        end
-                    end
-                end
-            end
-
-            if #readyTrees > 0 and CountItem(blockId) < 180 and CountItem(seedId) < 180 then
-                for idx, t in ipairs(readyTrees) do
-                    if not liveFn() or CountItem(blockId) >= 185 or CountItem(seedId) >= 185 then break end
-                    local px, py = GetTile()
-                    local s = PlayerPhysicsState()
-                    if not (s and Nav.StateReaches(s, t.x, t.y, R)) then
-                        Pabrik.status = string.format("Panen menuju (%d,%d) [%d/%d]", t.x, t.y, idx, #readyTrees)
-                        if py and t.y < py then
-                            Nav.ClimbUpWithDirt(px, t.y, function() return not liveFn() end, true, Config.harvestTpDelay)
-                        end
-                        Nav.To(t.x, t.y, function() return not liveFn() end, R, true)
-                    end
-                    local t0 = os.clock()
-                    while liveFn() and (TileValue(w, "fg", t.x, t.y) or 0) == seedId and os.clock() - t0 < 3.5 do
-                        local r = TryBreakOnce(t.x, t.y, false)
-                        if r == "broke" then
-                            Pabrik.harvested += 1
-                            Stats.Harvested += 1
-                        end
-                        task.wait(math.max(0.05, Config.harvestDelay))
-                    end
-                end
-            end
-
+            -- Cek lagi jika setelah break jumlah seed mencapai >= 180
+            CheckAndDropSeedIfReady(seedId, liveFn)
             if not liveFn() then break end
+            w = FindWorld()
 
-            -- 3. Fase TANAM (Plant seed di lahan kosong)
+            -- LANGKAH 3 & 8: Jika blok sudah habis (0), tanam seed yang ada
             if CountItem(seedId) > 0 then
-                Pabrik.phase = "TANAM"
+                Pabrik.phase = "TANAM SEED"
                 local spots = {}
                 for y = 0, w.h - 1 do
                     for x = 0, w.w - 1 do
-                        if (TileValue(w, "fg", x, y) or 0) == 0 and CanPlantAt(w, x, y, seedId) then
-                            -- Jangan tanam di titik break pabrik
-                            if not (x == Config.pabrikBreakX and y == Config.pabrikBreakY) then
-                                table.insert(spots, { x = x, y = y })
-                            end
+                        if (TileValue(w, "fg", x, y) or 0) == 0 and CanPlantAt(w, x, y, seedId) and not IsReservedBreakSpot(x, y) then
+                            table.insert(spots, { x = x, y = y })
                         end
                     end
                 end
+
                 for idx, sp in ipairs(spots) do
                     if not liveFn() or CountItem(seedId) <= 0 then break end
                     if CanPlantAt(w, sp.x, sp.y, seedId) then
@@ -4164,8 +4339,9 @@ do (function()
                             Nav.To(sp.x, sp.y, function() return not liveFn() end, R, true)
                         end
                         if CanPlantAt(w, sp.x, sp.y, seedId) and PlaceCell(seedId, sp, 1) then
-                            Pabrik.planted += 1
-                            Stats.Planted += 1
+                            Pabrik.planted = Pabrik.planted + 1
+                            Stats.Planted = Stats.Planted + 1
+                            Pabrik.status = string.format("Menanam %s (%d,%d) [Sisa Seed: %d]", ItemName(seedId), sp.x, sp.y, CountItem(seedId))
                             task.wait(math.max(0.05, Config.harvestPlantDelay))
                         end
                     end
@@ -4173,34 +4349,93 @@ do (function()
             end
 
             if not liveFn() then break end
+            w = FindWorld()
 
-            -- 4. Fase BREAK (Break block di posisi pabrik)
-            if CountItem(blockId) > 0 then
-                Pabrik.phase = "BREAK"
-                if not RunBreakSession(seedId, blockId, liveFn) then
-                    Pabrik.status = "Ada block tapi posisi / tile break belum diatur"
-                    task.wait(2)
+            -- LANGKAH 4 & 5: Cek pohon di world -> Tunggu siap panen, lalu Panen!
+            local readyTrees, growingCount, soonestWait = ScanWorldTrees(w, seedId)
+
+            if #readyTrees == 0 and growingCount > 0 then
+                -- LANGKAH 4: Tunggu sampai pohon siap panen (TIDAK AKAN MATI SENDIRI!)
+                Pabrik.phase = "TUNGGU TUMBUH"
+                while liveFn() do
+                    w = FindWorld()
+                    if not w then break end
+                    readyTrees, growingCount, soonestWait = ScanWorldTrees(w, seedId)
+                    if #readyTrees > 0 or growingCount == 0 then
+                        break
+                    end
+                    local waitSec = math.max(1, math.ceil(soonestWait or 15))
+                    Pabrik.status = string.format("Menunggu %d pohon siap panen (±%ds)...", growingCount, waitSec)
+                    task.wait(1)
+                end
+            end
+
+            if not liveFn() then break end
+
+            -- LANGKAH 5 & 6: Panen pohon yang sudah siap & ambil seluruh block
+            if #readyTrees > 0 then
+                Pabrik.phase = "PANEN POHON"
+                for idx, t in ipairs(readyTrees) do
+                    if not liveFn() then break end
+
+                    -- LANGKAH 6: Jika blok di tas sudah mencapai 200 (penuh), langsung ke posisi break dan break hingga habis!
+                    if CountItem(blockId) >= 200 then
+                        Pabrik.status = "Blok mencapai 200! Menuju Posisi Break..."
+                        RunBreakUntilEmpty(seedId, blockId, liveFn)
+                        if not liveFn() then break end
+                    end
+
+                    -- LANGKAH 9: Jika saat panen jumlah seed mencapai >= 180, drop dulu ke world penyimpanan
+                    CheckAndDropSeedIfReady(seedId, liveFn)
+                    if not liveFn() then break end
+
+                    w = FindWorld()
+                    if w and (TileValue(w, "fg", t.x, t.y) or 0) == seedId then
+                        local px, py = GetTile()
+                        local s = PlayerPhysicsState()
+                        if not (s and Nav.StateReaches(s, t.x, t.y, R)) then
+                            Pabrik.status = string.format("Panen menuju (%d,%d) [%d/%d]", t.x, t.y, idx, #readyTrees)
+                            if py and t.y < py then
+                                Nav.ClimbUpWithDirt(px, t.y, function() return not liveFn() end, true, Config.harvestTpDelay)
+                            end
+                            Nav.To(t.x, t.y, function() return not liveFn() end, R, true)
+                        end
+                        local t0 = os.clock()
+                        while liveFn() and (TileValue(w, "fg", t.x, t.y) or 0) == seedId and os.clock() - t0 < 3.5 do
+                            local r = TryBreakOnce(t.x, t.y, false)
+                            if r == "broke" then
+                                Pabrik.harvested = Pabrik.harvested + 1
+                                Stats.Harvested = Stats.Harvested + 1
+                            end
+                            task.wait(math.max(0.05, Config.harvestDelay))
+                        end
+                        task.wait(0.20) -- Beri waktu auto-collect menyerap block & seed
+                    end
+                end
+
+                -- Setelah selesai menyapu pohon siap panen, pastikan semua dropped block di world diambil & di-break sampai habis
+                CollectAllDroppedBlocks(blockId, liveFn)
+                if CountItem(blockId) > 0 then
+                    RunBreakUntilEmpty(seedId, blockId, liveFn)
                 end
             else
-                -- 5. Fase TUNGGU
-                Pabrik.phase = "TUNGGU"
-                if soonestWait then
-                    Pabrik.status = string.format("Menunggu pohon siap panen (±%ds)...", math.ceil(soonestWait))
-                elseif CountItem(seedId) <= 0 and CountItem(blockId) <= 0 then
-                    Pabrik.status = "Seed & block habis, tidak ada pohon tumbuh"
-                    Webhook.Send("pabrik", "Pabrik berhenti: Seed & block habis")
+                -- Jika benar-benar tidak ada pohon, tidak ada blok, dan tidak ada seed sama sekali
+                if CountItem(seedId) <= 0 and CountItem(blockId) <= 0 and FindDroppedItemInWorld(blockId) == nil and FindDroppedItemInWorld(seedId) == nil then
+                    Pabrik.status = "Selesai: Seed, blok, dan pohon di world sudah habis."
+                    Webhook.Send("pabrik", "Pabrik berhenti: Seed & blok habis total.")
+                    ClearPabrikState()
                     break
-                else
-                    Pabrik.status = "Menunggu..."
                 end
-                task.wait(1.5)
             end
+
+            task.wait(0.3)
         end
     end
 
     function Pabrik.Stop()
+        ClearPabrikState()
         if not Pabrik.on then return false end
-        Pabrik.token += 1
+        Pabrik.token = Pabrik.token + 1
         Pabrik.on = false
         Pabrik.traveling = false
         if Farm.Override then
@@ -4216,7 +4451,7 @@ do (function()
         return true
     end
 
-    function Pabrik.Start()
+    function Pabrik.Start(resumeHomeWorld)
         if Pabrik.on then return true end
         local seedId = Config.pabrikSeedId
         local blockId = BlockOfSeed(seedId)
@@ -4230,14 +4465,23 @@ do (function()
         if DF.on then DF.Stop() end
         if SpliceBot.on then SpliceBot.Stop() end
 
-        Pabrik.home = CurrentWorldName()
+        Pabrik.home = resumeHomeWorld or CurrentWorldName()
         Pabrik.dropOffUntil = 0
-        Pabrik.token += 1
+        Pabrik.token = Pabrik.token + 1
         local token = Pabrik.token
         Pabrik.on = true
         Pabrik.phase = "MULAI"
         Pabrik.status = "Inisialisasi Pabrik..."
+
+        SavePabrikState({
+            active = true,
+            stage = "farming",
+            homeWorld = Pabrik.home,
+            seedId = seedId,
+        })
+
         if UpdateGridVisuals then pcall(UpdateGridVisuals) end
+        if RefreshHub then RefreshHub() end
 
         task.spawn(function()
             local ok, err = pcall(PabrikLoop, token, blockId)
@@ -4254,6 +4498,57 @@ do (function()
             end
         end)
         return true
+    end
+
+    -- Pemulihan Otomatis Pabrik Saat Pindah World / Reload Script
+    function Pabrik.CheckStartup()
+        pcall(function()
+            if not (isfile and readfile and isfile(PABRIK_STATE_FILE)) then return end
+            local raw = readfile(PABRIK_STATE_FILE)
+            local st = HttpService:JSONDecode(raw)
+            if type(st) ~= "table" or not st.active then return end
+            if os.time() - (tonumber(st.updatedAt) or 0) > 1800 then
+                ClearPabrikState()
+                return
+            end
+
+            -- Tunggu sampai world dan karakter selesai dimuat
+            local t0 = os.clock()
+            while alive() and os.clock() - t0 < 30 do
+                if CurrentWorldName() ~= "" and GetTile() then break end
+                task.wait(1)
+            end
+            if not alive() or CurrentWorldName() == "" then return end
+
+            Refs.Scan()
+            task.wait(1.2)
+            local curW = CurrentWorldName():upper()
+            local homeW = tostring(st.homeWorld or ""):upper()
+            local targetW = tostring(st.targetWorld or ""):upper()
+
+            if st.stage == "dropping" and targetW ~= "" and curW == targetW then
+                Notify("Melanjutkan proses Drop Seed Pabrik di " .. curW .. "...", "Pabrik ANCH")
+                Pabrik.home = st.homeWorld
+                Pabrik.on = true
+                Pabrik.token = Pabrik.token + 1
+                local tk = Pabrik.token
+                ExecuteDropCycle(st.seedId or Config.pabrikSeedId, st.dropAmount or Config.pabrikDropAmount or 100, function()
+                    return Pabrik.on and Pabrik.token == tk and alive()
+                end)
+                Pabrik.on = false
+                if CurrentWorldName():upper() == homeW then
+                    Pabrik.Start(st.homeWorld)
+                end
+            elseif homeW ~= "" and curW == homeW then
+                Notify("Melanjutkan siklus Pabrik otomatis di " .. curW .. "!", "Pabrik ANCH")
+                Pabrik.Start(st.homeWorld)
+            elseif homeW ~= "" and curW ~= homeW then
+                Notify("Kembali ke world Pabrik: " .. homeW .. "...", "Pabrik ANCH")
+                if EnterTargetWorld(homeW, nil) then
+                    Pabrik.Start(st.homeWorld)
+                end
+            end
+        end)
     end
 end)() end
 
@@ -6626,11 +6921,12 @@ SafeUI("Tab:Pabrik", function()
                     pabrikPara,
                     string.format("Status: %s (Fase: %s)", Pabrik.status, Pabrik.phase),
                     string.format(
-                        "Seed: %s [%d] x%d | Block: %s x%d\nPosisi Break: %s\nTarget Drop: %s (Drop >= %d, Sisakan %d)\nHasil: Panen %d | Tanam %d | Di-drop %d",
+                        "Seed: %s [%d] x%d | Block: %s x%d\nSetPos Break: %s\nTarget Drop: %s (Saat Seed >= %d, Drop %d Seed)\nHasil: Panen %d | Tanam %d | Di-drop %d",
                         ItemName(sid), sid, CountItem(sid),
                         bid and ItemName(bid) or "-", bid and CountItem(bid) or 0,
-                        Config.pabrikBreakX >= 0 and string.format("(%d, %d)", Config.pabrikBreakX, Config.pabrikBreakY) or "Belum diatur",
-                        Config.pabrikDrop and dropInfo or "Mati", Config.pabrikDropAt, Config.pabrikKeep,
+                        Config.pabrikBreakX >= 0 and string.format("Tile (%d, %d)", Config.pabrikBreakX, Config.pabrikBreakY) or "Belum diset!",
+                        Config.pabrikDrop and dropInfo or "Mati",
+                        Config.pabrikDropAt, Config.pabrikDropAmount or 100,
                         Pabrik.harvested, Pabrik.planted, Pabrik.dropped
                     )
                 )
@@ -6638,7 +6934,7 @@ SafeUI("Tab:Pabrik", function()
         end
     end)
 
-    AddFeatureToggle(Tab, "Jalankan Pabrik", "Siklus otomatis Panen -> Tanam -> Break -> Auto Drop Seed lebihan.", "pabrik")
+    AddFeatureToggle(Tab, "Jalankan Pabrik", "Siklus: Break Blok -> Tanam -> Tunggu -> Panen -> Drop 100 Seed saat >= 180.", "pabrik")
 
     Tab:Input({
         Title = "ID Seed Pabrik",
@@ -6650,20 +6946,38 @@ SafeUI("Tab:Pabrik", function()
         end,
     })
 
-    Tab:Button({
-        Title = "Pakai Posisi Karakter Sekarang untuk Tempat Break",
+    Tab:Space()
+    Tab:Section({ Title = "Posisi Break Pabrik (SetPos Break)" })
+
+    local breakPosGrp = Tab:Group({})
+    breakPosGrp:Button({
+        Title = "SetPos Break (Simpan Posisi)",
+        Color = Color3.fromHex("#10C550"),
         Justify = "Center",
         Callback = function()
             local tx, ty = GetTile()
-            if not tx then Notify("Posisi belum terbaca!"); return end
+            if not tx then Notify("Posisi karakter belum terbaca!"); return end
             Config.pabrikBreakX, Config.pabrikBreakY = tx, ty
             SaveConfig()
-            Notify(string.format("Posisi Break Pabrik disimpan di (%d, %d)", tx, ty))
+            Notify(string.format("SetPos Break Pabrik disimpan di (%d, %d)!", tx, ty))
+        end,
+    })
+    breakPosGrp:Button({
+        Title = "Ke Pos Break",
+        Justify = "Center",
+        Callback = function()
+            if Config.pabrikBreakX < 0 or Config.pabrikBreakY < 0 then
+                Notify("SetPos Break belum disimpan!")
+                return
+            end
+            task.spawn(function()
+                Nav.To(Config.pabrikBreakX, Config.pabrikBreakY, nil, 0.3, true)
+            end)
         end,
     })
 
     Tab:Button({
-        Title = "Pilih Tile Break Pabrik (Buka Grid Mode Pabrik)",
+        Title = "Pilih Tile Break Pabrik (Buka Grid 5x5 Mode Pabrik)",
         Color = Color3.fromHex("#305dff"),
         Justify = "Center",
         Callback = function()
@@ -6672,54 +6986,49 @@ SafeUI("Tab:Pabrik", function()
         end,
     })
 
-    Tab:Slider({
-        Title = "Lama 1 Sesi Break (detik)",
-        IsTooltip = true,
-        Step = 5,
-        Value = { Min = 15, Max = 300, Default = math.clamp(Config.pabrikBreakSec, 15, 300) },
-        Callback = function(v) Config.pabrikBreakSec = math.floor(tonumber(v) or 60); SaveConfig() end,
-    })
-
     Tab:Space()
-    Tab:Section({ Title = "Pengaturan Auto Drop Seed" })
+    Tab:Section({ Title = "Pengaturan Penyimpanan / Auto Drop Seed" })
 
     Tab:Toggle({
-        Title = "Aktifkan Auto Drop Seed",
+        Title = "Aktifkan Auto Drop Seed ke Penyimpanan",
         Value = Config.pabrikDrop,
         Callback = function(on) Config.pabrikDrop = on; SaveConfig() end,
     })
 
     Tab:Slider({
-        Title = "Drop Saat Jumlah Seed Mencapai >=",
+        Title = "Drop Saat Seed Mencapai >=",
+        Desc = "Default: 180 seed.",
         IsTooltip = true,
         Step = 5,
-        Value = { Min = 10, Max = 200, Default = math.clamp(Config.pabrikDropAt, 10, 200) },
-        Callback = function(v) Config.pabrikDropAt = math.floor(tonumber(v) or 200); SaveConfig() end,
+        Value = { Min = 20, Max = 200, Default = math.clamp(Config.pabrikDropAt or 180, 20, 200) },
+        Callback = function(v) Config.pabrikDropAt = math.floor(tonumber(v) or 180); SaveConfig() end,
     })
 
     Tab:Slider({
-        Title = "Sisakan Seed di Tas (Untuk Tanam Ulang)",
+        Title = "Jumlah Seed yang Di-drop",
+        Desc = "Default: 100 seed sekali drop.",
         IsTooltip = true,
         Step = 5,
-        Value = { Min = 0, Max = 195, Default = math.clamp(Config.pabrikKeep, 0, 195) },
-        Callback = function(v) Config.pabrikKeep = math.floor(tonumber(v) or 50); SaveConfig() end,
+        Value = { Min = 10, Max = 200, Default = math.clamp(Config.pabrikDropAmount or 100, 10, 200) },
+        Callback = function(v) Config.pabrikDropAmount = math.floor(tonumber(v) or 100); SaveConfig() end,
     })
 
     Tab:Input({
-        Title = "World Drop (Kosong = World Ini | WORLD | WORLD:ID_PINTU)",
-        Placeholder = "Contoh: STORAGE:1",
+        Title = "World Penyimpanan Seed (WORLD atau WORLD:ID_PINTU)",
+        Value = Config.pabrikDropWorld,
+        Placeholder = "Contoh: STORAGE atau STORAGE:1",
         Callback = function(t) Config.pabrikDropWorld = Trim(t or ""); SaveConfig() end,
     })
 
     Tab:Button({
-        Title = "Pakai Posisi Sekarang untuk Tempat Drop Seed",
+        Title = "SetPos Drop Seed (Simpan Titik Drop Sekarang)",
         Justify = "Center",
         Callback = function()
             local tx, ty = GetTile()
             if not tx then Notify("Posisi belum terbaca!"); return end
             Config.pabrikDropX, Config.pabrikDropY = tx, ty
             SaveConfig()
-            Notify(string.format("Posisi Drop Pabrik disimpan di (%d, %d)", tx, ty))
+            Notify(string.format("Posisi Drop Seed disimpan di (%d, %d)", tx, ty))
         end,
     })
 end)
@@ -7607,5 +7916,6 @@ task.spawn(function()
         if RefreshHub then RefreshHub() end
     end
     task.spawn(Reconnect.CheckStartup)
+    task.spawn(Pabrik.CheckStartup)
     Notify("ANCH HUB v11 Ultimate Loaded! Semua tab & fitur siap digunakan.")
 end)
