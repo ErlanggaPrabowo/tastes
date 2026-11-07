@@ -182,7 +182,7 @@ local Config = {
     dfBreakDelay = 0.15,
     dfTpDelay = 0.30,
     dfTake = true,
-    dfModFly = false,
+    dfModFly = true,
     dfReplacePlatform = true,
     -- Auto Splice
     spliceA = 3,
@@ -2077,6 +2077,7 @@ local function WarpToWorld(worldName)
     end
     Config.lastWorld = worldName
     SaveConfig()
+    if QueueReload then pcall(QueueReload) end
     local m = Refs.Menu
     if m and type(rawget(m, "enter")) == "function" then
         pcall(m.enter, worldName)
@@ -2312,6 +2313,8 @@ do (function()
         return not (fail and now < fail)
     end
 
+    local busyFarCollect = false
+
     local function takeSingleDrop(d)
         local w = FindWorld()
         local worldTake = w and rawget(w, "takeDrop")
@@ -2334,9 +2337,28 @@ do (function()
             return false
         end
 
+        -- Cek jarak drop dari karakter saat ini
+        local sx, sy = GetGridState()
+        local origTx, origTy = GetTile()
+        local needStep = false
+        if sx and sy then
+            local dist = math.max(math.abs(d.x - sx), math.abs(d.y - (sy - 0.475)))
+            if dist > 3.2 then
+                if busyFarCollect or AutoInput.active then return false end
+                needStep = true
+                busyFarCollect = true
+            end
+        end
+
         d.taking = true
         d.flown = true
         if typeof(d.frame) == "Instance" then pcall(function() d.frame.Visible = false end) end
+
+        -- Jika jarak > 3.2 blok, lakukan Micro-Step mendekat ke tile drop agar tidak ditolak server
+        if needStep and w and type(w.goTo) == "function" then
+            pcall(w.goTo, math.floor(d.x), math.floor(d.y))
+            task.wait(0.06)
+        end
 
         local ok, taken
         if type(worldTake) == "function" then
@@ -2344,6 +2366,15 @@ do (function()
         else
             ok, taken = pcall(TakeDropRemote.InvokeServer, TakeDropRemote, d.uid, amount)
         end
+
+        -- Kembalikan posisi ke tile semula setelah mengambil drop jauh
+        if needStep then
+            if origTx and origTy and w and type(w.goTo) == "function" then
+                pcall(w.goTo, origTx, origTy)
+            end
+            task.delay(0.12, function() busyFarCollect = false end)
+        end
+
         d.taking = false
 
         if not (ok and type(taken) == "number" and taken > 0) then
@@ -3138,9 +3169,16 @@ do (function()
     end
 
     local function WalkOrClimbTo(standX, standY, token)
+        local w = FindWorld()
+        if Config.dfModFly and w then
+            SetAutoFly("autodf", true)
+            w.ghost = true
+        end
         local px, py = GetTile()
         if not px or (px == standX and py == standY) then return true end
-        if py and standY < py and math.abs(px - standX) <= 1 then
+        if Config.dfModFly then
+            return Nav.FlyTo(standX, standY, function() return DF.token ~= token or not DF.on or not alive() end, Config.dfTpDelay)
+        elseif py and standY < py and math.abs(px - standX) <= 1 then
             return Nav.ClimbUpWithDirt(standX, standY, function() return DF.token ~= token or not DF.on end, true, Config.dfTpDelay)
         elseif py == standY and Nav.ExecWalk(standX, standY, function() return DF.token ~= token or not DF.on end) then
             return true
@@ -3165,6 +3203,7 @@ do (function()
             local cBg = TileValue(w, "bg", tx, ty) or 0
             local hasFg = cFg ~= 0 and CanBreakId(cFg)
             local hasBg = cBg ~= 0 and CanBreakId(cBg)
+            if Config.dfModFly then w.ghost = true end
             if not hasFg and not hasBg then break end
             if os.clock() - startT >= DF_BREAK_TIMEOUT then break end
 
@@ -3429,11 +3468,14 @@ do (function()
     end
 
     local function DFLoop(token, home)
-        SetAutoFly("autodf", false)
+        local wasGod = godOn
+        if not wasGod and StartGod then pcall(StartGod) end
+        SetAutoFly("autodf", Config.dfModFly)
 
         local w = FindWorld()
         if not w then return end
-
+        if Config.dfModFly then w.ghost = true end
+        
         local topDirtY, bedrockY = DetectWorldLayers(w)
         DF.stats.topDirtY = topDirtY
         DF.stats.bedrockY = bedrockY
@@ -3489,7 +3531,11 @@ do (function()
                     end
                 end
 
-                if not Nav.ExecWalk(x, emptyY, function() return DF.token ~= token end) then
+                if Config.dfModFly then
+                    w.ghost = true
+                    pcall(w.goTo, x, emptyY) -- (Catatan: untuk baris 1440 gunakan walkY, bukan emptyY)
+                    task.wait(math.max(0.20, Config.dfTpDelay))
+                elseif not Nav.ExecWalk(x, emptyY, function() return DF.token ~= token end) then
                     pcall(w.goTo, x, emptyY)
                     task.wait(math.max(0.22, Config.dfTpDelay))
                 end
@@ -5575,7 +5621,12 @@ local function SetFeature(key, on)
     if RefreshHub then RefreshHub() end
 end
 
+local HasQueuedTeleport = false
+
 local function ReloadSource()
+    if type(G.ANCHHub_ReloadCode) == "string" and G.ANCHHub_ReloadCode ~= "" then
+        return G.ANCHHub_ReloadCode
+    end
     local url = Config.scriptUrl
     if type(url) ~= "string" or url == "" then url = G.ANCHHubURL end
     if type(url) == "string" and url ~= "" then
@@ -5589,14 +5640,19 @@ local function ReloadSource()
 end
 
 local function GetQueueFn()
-    return queue_on_teleport or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport)
+    return queue_on_teleport
+        or (syn and syn.queue_on_teleport)
+        or (fluxus and fluxus.queue_on_teleport)
+        or (getgenv and getgenv().queue_on_teleport)
 end
 
 QueueReload = function()
-    if not Config.autoReload then return false end
+    if not Config.autoReload or HasQueuedTeleport then return false end
     local qFn, src = GetQueueFn(), ReloadSource()
     if not qFn or not src then return false end
-    return pcall(qFn, src)
+    local ok = pcall(qFn, src)
+    if ok then HasQueuedTeleport = true end
+    return ok
 end
 
 local function InstallAutoexec()
@@ -5869,7 +5925,7 @@ local Window = WindUI:CreateWindow({
     Icon = "solar:folder-2-bold-duotone",
     NewElements = true,
     HideSearchBar = false,
-    --Theme = "Indigo",
+    Theme = "Indigo",
     OpenButton = {
         Title = "ANCH Hub",
         CornerRadius = UDim.new(1, 0),
@@ -5883,13 +5939,9 @@ local Window = WindUI:CreateWindow({
             Color3.fromHex("#e7ff2f")
         ),
     },
-    Topbar = {
-        Height = 44,
-        -- ButtonsType = "Mac",
-    },
 })
 
-Window::DisableTopbarButtons({
+Window:DisableTopbarButtons({
     "Fullscreen",
 })
 
@@ -6447,6 +6499,17 @@ SafeUI("Tab:AutoDF", function()
         Title = "Auto Collect Drop",
         Value = Config.dfTake,
         Callback = function(on) Config.dfTake = on; SaveConfig() end,
+    })
+
+    Tab:Toggle({
+        Title = "Aktifkan ModFly Saat Auto DF (Anti-Lava)",
+        Desc = "Terbang & kebal lava saat menghancurkan blok agar tidak mati/respawn.",
+        Value = Config.dfModFly,
+        Callback = function(on)
+            Config.dfModFly = on
+            SaveConfig()
+            if DF.on then SetAutoFly("autodf", on) end
+        end,
     })
 
     Tab:Input({
