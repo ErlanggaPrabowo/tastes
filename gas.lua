@@ -1,5 +1,5 @@
 --[[
-    ANCH HUB | GrowBlox  (v11 Ultimate - All-in-One WindUI)
+    ANCH HUB | GrowBlox  (v1 Ultimate - All-in-One WindUI)
     Gabungan penuh ANCH Hub + SkyP v1.2 Engine (ByteNet & Classic Compatible)
 
     Daftar Perintah Chat (Prefix default "/"):
@@ -33,7 +33,7 @@
       god [on|off]                God Mode (kebal lava, spike, api)
       lite [on|off]               Mode Lite (matikan partikel & suara)
       blockid|bid <nama>          Cari ID block dari nama
-      hpx                         Daftar perintah
+      anch                         Daftar perintah
 ]]
 
 ----------------------------------------------------------------------
@@ -700,7 +700,7 @@ local function CountItem(id)
     if type(bag.slots) == "table" then
         for _, slot in pairs(bag.slots) do
             if type(slot) == "table" and slot.id == id then
-                total += (slot.n or 0)
+                total = total + ((slot.n or 0))
             end
         end
     end
@@ -880,7 +880,7 @@ local function PlaceCell(id, cell, facing)
     if Refs.Inv and type(Refs.Inv.remove) == "function" then
         pcall(function() Refs.Inv:remove(id, 1) end)
     end
-    Stats.Placed += 1
+    Stats.Placed = Stats.Placed + (1)
     return true
 end
 
@@ -934,7 +934,7 @@ local function TryBreakOnce(x, y, includeBg)
         local ok = pcall(Refs.Punch, x, y, Config.mutePunch or nil, nil)
         if not ok then return nil end
         if TileValue(w, layer, x, y) ~= id then
-            Stats.Broken += 1
+            Stats.Broken = Stats.Broken + (1)
             return "broke", id, layer
         end
         return "hit", id, layer
@@ -1119,7 +1119,7 @@ do (function()
         local s = PlayerPhysicsState()
         if s and not stateReaches(s, x, y, BuildReach() + 0.5) then return false end
         if PlaceCell(id, { x = x, y = y }, 1) then
-            Nav.PlacedScaffolds += 1
+            Nav.PlacedScaffolds = Nav.PlacedScaffolds + (1)
             return true
         end
         return false
@@ -1133,10 +1133,10 @@ do (function()
     Nav.PlaceOk = placeOk
 
     local function heapPush(hf, hi, n, f, i)
-        n += 1
+        n = n + (1)
         local k = n
         while k > 1 do
-            local p = k // 2
+            local p = math.floor(k / 2)
             if hf[p] <= f then break end
             hf[k], hi[k] = hf[p], hi[p]
             k = p
@@ -1149,13 +1149,13 @@ do (function()
         local top = hi[1]
         local lf, li = hf[n], hi[n]
         hf[n], hi[n] = nil, nil
-        n -= 1
+        n = n - (1)
         if n > 0 then
             local k = 1
             while true do
                 local c = k * 2
                 if c > n then break end
-                if c < n and hf[c + 1] < hf[c] then c += 1 end
+                if c < n and hf[c + 1] < hf[c] then c = c + (1) end
                 if lf <= hf[c] then break end
                 hf[k], hi[k] = hf[c], hi[c]
                 k = c
@@ -1229,7 +1229,7 @@ do (function()
         local ex, ey, ek, ec, eb = {}, {}, {}, {}, {}
         local n = 0
         local function add(x, y, kind, cost, build)
-            n += 1
+            n = n + (1)
             ex[n], ey[n], ek[n], ec[n], eb[n] = x, y, kind, cost, build
         end
 
@@ -1246,7 +1246,7 @@ do (function()
                         end
                         local fy = y + 1
                         while fy < H and fy - y <= 40 and open(ax, fy) and not sup(ax, fy) do
-                            fy += 1
+                            fy = fy + (1)
                         end
                         if fy < H and open(ax, fy) and sup(ax, fy) then
                             add(ax, fy, "fall", 1 + 0.5 * (fy - y), false)
@@ -1295,21 +1295,21 @@ do (function()
             cur, hn = heapPop(hf, hi, hn)
             if not closed[cur] then
                 closed[cur] = true
-                local cx, cy = cur % W, cur // W
+                local cx, cy = cur % W, math.floor(cur / W)
                 if isGoal(cx, cy) then
                     local path = {}
                     local i = cur
                     while i ~= startI do
                         local p = came[i]
                         table.insert(path, 1, {
-                            fx = p % W, fy = p // W, x = i % W, y = i // W,
+                            fx = p % W, fy = math.floor(p / W), x = i % W, y = math.floor(i / W),
                             kind = kind[i], build = buildOf[i], key = p * WH + i,
                         })
                         i = p
                     end
                     return path, false, closed
                 end
-                expanded += 1
+                expanded = expanded + (1)
                 if expanded > 6500 then return nil, false, closed end
                 if expanded % 400 == 0 then
                     task.wait()
@@ -1579,7 +1579,7 @@ do (function()
             if e.kind == "walk" then
                 local dir = e.x - e.fx
                 while path[last + 1] and path[last + 1].kind == "walk" and (path[last + 1].x - path[last + 1].fx) == dir do
-                    last += 1
+                    last = last + (1)
                 end
                 local anyBuild = false
                 for j = i, last do
@@ -1999,7 +1999,7 @@ do (function()
             Notify("Click TP: posisi klik tidak terbaca.")
             return
         end
-        Nav.token += 1
+        Nav.token = Nav.token + (1)
         local token = Nav.token
         task.spawn(function()
             local started = os.clock()
@@ -2030,7 +2030,7 @@ do (function()
     function Nav.StopClick()
         if not Nav.clickOn then return false end
         Nav.clickOn = false
-        Nav.token += 1
+        Nav.token = Nav.token + (1)
         if Nav.conn then
             Nav.conn:Disconnect()
             Nav.conn = nil
@@ -2380,7 +2380,7 @@ do (function()
         d.taking = false
 
         if not (ok and type(taken) == "number" and taken > 0) then
-            Farm.stats.fail += 1
+            Farm.stats.fail = Farm.stats.fail + (1)
             d.refused = os.clock()
             if d.uid then DropFailUntil[d.uid] = os.clock() + 1 end
             d.flown = nil
@@ -2398,12 +2398,12 @@ do (function()
             pcall(Drops.update, d, d.n - taken)
         end
 
-        Stats.Collected += taken
+        Stats.Collected = Stats.Collected + (taken)
         Stats.Items[d.id] = (Stats.Items[d.id] or 0) + taken
-        Farm.stats.picked += taken
-        if Clear.on then Clear.stats.picked += taken end
-        if Farmer.on then Farmer.stats.picked += taken end
-        if DF.on then DF.stats.picked += taken end
+        Farm.stats.picked = Farm.stats.picked + (taken)
+        if Clear.on then Clear.stats.picked = Clear.stats.picked + (taken) end
+        if Farmer.on then Farmer.stats.picked = Farmer.stats.picked + (taken) end
+        if DF.on then DF.stats.picked = DF.stats.picked + (taken) end
         return true
     end
 
@@ -2586,7 +2586,7 @@ do (function()
                             break
                         end
                         if PlaceCell(id, t, anchor.facing) then
-                            Farm.stats.placed += 1
+                            Farm.stats.placed = Farm.stats.placed + (1)
                             acted = true
                             task.wait(math.max(0.05, Config.farmPlaceMs / 1000))
                         end
@@ -2603,7 +2603,7 @@ do (function()
                 while Farm.on and Farm.token == token and alive() do
                     while #active < K and nextI <= #tiles do
                         local t = tiles[nextI]
-                        nextI += 1
+                        nextI = nextI + (1)
                         if breakableAt(w, t.x, t.y) then
                             active[#active + 1] = { x = t.x, y = t.y, n = 0 }
                         end
@@ -2626,10 +2626,10 @@ do (function()
                         if not Farm.on or Farm.token ~= token then break end
                         if i > 1 then task.wait(0.05) end
                         local r = TryBreakOnce(a.x, a.y, Config.farmBreakBg)
-                        a.n += 1
+                        a.n = a.n + (1)
                         if r then hitAny, acted = true, true end
                         if r == "broke" then
-                            Farm.stats.broken += 1
+                            Farm.stats.broken = Farm.stats.broken + (1)
                             brokeAny = true
                         end
                         if r == nil or a.n > 80 or (r == "broke" and not breakableAt(w, a.x, a.y)) then
@@ -2672,7 +2672,7 @@ do (function()
                 task.wait(math.max(0.1, Config.farmDelay))
             end
 
-            Farm.stats.cycles += 1
+            Farm.stats.cycles = Farm.stats.cycles + (1)
         end
     end
 
@@ -2680,7 +2680,7 @@ do (function()
 
     StopFarm = function()
         if not Farm.on then return false end
-        Farm.token += 1
+        Farm.token = Farm.token + (1)
         Farm.on = false
         Farm.stats.status = "Mati"
         if UpdateGridVisuals then pcall(UpdateGridVisuals) end
@@ -2713,7 +2713,7 @@ do (function()
         }
         Farm.Override = nil
         Farm.Quiet = false
-        Farm.token += 1
+        Farm.token = Farm.token + (1)
         local token = Farm.token
         Farm.on = true
         Farm.stats.status = "Berjalan"
@@ -2797,7 +2797,7 @@ do (function()
         local pass = 0
 
         while Clear.on and Clear.token == token and alive() do
-            pass += 1
+            pass = pass + (1)
             local w = FindWorld()
             if not w or CurrentWorldName() ~= home.world then
                 Clear.status = "World berubah, berhenti"
@@ -2867,7 +2867,7 @@ do (function()
                         local r = TryBreakOnce(target.x, target.y, Config.clearIncludeBg)
                         if r == "broke" then
                             brokeAny = true
-                            Clear.stats.broken += 1
+                            Clear.stats.broken = Clear.stats.broken + (1)
                             started = os.clock()
                         end
                         task.wait(math.max(0.04, Config.clearBreakDelay))
@@ -2877,7 +2877,7 @@ do (function()
                         Clear.stats.left = math.max(0, Clear.stats.left - 1)
                     elseif timedOut then
                         skippedSet[target.key] = true
-                        Clear.stats.skipped += 1
+                        Clear.stats.skipped = Clear.stats.skipped + (1)
                         Clear.stats.left = math.max(0, Clear.stats.left - 1)
                         Clear.status = string.format("Skip (%d,%d) > 5 dtk", target.x, target.y)
                     end
@@ -2900,7 +2900,7 @@ do (function()
 
     function Clear.Stop()
         if not Clear.on then return false end
-        Clear.token += 1
+        Clear.token = Clear.token + (1)
         Clear.on = false
         SetAutoFly("autoclear", false)
         ReleaseInput()
@@ -2920,7 +2920,7 @@ do (function()
         local x, y = GetGridState()
         if not x then Notify("Posisi belum terdeteksi."); return false end
         local home = { x = math.floor(x), y = math.floor(y - 0.475), world = CurrentWorldName() }
-        Clear.token += 1
+        Clear.token = Clear.token + (1)
         local token = Clear.token
         Clear.on = true
         Clear.status = "Mulai"
@@ -2955,7 +2955,7 @@ do (function()
         local pass = 0
 
         while Farmer.on and Farmer.token == token and alive() do
-            pass += 1
+            pass = pass + (1)
             local w = FindWorld()
             if not w or CurrentWorldName() ~= home.world then
                 Farmer.status = "World berubah, berhenti"
@@ -2973,12 +2973,12 @@ do (function()
                 for x = 0, w.w - 1 do
                     local id = TileValue(w, "fg", x, y) or 0
                     if id ~= 0 and IsSeedId(id) then
-                        totalTrees += 1
+                        totalTrees = totalTrees + (1)
                         if Config.harvestDoHarvest and not failedSet[x .. "," .. y] then
                             if IsTreeReady(w, x, y, id) then
                                 table.insert(readyTrees, { x = x, y = y, id = id })
                             else
-                                skippedNotReady += 1
+                                skippedNotReady = skippedNotReady + (1)
                             end
                         end
                     elseif doPlant and id == 0 and CanPlantAt(w, x, y, Config.harvestSeedId) then
@@ -3027,20 +3027,20 @@ do (function()
 
                     if TileValue(w, "fg", tree.x, tree.y) ~= tree.id then
                         actedInPass = true
-                        Farmer.stats.harvested += 1
-                        Stats.Harvested += 1
+                        Farmer.stats.harvested = Farmer.stats.harvested + (1)
+                        Stats.Harvested = Stats.Harvested + (1)
                         Farmer.stats.ready = math.max(0, Farmer.stats.ready - 1)
                         if Config.harvestDoPlant and Config.harvestSeedId and CountItem(Config.harvestSeedId) > 0 and CanPlantAt(w, tree.x, tree.y, Config.harvestSeedId) then
                             task.wait(0.08)
                             if PlaceCell(Config.harvestSeedId, { x = tree.x, y = tree.y }, 1) then
-                                Farmer.stats.planted += 1
-                                Stats.Planted += 1
+                                Farmer.stats.planted = Farmer.stats.planted + (1)
+                                Stats.Planted = Stats.Planted + (1)
                                 task.wait(math.max(0.05, Config.harvestPlantDelay))
                             end
                         end
                     else
                         failedSet[tree.x .. "," .. tree.y] = true
-                        Farmer.stats.skipped += 1
+                        Farmer.stats.skipped = Farmer.stats.skipped + (1)
                     end
                 end
             end
@@ -3066,8 +3066,8 @@ do (function()
 
                         if CanPlantAt(w, spot.x, spot.y, Config.harvestSeedId) and PlaceCell(Config.harvestSeedId, spot, 1) then
                             actedInPass = true
-                            Farmer.stats.planted += 1
-                            Stats.Planted += 1
+                            Farmer.stats.planted = Farmer.stats.planted + (1)
+                            Stats.Planted = Stats.Planted + (1)
                             Farmer.status = string.format("Tanam %s (%d,%d)", ItemName(Config.harvestSeedId), spot.x, spot.y)
                             task.wait(math.max(0.05, Config.harvestPlantDelay))
                         end
@@ -3089,7 +3089,7 @@ do (function()
 
     function Farmer.Stop()
         if not Farmer.on then return false end
-        Farmer.token += 1
+        Farmer.token = Farmer.token + (1)
         Farmer.on = false
         SetAutoFly("autoharvest", false)
         ReleaseInput()
@@ -3109,7 +3109,7 @@ do (function()
         local x, y = GetGridState()
         if not x then Notify("Posisi belum terdeteksi."); return false end
         local home = { x = math.floor(x), y = math.floor(y - 0.475), world = CurrentWorldName() }
-        Farmer.token += 1
+        Farmer.token = Farmer.token + (1)
         local token = Farmer.token
         Farmer.on = true
         Farmer.status = "Mulai"
@@ -3151,9 +3151,9 @@ do (function()
                 local fg = TileValue(w, "fg", x, y) or 0
                 if fg ~= 0 then
                     if IsBedrockId(fg) then
-                        bedrockCount += 1
+                        bedrockCount = bedrockCount + (1)
                     elseif fg == dirtId or CanBreakId(fg) then
-                        groundCount += 1
+                        groundCount = groundCount + (1)
                     end
                 end
             end
@@ -3211,7 +3211,7 @@ do (function()
 
             local r = TryBreakOnce(tx, ty, true)
             if r == "broke" then
-                DF.stats.broken += 1
+                DF.stats.broken = DF.stats.broken + (1)
                 startT = os.clock()
             end
             task.wait(math.max(0.04, Config.dfBreakDelay))
@@ -3251,9 +3251,9 @@ do (function()
             if (TileValue(w, "fg", x, platformY) or 0) == dirtId and (TileValue(w, "fg", x, plantY) or 0) == 0 then
                 WalkOrClimbTo(x, plantY, token)
                 if PlaceCell(seedId, { x = x, y = plantY }, 1) then
-                    Stats.Planted += 1
+                    Stats.Planted = Stats.Planted + (1)
                     table.insert(plantedSpots, { x = x, y = plantY, plantedTime = os.clock() })
-                    count += 1
+                    count = count + (1)
                     task.wait(0.18)
                 end
             end
@@ -3295,7 +3295,7 @@ do (function()
                 local t0 = os.clock()
                 while DF.on and DF.token == token and (TileValue(w, "fg", spot.x, spot.y) or 0) == seedId and os.clock() - t0 < 3.5 do
                     local r = TryBreakOnce(spot.x, spot.y, false)
-                    if r == "broke" then Stats.Harvested += 1 end
+                    if r == "broke" then Stats.Harvested = Stats.Harvested + (1) end
                     task.wait(math.max(0.05, Config.dfBreakDelay))
                 end
                 task.wait(0.25)
@@ -3310,7 +3310,7 @@ do (function()
             local dirtCount = 0
             for x = 3, w.w - 4 do
                 if (TileValue(w, "fg", x, y) or 0) == dirtId and (TileValue(w, "fg", x, y - 1) or 0) == 0 then
-                    dirtCount += 1
+                    dirtCount = dirtCount + (1)
                     if dirtCount >= 12 then return y end
                 end
             end
@@ -3379,7 +3379,7 @@ do (function()
                     if (TileValue(w, "fg", item.x, item.y) or 0) == 0 and CountItem(dirtId) > 0 then
                         WalkOrClimbTo(item.standX, item.standY, token)
                         if PlaceCell(dirtId, { x = item.x, y = item.y }, 1) then
-                            DF.stats.placed += 1
+                            DF.stats.placed = DF.stats.placed + (1)
                             task.wait(0.14)
                         end
                     end
@@ -3420,7 +3420,7 @@ do (function()
             local t0 = os.clock()
             while DF.on and DF.token == token and (TileValue(w, "fg", tx, ty) or 0) ~= 0 and os.clock() - t0 < DF_BREAK_TIMEOUT do
                 local r = TryBreakOnce(tx, ty, false)
-                if r == "broke" then DF.stats.broken += 1 end
+                if r == "broke" then DF.stats.broken = DF.stats.broken + (1) end
                 task.wait(math.max(0.04, Config.dfBreakDelay))
             end
         end
@@ -3431,7 +3431,7 @@ do (function()
             end
             if CountItem(dirtId) > 0 then
                 if PlaceCell(dirtId, { x = tx, y = ty }, (tx >= standX) and 1 or -1) then
-                    DF.stats.placed += 1
+                    DF.stats.placed = DF.stats.placed + (1)
                     task.wait(0.14)
                 end
             end
@@ -3606,7 +3606,7 @@ do (function()
 
     function DF.Stop()
         if not DF.on then return false end
-        DF.token += 1
+        DF.token = DF.token + (1)
         DF.on = false
         SetAutoFly("autodf", false)
         ReleaseInput()
@@ -3627,7 +3627,7 @@ do (function()
         local x, y = GetGridState()
         if not x then Notify("Posisi belum terdeteksi."); return false end
         local home = { x = math.floor(x), y = math.floor(y - 0.475), world = CurrentWorldName() }
-        DF.token += 1
+        DF.token = DF.token + (1)
         local token = DF.token
         DF.on = true
         DF.status = "Mulai"
@@ -3687,7 +3687,7 @@ do (function()
             if Refs.SetTile then
                 pcall(Refs.SetTile, "fg", x, y, newId, true)
             end
-            SpliceBot.made += 1
+            SpliceBot.made = SpliceBot.made + (1)
             SpliceBot.status = string.format("Splice jadi %s (%d,%d)", ItemName(newId), x, y)
             return true
         end
@@ -3751,8 +3751,8 @@ do (function()
 
                     if (TileValue(w, "fg", t.x, t.y) or 0) == 0 and CountItem(seedA) > 0 then
                         if PlaceCell(seedA, { x = t.x, y = t.y }, 1) then
-                            SpliceBot.planted += 1
-                            Stats.Planted += 1
+                            SpliceBot.planted = SpliceBot.planted + (1)
+                            Stats.Planted = Stats.Planted + (1)
                             acted = true
                             task.wait(math.max(0.14, Config.spliceMs / 1000))
                         end
@@ -3784,8 +3784,8 @@ do (function()
                                 local fg = TileValue(w, "fg", tx, ty) or 0
                                 if fg == 0 and CountItem(seedA) > 0 and CountItem(seedB) > 0 and CanPlantAt(w, tx, ty, seedA) then
                                     if PlaceCell(seedA, { x = tx, y = ty }, 1) then
-                                        SpliceBot.planted += 1
-                                        Stats.Planted += 1
+                                        SpliceBot.planted = SpliceBot.planted + (1)
+                                        Stats.Planted = Stats.Planted + (1)
                                         acted = true
                                         task.wait(math.max(0.14, Config.spliceMs / 1000))
                                     end
@@ -3820,7 +3820,7 @@ do (function()
 
     function SpliceBot.Stop()
         if not SpliceBot.on then return false end
-        SpliceBot.token += 1
+        SpliceBot.token = SpliceBot.token + (1)
         SpliceBot.on = false
         SpliceBot.roaming = false
         ReleaseInput()
@@ -3850,7 +3850,7 @@ do (function()
         local home = { x = math.floor(x), y = math.floor(y - 0.475), world = CurrentWorldName() }
         table.clear(SpliceBot.fail)
         table.clear(SpliceBot.skip)
-        SpliceBot.token += 1
+        SpliceBot.token = SpliceBot.token + (1)
         local token = SpliceBot.token
         SpliceBot.on = true
         SpliceBot.roaming = Config.spliceRoam
@@ -4581,7 +4581,7 @@ do (function()
         pcall(function() Refs.Inv:remove(id, count) end)
         local ok = worldCall("Recycle", id, count)
         if ok then
-            Bag.recycled += count
+            Bag.recycled = Bag.recycled + (count)
             Bag.status = string.format("Recycle %s x%d", ItemName(id), count)
         end
         return ok
@@ -4597,7 +4597,7 @@ do (function()
         end)
         local ok = worldCall("ConvertLock", rule.from, rule.to)
         if ok then
-            Bag.converted += 1
+            Bag.converted = Bag.converted + (1)
             Bag.status = "Convert ke " .. rule.name
         end
         return ok
@@ -4787,7 +4787,7 @@ do (function()
         for _, p in ipairs(playersHere()) do
             if not p.role then
                 Guard.allow[p.id] = true
-                n += 1
+                n = n + (1)
             end
         end
         return n
@@ -4795,7 +4795,7 @@ do (function()
 
     function Guard.Set(on)
         Guard.on = on
-        Guard.token += 1
+        Guard.token = Guard.token + (1)
         Guard.mode, Guard.saved, Guard.calmAt = "idle", nil, nil
         table.clear(Guard.alerted)
         table.clear(Guard.allow)
@@ -4853,7 +4853,7 @@ do (function()
                             Webhook.Send("penjaga", "World " .. name .. " aman, lanjut aktivitas")
                             local sv = Guard.saved
                             Guard.mode, Guard.saved = "idle", nil
-                            Guard.token += 1
+                            Guard.token = Guard.token + (1)
                             local tk = Guard.token
                             task.spawn(resumeSaved, sv, tk)
                         end
@@ -4879,13 +4879,13 @@ do (function()
                 end
 
                 if #fresh > 0 then
-                    Guard.detected += #fresh
+                    Guard.detected = Guard.detected + (#fresh)
                     local alertMsg = "Terdeteksi masuk world " .. CurrentWorldName() .. ": " .. namesList(fresh)
                     Notify(alertMsg, "PERINGATAN PENJAGA", 6)
                     Webhook.Send("penjaga", alertMsg)
                     if Config.guardStopAll or Config.guardLeave then
                         if not Guard.saved then Guard.saved = snapshot() end
-                        Guard.token += 1
+                        Guard.token = Guard.token + (1)
                         stopAllBots()
                         Guard.calmAt = nil
                         if Config.guardLeave then
@@ -4914,7 +4914,7 @@ do (function()
                         Guard.mode, Guard.saved = "idle", nil
                         if Config.guardAutoBack and sv then
                             Notify("World aman, melanjutkan aktivitas!", "Penjaga ANCH")
-                            Guard.token += 1
+                            Guard.token = Guard.token + (1)
                             local tk = Guard.token
                             task.spawn(resumeSaved, sv, tk)
                         end
@@ -4964,7 +4964,7 @@ do (function()
                 if enterWorld(snap.world) then
                     Refs.Scan()
                     task.wait(1.5)
-                    Reconnect.count += 1
+                    Reconnect.count = Reconnect.count + (1)
                     Reconnect.status = "Berhasil masuk lagi ke " .. snap.world
                     Webhook.Send("rejoin", "Berhasil masuk kembali ke " .. snap.world)
                     resumeSaved(snap, nil)
@@ -5003,7 +5003,7 @@ do (function()
                     if enterWorld(target) then
                         Refs.Scan()
                         task.wait(1.5)
-                        Reconnect.count += 1
+                        Reconnect.count = Reconnect.count + (1)
                         Reconnect.status = "Kembali otomatis ke " .. target
                         if Reconnect.last and Reconnect.last.world == target then
                             resumeSaved(Reconnect.last, nil)
@@ -5064,7 +5064,7 @@ do (function()
             if alive() and CurrentWorldName() == snap.world then
                 Refs.Scan()
                 task.wait(1.5)
-                Reconnect.count += 1
+                Reconnect.count = Reconnect.count + (1)
                 Webhook.Send("rejoin", "Berhasil rejoin server ke world " .. snap.world .. ", melanjutkan bot!")
                 resumeSaved(snap, nil)
             end
@@ -5100,7 +5100,7 @@ do (function()
 
     local function formatDuration(sec)
         sec = math.max(0, math.floor(sec or 0))
-        return string.format("%dj %dm %dd", sec // 3600, (sec % 3600) // 60, sec % 60)
+        return string.format("%dj %dm %dd", math.floor(sec / 3600), math.floor((sec % 3600) / 60), sec % 60)
     end
 
     function Stats.GemsNow()
@@ -5202,7 +5202,7 @@ do (function()
         end
         local ok, err = pcall(ch.SendAsync, ch, msg)
         if ok then
-            Spam.sent += 1
+            Spam.sent = Spam.sent + (1)
             Spam.last = msg
         else
             Spam.last = "Gagal: " .. tostring(err)
@@ -5237,15 +5237,15 @@ do (function()
         local total, done = 0, 0
         local now = os.clock()
         for _, q in ipairs(data.quests) do
-            total += 1
+            total = total + (1)
             local have, need = tonumber(q.have) or 0, tonumber(q.need) or math.huge
             if q.claimed then
-                done += 1
+                done = done + (1)
             elseif have >= need and not ((Bonus.questFail[q.id] or 0) > now) then
                 local okC, success, _, _, gems = netCall("Quests", "claim", q.id)
                 if okC and success then
-                    done += 1
-                    Bonus.claimed += 1
+                    done = done + (1)
+                    Bonus.claimed = Bonus.claimed + (1)
                     local qName = stripColor(q.text or q.id)
                     Notify("Quest diklaim: " .. qName, "Bonus ANCH")
                     Webhook.Send("bonus", "Quest diklaim: " .. qName)
@@ -5284,16 +5284,16 @@ do (function()
         end
         local total, have = 0, 0
         for _, c in ipairs(list) do
-            total += 1
+            total = total + (1)
             local code = c.code and tostring(c.code)
             if c.done then
-                have += 1
+                have = have + (1)
             elseif code and not Bonus.tried[code] and not (type(c.uses) == "number" and c.uses == 0) then
                 local success, msg = Bonus.RedeemSingle(code)
                 if success ~= nil then Bonus.tried[code] = true end
                 if success then
-                    have += 1
-                    Bonus.redeemed += 1
+                    have = have + (1)
+                    Bonus.redeemed = Bonus.redeemed + (1)
                     Notify(code .. " -> " .. tostring(msg), "Redeem Berhasil!")
                     Webhook.Send("bonus", "Redeem berhasil " .. code .. ": " .. tostring(msg))
                 end
@@ -5774,7 +5774,7 @@ do (function()
                 local f = rFg and rFg[x] or 0
                 if f ~= 0 then
                     result.fg[f] = (result.fg[f] or 0) + 1
-                    result.totalFg += 1
+                    result.totalFg = result.totalFg + (1)
                     if IsSeedId(f) then
                         local rAt = TreeReadyAt(w, x, y, f)
                         local tEntry = result.trees[f]
@@ -5783,11 +5783,11 @@ do (function()
                             result.trees[f] = tEntry
                         end
                         if rAt and nowSrv >= rAt then
-                            tEntry.ready += 1
-                            result.readyTrees += 1
+                            tEntry.ready = tEntry.ready + (1)
+                            result.readyTrees = result.readyTrees + (1)
                         else
-                            tEntry.growing += 1
-                            result.growingTrees += 1
+                            tEntry.growing = tEntry.growing + (1)
+                            result.growingTrees = result.growingTrees + (1)
                             if rAt then
                                 local rem = rAt - nowSrv
                                 if not tEntry.nextIn or rem < tEntry.nextIn then
@@ -5798,7 +5798,7 @@ do (function()
                     end
                 end
                 local b = rBg and rBg[x] or 0
-                if b ~= 0 then result.bg[b] = (result.bg[b] or 0) + 1; result.totalBg += 1 end
+                if b ~= 0 then result.bg[b] = (result.bg[b] or 0) + 1; result.totalBg = result.totalBg + (1) end
             end
         end
         local dList = Drops.list
@@ -5810,8 +5810,8 @@ do (function()
             for _, d in pairs(dList) do
                 if type(d) == "table" and type(d.id) == "number" and (d.n or 0) > 0 then
                     result.drops[d.id] = (result.drops[d.id] or 0) + (d.n or 1)
-                    result.totalDrops += (d.n or 1)
-                    result.piles += 1
+                    result.totalDrops = result.totalDrops + ((d.n or 1))
+                    result.piles = result.piles + (1)
                 end
             end
         end
@@ -6242,7 +6242,7 @@ Window:DisableTopbarButtons({
 
 pcall(function()
     Window:Tag({
-        Title = "v11 Release",
+        Title = "v1 Beta",
         Icon = "github",
         Color = Color3.fromHex("#1c1c1c"),
         Border = true,
@@ -7608,7 +7608,7 @@ SafeUI("Tab:Settings", function()
             end
             local prev = Config.webhookOn
             Config.webhookOn = true
-            Webhook.Send("test", "Tes notifikasi dari ANCH Hub v11 Ultimate!")
+            Webhook.Send("test", "Tes notifikasi dari ANCH Hub v1 Ultimate!")
             Config.webhookOn = prev
             Notify("Pesan tes masuk antrian kirim Discord.")
         end,
@@ -7686,7 +7686,7 @@ SafeUI("Tab:Help", function()
     hub.tabs.help = HelpTab
 
     HelpTab:Paragraph({
-        Title = "Daftar Perintah Chat ANCH Hub v11 Ultimate",
+        Title = "Daftar Perintah Chat ANCH Hub v1 Beta",
         Desc = table.concat({
             "/af [on/off]  —  Auto Farm (Multi-Target + Rayman)",
             "/ac [on/off]  —  Auto Clear World (ModFly + Berdiri di Atas Blok)",
@@ -7730,7 +7730,7 @@ local function HandleMessage(text)
         bodyText = text:sub(#prefix + 1)
     elseif text:sub(1, 1) == "/" then
         local w = text:sub(2):lower()
-        if w == "settingsgb" or w == "sgb" or w == "hpx" then bodyText = text:sub(2) end
+        if w == "settingsgb" or w == "sgb" or w == "anch" then bodyText = text:sub(2) end
     end
     if not bodyText then return false end
     local command, args = bodyText:match("^(%S+)%s*(.-)%s*$")
@@ -7830,7 +7830,7 @@ local function HandleMessage(text)
         for _, e in ipairs(found) do table.insert(parts, e.name .. " = " .. e.id) end
         Notify(#parts > 0 and table.concat(parts, " | ") or "Block tidak ditemukan.")
         return true
-    elseif command == "hpx" then
+    elseif command == "anch" then
         ToggleHub("help"); return true
     end
     return false
@@ -7917,5 +7917,5 @@ task.spawn(function()
     end
     task.spawn(Reconnect.CheckStartup)
     task.spawn(Pabrik.CheckStartup)
-    Notify("ANCH HUB v11 Ultimate Loaded! Semua tab & fitur siap digunakan.")
+    Notify("ANCH HUB v1 Beta Loaded! Semua tab & fitur siap digunakan.")
 end)
