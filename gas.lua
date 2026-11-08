@@ -2866,6 +2866,66 @@ do (function()
     end
 
     takeSingleDrop = function(d)
+        local w = FindWorld()
+        local worldTake = w and rawget(w, "takeDrop")
+        if type(worldTake) ~= "function" and not TakeDropRemote then return false end
+        local now = os.clock()
+        if not canTryDrop(d, now) then return false end
+
+        local amount = d.n
+        if d.id ~= 112 and Refs.Inv and type(Refs.Inv.room) == "function" then
+            local okR, room = pcall(function() return Refs.Inv:room(d.id) end)
+            if okR and type(room) == "number" then amount = math.min(amount, room) end
+        end
+        if amount <= 0 then
+            if d.uid then DropFailUntil[d.uid] = now + 1 end
+            local lastFull = Webhook.LastFull[d.id]
+            if not lastFull or now - lastFull > 120 then
+                Webhook.LastFull[d.id] = now
+                Webhook.Send("full", "Inventori penuh: " .. ItemName(d.id) .. " tidak bisa diambil lagi")
+            end
+            return false
+        end
+
+        d.taking = true
+        d.flown = true
+        if typeof(d.frame) == "Instance" then pcall(function() d.frame.Visible = false end) end
+
+        local ok, taken
+        if type(worldTake) == "function" then
+            ok, taken = pcall(worldTake, d.uid, amount)
+        else
+            ok, taken = pcall(TakeDropRemote.InvokeServer, TakeDropRemote, d.uid, amount)
+        end
+
+        d.taking = false
+
+        if not (ok and type(taken) == "number" and taken > 0) then
+            Farm.stats.fail = Farm.stats.fail + 1
+            d.refused = os.clock()
+            if d.uid then DropFailUntil[d.uid] = os.clock() + 1 end
+            d.flown = nil
+            if typeof(d.frame) == "Instance" then pcall(function() d.frame.Visible = not d.culled end) end
+            return false
+        end
+
+        if d.uid then DropFailUntil[d.uid] = nil end
+        if d.id == 112 then
+            if Refs.Gems and type(Refs.Gems.addGems) == "function" then pcall(Refs.Gems.addGems, taken) end
+        elseif Refs.Inv and type(Refs.Inv.add) == "function" then
+            pcall(function() Refs.Inv:add(d.id, taken) end)
+        end
+
+        Drops.applyTaken(d, d.n - taken)
+
+        Stats.Collected = Stats.Collected + taken
+        Stats.Items[d.id] = (Stats.Items[d.id] or 0) + taken
+        Farm.stats.picked = Farm.stats.picked + taken
+        if Clear.on then Clear.stats.picked = Clear.stats.picked + taken end
+        if Farmer.on then Farmer.stats.picked = Farmer.stats.picked + taken end
+        if DF.on then DF.stats.picked = DF.stats.picked + taken end
+        return true
+    end
 
     local nextDropScan = 0
     trackConn(RunService.Heartbeat:Connect(function()
