@@ -2075,6 +2075,7 @@ local function DropWorldLock(amount)
     return false
 end
 
+local QueueReload
 local function WarpToWorld(worldName)
     worldName = Trim(worldName):upper()
     if worldName == "" then
@@ -2100,7 +2101,7 @@ local function WarpToWorld(worldName)
     return false
 end
 
-local QueueReload
+
 local function Rejoin()
     local wName = CurrentWorldName()
     if wName ~= "" then
@@ -2425,7 +2426,6 @@ do (function()
         if DF.on then DF.stats.picked = DF.stats.picked + taken end
         return true
     end
-end
 
     local nextDropScan = 0
     trackConn(RunService.Heartbeat:Connect(function()
