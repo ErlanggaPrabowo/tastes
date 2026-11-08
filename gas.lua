@@ -783,25 +783,70 @@ do (function()
             end))
         end
 
-        Drops.list, Drops.update = nil, nil
-        if Refs.World and type(rawget(Refs.World, "dropList")) == "function" then
-            local okL, l = pcall(Refs.World.dropList)
-            if okL and type(l) == "table" then Drops.list = l end
-        end
-        local wd = Refs.World and rawget(Refs.World, "dropTaken")
-        if type(wd) == "function" then
+        function Drops.findUpdate()
+            local w, list = Refs.World, Drops.list
+            local wd = w and rawget(w, "dropTaken")
+            if type(wd) ~= "function" or not list then return false end
             for _, u in pairs(GetUpvalues(wd)) do
-                if not Drops.list and isDropList(u) then
-                    Drops.list = u
-                elseif not Drops.update and type(u) == "function" then
-                    Drops.update = u
+                if type(u) == "function" then
+                    for _, uu in pairs(GetUpvalues(u)) do
+                        if rawequal(uu, list) then
+                            Drops.update = u
+                            return true
+                        end
+                    end
                 end
             end
+            return false
         end
-        if not Drops.list and Refs.World and type(rawget(Refs.World, "dropList")) == "function" then
-            local okL, l = pcall(Refs.World.dropList)
-            if okL and type(l) == "table" then Drops.list = l end
+
+        function Drops.findRefs()
+            local w0 = Refs.World
+            local dl = w0 and rawget(w0, "dropList")
+            if type(dl) == "function" then
+                local okL, l = pcall(dl)
+                if okL and isDropList(l) then
+                    if Drops.list ~= l then Drops.update = nil end
+                    Drops.list = l
+                    if not Drops.update then Drops.findUpdate() end
+                    return true
+                end
+            end
+            Drops.list, Drops.update = nil, nil
+            local wd = w0 and rawget(w0, "dropTaken")
+            if type(wd) == "function" then
+                for _, u in pairs(GetUpvalues(wd)) do
+                    if not Drops.list and isDropList(u) then
+                        Drops.list = u
+                    elseif not Drops.update and type(u) == "function" then
+                        Drops.update = u
+                    end
+                end
+                if Drops.list and not Drops.update then Drops.findUpdate() end
+            end
+            local evDrop = WorldRemotes and WorldRemotes:FindFirstChild("DropTaken")
+            if not Drops.list and evDrop and getconnections then
+                local okC, conns = pcall(getconnections, evDrop.OnClientEvent)
+                if okC and type(conns) == "table" then
+                    for _, c in ipairs(conns) do
+                        local okF, fn = pcall(function() return c.Function end)
+                        if okF and type(fn) == "function" then
+                            for _, u in pairs(GetUpvalues(fn)) do
+                                if not Drops.list and isDropList(u) then
+                                    Drops.list = u
+                                elseif not Drops.update and type(u) == "function" then
+                                    Drops.update = u
+                                end
+                            end
+                        end
+                        if Drops.list then break end
+                    end
+                end
+            end
+            return Drops.list ~= nil
         end
+
+        Drops.findRefs()
 
         Refs.Trees = nil
         if not Refs.Trees then findTreesFromWorldStruct() end
@@ -1129,9 +1174,9 @@ local function TryBreakOnce(x, y, includeBg)
     if Refs.Punch then
         local ok = pcall(Refs.Punch, x, y, Config.mutePunch or nil, nil)
         if not ok then return nil end
+        Anim.Swing(x, y, "punch")
         if TileValue(w, layer, x, y) ~= id then
             Stats.Broken += 1
-            Anim.Swing(x, y, "punch")
             Drops.brokeAt[x .. "," .. y] = os.clock()
             return "broke", id, layer
         end
@@ -2601,7 +2646,7 @@ end
 ----------------------------------------------------------------------
 do (function()
     local function inTile(t, x, y)
-        return x >= t.x - 0.25 and x < t.x + 1.25 and y >= t.y - 0.25 and y < t.y + 1.25
+        return x >= t.x - 0.15 and x < t.x + 1.15 and y >= t.y - 0.15 and y < t.y + 1.15
     end
 
     local function canTryDrop(d, now)
@@ -2616,6 +2661,7 @@ do (function()
     function Drops.applyTaken(d, left)
         local list = Drops.list
         if not list or not table.find(list, d) then return end
+        if not Drops.update and Drops.findUpdate then Drops.findUpdate() end
         if Drops.update then
             local ok = pcall(Drops.update, d, left)
             if ok then
@@ -2637,18 +2683,19 @@ do (function()
         end
     end
 
+    -- Tunggu sampai drop yang menempel di badan selesai dipungut oleh fisika game
     function Drops.waitNearDrops(maxSec)
         local list = Drops.list
         if not list then return end
-        task.wait(0.12)
+        task.wait(0.15)
         local t0 = os.clock()
         while os.clock() - t0 < (maxSec or 0.45) and alive() do
             local s = PlayerPhysicsState()
             if not s or not s.x then return end
             local busy = false
             for _, d in ipairs(list) do
-                if type(d) == "table" and type(d.x) == "number" and (d.n or 0) > 0
-                    and math.abs(d.x - s.x) < 0.75 and math.abs(d.y - (s.y - 0.475)) < 0.85 then
+                if type(d) == "table" and type(d.x) == "number" and (d.n or 0) > 0 and d.armed ~= false
+                    and math.abs(d.x - s.x) < 0.6 and d.y + 0.3 > s.y - 0.95 and d.y - 0.3 < s.y then
                     local room = true
                     if d.id ~= 112 and Refs.Inv and type(Refs.Inv.room) == "function" then
                         local okr, r = pcall(function() return Refs.Inv:room(d.id) end)
@@ -2662,44 +2709,37 @@ do (function()
         end
     end
 
-    -- Tunggu drop dari blok yang baru pecah muncul & siap diambil (armed)
+    -- Tunggu drop baru dari blok yang barusan pecah muncul dari server (sesuai ping)
     function Drops.waitSpawn(tiles)
+        if not Drops.list and Drops.findRefs then Drops.findRefs() end
         local ping = 0.1
         pcall(function() ping = Player:GetNetworkPing() end)
-        local limit = math.clamp(0.25 + 2.5 * ping, 0.35, 0.9)
+        local limit = math.clamp(0.15 + 2.5 * ping, 0.25, 0.85)
         local newest = nil
         for _, t in ipairs(tiles) do
             local b = Drops.brokeAt[t.x .. "," .. t.y]
-            if b and os.clock() - b < 1.2 and (not newest or b > newest) then newest = b end
+            if b and os.clock() - b < limit and (not newest or b > newest) then newest = b end
         end
         if not newest then return end
         local list = Drops.list
-        local foundSpawn = false
         while os.clock() - newest < limit and alive() do
             if list then
-                local allArmed = true
                 for _, d in ipairs(list) do
-                    if type(d) == "table" and type(d.x) == "number" and (d.n or 0) > 0 then
+                    if type(d) == "table" and type(d.x) == "number" and (d.born or 0) >= newest - 0.2 then
                         for _, t in ipairs(tiles) do
                             if inTile(t, d.x, d.y) then
-                                foundSpawn = true
-                                if d.armed == false then allArmed = false end
+                                task.wait(0.05)
+                                return
                             end
                         end
                     end
                 end
-                if foundSpawn and allArmed then
-                    task.wait(0.06)
-                    return
-                end
             end
-            task.wait(0.03)
+            task.wait()
         end
     end
 
-    local takeSingleDrop
-
-    takeSingleDrop = function(d)
+    local function takeSingleDrop(d)
         local w = FindWorld()
         local worldTake = w and rawget(w, "takeDrop")
         if type(worldTake) ~= "function" and not TakeDropRemote then return false end
@@ -2722,7 +2762,6 @@ do (function()
         end
 
         d.taking = true
-        d.flown = true
         if typeof(d.frame) == "Instance" then pcall(function() d.frame.Visible = false end) end
 
         local ok, taken
@@ -2737,7 +2776,8 @@ do (function()
         if not (ok and type(taken) == "number" and taken > 0) then
             Farm.stats.fail = Farm.stats.fail + 1
             d.refused = os.clock()
-            if d.uid then DropFailUntil[d.uid] = os.clock() + 0.5 end
+            d.failN = (d.failN or 0) + 1
+            if d.uid then DropFailUntil[d.uid] = os.clock() + math.min(8, d.failN) end
             d.flown = nil
             if typeof(d.frame) == "Instance" then pcall(function() d.frame.Visible = not d.culled end) end
             return false
@@ -2750,7 +2790,7 @@ do (function()
             pcall(function() Refs.Inv:add(d.id, taken) end)
         end
 
-        Drops.applyTaken(d, d.n - taken)
+        Drops.applyTaken(d, math.max(0, (d.n or 0) - taken))
 
         Stats.Collected = Stats.Collected + taken
         Stats.Items[d.id] = (Stats.Items[d.id] or 0) + taken
@@ -2761,49 +2801,41 @@ do (function()
         return true
     end
 
-    -- Mode Sentuhan: Karakter bergerak fisik mendatangi setiap tile yang ada dropped item-nya
+    -- Mode Sentuhan Murni (Tanpa Remote): Karakter menyapu kiri/kanan & lompat kecil menyentuh drop
     function Drops.touchAll(tiles, hx, hy)
+        if not Drops.list and Drops.findRefs then Drops.findRefs() end
         local list = Drops.list
-        if not list then Refs.Scan(); list = Drops.list end
-        if not list or #list == 0 then return false end
+        if not list or not OrigIsDown then return false end
 
-        -- Jangan filter d.armed di sini agar drop yang baru jatuh tetap terdeteksi
-        local function getDropsInTile(t)
-            local found = {}
+        local function dropsAt(t)
             for _, d in ipairs(list) do
-                if type(d) == "table" and type(d.x) == "number" and (d.n or 0) > 0
-                    and not d.taking and not d.display and inTile(t, d.x, d.y) then
-                    local room = true
-                    if d.id ~= 112 and Refs.Inv and type(Refs.Inv.room) == "function" then
-                        local okR, r = pcall(function() return Refs.Inv:room(d.id) end)
-                        if okR and type(r) == "number" and r <= 0 then room = false end
-                    end
-                    if room then table.insert(found, d) end
+                if type(d) == "table" and type(d.x) == "number" and (d.n or 0) > 0 and d.armed ~= false
+                    and not d.taking and inTile(t, d.x, d.y) then
+                    return true
                 end
             end
-            return found
+            return false
         end
 
         local has = {}
         for _, t in ipairs(tiles) do
-            if not Nav.SolidAt(t.x, t.y) then
-                local dList = getDropsInTile(t)
-                if #dList > 0 then
-                    table.insert(has, { x = t.x, y = t.y, drops = dList })
-                end
+            if not Nav.SolidAt(t.x, t.y) and dropsAt(t) then
+                has[#has + 1] = t
             end
         end
         if #has == 0 then return false end
 
-        -- Urutkan dari tile terdekat ke terjauh dari posisi anchor (hx, hy)
-        table.sort(has, function(a, b)
-            local da = math.abs(a.x - hx) + math.abs(a.y - hy) * 1.5
-            local db = math.abs(b.x - hx) + math.abs(b.y - hy) * 1.5
-            return da < db
-        end)
+        local s0 = PlayerPhysicsState()
+        if not s0 or s0.dead or not s0.grounded then return false end
 
-        local was = AutoInput.active
-        AutoInput.active = true
+        local function ground(c) return Nav.OpenAt(c, hy) and Nav.RealSupport(c, hy) end
+        local function walkable(a, b)
+            local st = (b >= a) and 1 or -1
+            for c = a, b, st do
+                if not ground(c) then return false end
+            end
+            return true
+        end
 
         local function steer(s, targetX, tol)
             local dx = targetX - s.x
@@ -2812,113 +2844,99 @@ do (function()
             local dir = 0
             if math.abs(dx) > tol then
                 dir = dx > 0 and 1 or -1
-                if vx * dir > 0 and (vx * vx) / (2 * decel) >= math.abs(dx) - tol * 0.5 then dir = 0 end
+                if vx * dir > 0 and (vx * vx) / (2 * decel) >= math.abs(dx) - tol * 0.5 then
+                    dir = 0
+                end
             end
             AutoInput.left = dir < 0
             AutoInput.right = dir > 0
         end
 
-        -- Hanya pungut drop yang sudah benar-benar tersentuh badan karakter (radius <= 0.85 tile)
-        local function grabTouching()
-            local c = PlayerPhysicsState()
-            if not c or not c.x then return end
-            for _, item in ipairs(has) do
-                for _, d in ipairs(item.drops) do
-                    if (d.n or 0) > 0 and not d.taking and d.armed ~= false
-                        and math.abs(d.x - c.x) <= 0.85 and math.abs(d.y - (c.y - 0.475)) <= 0.95 then
-                        task.spawn(takeSingleDrop, d)
-                    end
-                end
-            end
-        end
+        local was = AutoInput.active
+        AutoInput.active = true
 
-        local function walkHorizTo(targetTileX, maxT)
-            local cx = targetTileX + 0.5
+        local function moveTo(cx, maxT)
             local t0 = os.clock()
-            while alive() and (Farm.on or Farm.Override ~= nil) and os.clock() - t0 < (maxT or 1.6) do
+            while alive() and (Farm.on or Farm.Override ~= nil) and os.clock() - t0 < (maxT or 1.2) do
+                task.wait()
                 local c = PlayerPhysicsState()
                 if not c or c.dead then break end
-                steer(c, cx, 0.10)
-                grabTouching()
-                if math.abs(c.x - cx) <= 0.22 and math.abs(c.vx or 0) < 3.0 then
-                    ReleaseInput()
-                    grabTouching()
+                steer(c, cx, 0.1)
+                if c.grounded and math.abs(c.x - cx) <= 0.15 and math.abs(c.vx or 0) < 1.5 then
+                    AutoInput.left, AutoInput.right = false, false
                     return true
                 end
-                task.wait()
             end
-            ReleaseInput()
-            grabTouching()
+            AutoInput.left, AutoInput.right = false, false
             return false
         end
 
-        local function jumpTouchAt(targetY)
-            ReleaseInput()
+        local function hop(toX, highJump)
+            AutoInput.left, AutoInput.right = false, false
             local c0 = PlayerPhysicsState()
             if not c0 then return end
-            local isHighJump = (targetY <= hy - 2)
+            local y0 = c0.y
             AutoInput.jump = true
             local t0, air = os.clock(), false
-            while alive() and (Farm.on or Farm.Override ~= nil) and os.clock() - t0 < 1.5 do
+            while alive() and (Farm.on or Farm.Override ~= nil) and os.clock() - t0 < 1.4 do
+                task.wait()
                 local c = PlayerPhysicsState()
                 if not c or c.dead then break end
                 if not c.grounded then
                     air = true
-                    if not isHighJump then
-                        AutoInput.jump = false
-                    elseif c.y <= targetY + 0.55 or (c.vy or 0) >= 0 then
+                    if not highJump or c.y <= y0 - 1.2 or (c.vy or 0) >= 0 then
                         AutoInput.jump = false
                     end
                 end
-                grabTouching()
+                if toX and air and c.y <= y0 - 0.25 then
+                    steer(c, toX, 0.1)
+                else
+                    AutoInput.left, AutoInput.right = false, false
+                end
                 if air and c.grounded then break end
-                if not air and os.clock() - t0 > 0.38 then break end
-                task.wait()
+                if not air and os.clock() - t0 > 0.35 then break end
             end
-            ReleaseInput()
-            grabTouching()
+            AutoInput.jump, AutoInput.left, AutoInput.right = false, false, false
         end
 
-        pcall(function()
-            for _, target in ipairs(has) do
-                if not alive() or not (Farm.on or Farm.Override ~= nil) then break end
-                -- Cek apakah drop di tile ini masih ada
-                local stillThere = false
-                for _, d in ipairs(target.drops) do
-                    if (d.n or 0) > 0 and table.find(list, d) then stillThere = true; break end
-                end
-                if stillThere then
-                    -- 1. Berjalan mendatar menuju kolom X tempat drop berada
-                    local cNow = PlayerPhysicsState()
-                    if cNow and math.abs(cNow.x - (target.x + 0.5)) > 0.22 then
-                        walkHorizTo(target.x, 1.6)
-                    end
-                    -- 2. Jika drop berada di tile atas (dy < 0), lompat untuk menyentuhnya
-                    if target.y < hy then
-                        jumpTouchAt(target.y)
-                    else
-                        -- Tunggu sejenak di atas tile drop agar tersentuh sempurna oleh karakter
-                        local waitT = os.clock()
-                        while os.clock() - waitT < 0.18 and alive() do
-                            grabTouching()
-                            task.wait(0.03)
-                        end
-                    end
+        -- 1. Baris sejajar badan (t.y == hy): susuri sampai tile terjauh di kiri & kanan
+        local lo, hi = hx, hx
+        for _, t in ipairs(has) do
+            if t.y == hy and math.abs(t.x - hx) <= 3 then
+                if t.x < lo then lo = t.x end
+                if t.x > hi then hi = t.x end
+            end
+        end
+        if lo < hx and walkable(hx - 1, lo) then moveTo(lo + 0.5) end
+        if hi > hx and walkable(hx + 1, hi) then moveTo(hi + 0.5) end
+
+        -- 2. Baris di atas kepala (t.y == hy - 1 atau hy - 2): lompat di bawah tile yang ada drop-nya
+        for _ = 1, 4 do
+            local cs = PlayerPhysicsState()
+            if not cs or not alive() or not (Farm.on or Farm.Override ~= nil) then break end
+            local cur = math.floor(cs.x)
+            local cols = {}
+            local needHigh = false
+            for _, t in ipairs(has) do
+                if (t.y == hy - 1 or t.y == hy - 2) and math.abs(t.x - hx) <= 2 and ground(t.x) and walkable(cur, t.x)
+                    and not Nav.SolidAt(t.x, t.y) and dropsAt(t) then
+                    cols[#cols + 1] = t.x
+                    if t.y == hy - 2 then needHigh = true end
                 end
             end
+            if #cols == 0 then break end
+            table.sort(cols, function(p, q) return math.abs(p - cur) < math.abs(q - cur) end)
+            local a = cols[1]
+            if a ~= cur then moveTo(a + 0.5) end
+            hop(cols[2] and (cols[2] + 0.5) or nil, needHigh)
+        end
 
-            -- 3. Setelah semua tile drop didatangi, jalan kembali ke titik tengah Auto Farm (hx, hy)
-            walkHorizTo(hx, 1.8)
-            local fx, fy = GetTile()
-            if fx and (fx ~= hx or fy ~= hy) then
-                Nav.To(hx, hy, function() return not (Farm.on or Farm.Override ~= nil) end, 0.25, false)
-            end
-        end)
-
-        ReleaseInput()
+        -- 3. Kembali ke posisi tengah Auto Farm (hx, hy)
+        local ok = moveTo(hx + 0.5, 2.0)
+        AutoInput.left, AutoInput.right, AutoInput.jump = false, false, false
         AutoInput.active = was
-        Drops.waitNearDrops(0.15)
-        return true
+        Drops.waitNearDrops(0.2)
+        return ok
     end
 
     local nextDropScan = 0
@@ -2936,23 +2954,22 @@ do (function()
 
         local tnow = os.clock()
         if tnow < (Drops.nextTick or 0) then return end
-        Drops.nextTick = tnow + ((Config.collectMode == "Remote") and 0.1 or 0.18)
+        Drops.nextTick = tnow + ((Config.collectMode == "Remote") and 0.1 or 0.2)
 
         local list = Drops.list
         if not list then
             if tnow >= nextDropScan then
-                nextDropScan = tnow + 4
-                Refs.Scan()
+                nextDropScan = tnow + 5
+                if Drops.findRefs then Drops.findRefs() else Refs.Scan() end
             end
             return
         end
-        if #list == 0 then return end
 
-        local x, y = GetGridState()
-        if not x then return end
-        local cx, cy = x, y - 0.475
+        local s = PlayerPhysicsState()
+        if not s or type(s.x) ~= "number" then return end
+        local cx, cy = s.x, s.y - 0.475
 
-        -- Mode "Sentuhan": hanya hitung atau ambil drop yang benar-benar menempel di badan karakter (<= 0.85 tile)
+        -- Mode "Sentuhan": drop dipungut otomatis oleh game saat tersentuh badan; hitung statistiknya
         if Config.collectMode ~= "Remote" then
             local seen = {}
             for _, d in ipairs(list) do
@@ -2974,7 +2991,8 @@ do (function()
             return
         end
 
-        -- Mode "Remote": ambil via world.takeDrop (terbatas sesuai izin jarak server)
+        -- Mode "Remote": ambil langsung via world.takeDrop
+        if #list == 0 then return end
         local ptx, pty = math.floor(cx), math.floor(cy)
         local radius = (tonumber(Config.collectRadius) or 3) + 0.25
         local dropZone = Pabrik.Zone
@@ -3133,8 +3151,15 @@ do (function()
 
             local acted, outOfBlock = false, false
 
-            
+            -- 0) Ambil drop yang ada di tile grid sebelum menaruh block baru (seperti Tadonoki)
+            if (Config.farmTake or Farm.Override) and Config.collectMode == "Sentuhan" then
+                Drops.waitSpawn(tiles)
+                if Drops.touchAll then
+                    Drops.touchAll(tiles, px, py)
+                end
+            end
 
+            -- 1) Place semua tile kosong
             if doPlace then
                 Farm.stats.status = "Place " .. ItemName(id)
                 local layer = LayerOf(id)
@@ -3158,6 +3183,7 @@ do (function()
 
             if not Farm.on or Farm.token ~= token then break end
 
+            -- 2) Break semua tile sampai hancur
             if doBreak then
                 Farm.stats.status = "Break (" .. (raymanOn() and "Rayman" or ("Multi " .. Config.farmMultiTarget)) .. ")"
                 local K = math.clamp(math.floor(Config.farmMultiTarget or 1), 1, 5)
@@ -3190,11 +3216,16 @@ do (function()
                         local r = TryBreakOnce(a.x, a.y, Config.farmBreakBg)
                         a.n += 1
                         if r then hitAny, acted = true, true end
-                        if r == "broke" then
+                        if r == "broke" or (r == nil and a.n > 1 and not breakableAt(w, a.x, a.y)) then
+                            if r ~= "broke" then
+                                Stats.Broken += 1
+                                Drops.brokeAt[a.x .. "," .. a.y] = os.clock()
+                            end
                             Farm.stats.broken += 1
                             brokeAny = true
                         end
-                        if r == nil or a.n > 80 or (r == "broke" and not breakableAt(w, a.x, a.y)) then
+                        if r == nil or a.n > 80 or not breakableAt(w, a.x, a.y) then
+                            Drops.brokeAt[a.x .. "," .. a.y] = Drops.brokeAt[a.x .. "," .. a.y] or os.clock()
                             a.done = true
                         end
                         a.used = true
@@ -3216,13 +3247,14 @@ do (function()
                         local rest = gap - (os.clock() - t0)
                         if rest > 0.005 then task.wait(rest) end
                     end
-                    if brokeAny and Config.farmAfterBreakMs > 0 then
+                    -- Hanya tunggu farmAfterBreakMs jika masih ada tile lain di antrian active
+                    if brokeAny and #active > 0 and Config.farmAfterBreakMs > 0 then
                         task.wait(Config.farmAfterBreakMs / 1000)
                     end
                 end
             end
 
-            -- Setelah semua tile selesai di-break, bergerak ambil dropped items dulu baru lanjut siklus berikutnya!
+            -- 3) Begitu selesai break, langsung tunggu drop spawn & sapu dengan sentuhan badan!
             if (Config.farmTake or Farm.Override) and Config.collectMode == "Sentuhan" then
                 Farm.stats.status = "Mengambil drop (Sentuhan)..."
                 Drops.waitSpawn(tiles)
