@@ -2693,6 +2693,9 @@ do (function()
         end
     end
 
+    -- Deklarasi awal agar takeSingleDrop dikenali di dalam Drops.touchAll
+    local takeSingleDrop
+
     -- Sapu semua drop di tile Grid 5x5 (Mendukung jarak +-2 tile mendatar & +2 tile vertikal ke atas)
     function Drops.touchAll(tiles, hx, hy)
         local list = Drops.list
@@ -2749,13 +2752,13 @@ do (function()
             AutoInput.right = dir > 0
         end
 
-        -- Ambil drop yang sudah berada tepat di dekat badan saat sedang bergerak/melompat
         local function grabNearby()
+            if type(takeSingleDrop) ~= "function" then return end
             local c = PlayerPhysicsState()
             if not c or not c.x then return end
             for _, item in ipairs(has) do
                 for _, d in ipairs(item.drops) do
-                    if (d.n or 0) > 0 and not d.taking and math.abs(d.x - c.x) <= 1.8 and math.abs(d.y - (c.y - 0.475)) <= 1.8 then
+                    if (d.n or 0) > 0 and not d.taking and math.abs(d.x - c.x) <= 1.85 and math.abs(d.y - (c.y - 0.475)) <= 1.85 then
                         task.spawn(takeSingleDrop, d)
                     end
                 end
@@ -2764,44 +2767,43 @@ do (function()
 
         local function moveTo(cx, maxT)
             local t0 = os.clock()
-            while alive() and os.clock() - t0 < (maxT or 1.4) do
+            while alive() and (Farm.on or Farm.Override ~= nil) and os.clock() - t0 < (maxT or 1.4) do
                 task.wait()
                 local c = PlayerPhysicsState()
                 if not c or c.dead then break end
-                steer(c, cx, 0.1)
+                steer(c, cx, 0.14)
                 grabNearby()
-                if c.grounded and math.abs(c.x - cx) <= 0.18 and math.abs(c.vx or 0) < 1.8 then
-                    AutoInput.left, AutoInput.right = false, false
+                if c.grounded and math.abs(c.x - cx) <= 0.24 and math.abs(c.vx or 0) < 3.2 then
+                    ReleaseInput()
                     return true
                 end
             end
-            AutoInput.left, AutoInput.right = false, false
+            ReleaseInput()
             return false
         end
 
-        -- Lompat vertikal (mendukung 1 tile maupun +2 tile di atas kepala!)
         local function jumpCollect(targetY, toX)
-            AutoInput.left, AutoInput.right = false, false
+            ReleaseInput()
             local c0 = PlayerPhysicsState()
             if not c0 then return end
             local y0 = c0.y
-            local isHighJump = (targetY <= hy - 2) -- Jika +2 tile di atas kepala, tahan tombol lompat lebih lama
+            local isHighJump = (targetY <= hy - 2)
             AutoInput.jump = true
             local t0, air = os.clock(), false
-            while alive() and os.clock() - t0 < 1.6 do
+            while alive() and (Farm.on or Farm.Override ~= nil) and os.clock() - t0 < 1.5 do
                 task.wait()
                 local c = PlayerPhysicsState()
                 if not c or c.dead then break end
                 if not c.grounded then
                     air = true
                     if not isHighJump then
-                        AutoInput.jump = false -- Tap hop untuk 1 tile
+                        AutoInput.jump = false
                     elseif c.y <= targetY + 0.6 or (c.vy or 0) >= 0 then
-                        AutoInput.jump = false -- Lepas saat mencapai tinggi +2 tile atau puncak lompatan
+                        AutoInput.jump = false
                     end
                 end
                 if toX and air and c.y <= y0 - 0.25 then
-                    steer(c, toX, 0.1)
+                    steer(c, toX, 0.14)
                 else
                     AutoInput.left, AutoInput.right = false, false
                 end
@@ -2809,114 +2811,61 @@ do (function()
                 if air and c.grounded then break end
                 if not air and os.clock() - t0 > 0.38 then break end
             end
-            AutoInput.jump, AutoInput.left, AutoInput.right = false, false, false
+            ReleaseInput()
         end
 
-        -- 1) Sapu semua drop sebaris (dy == 0) dan bawah sedikit hingga jarak +-3 tile
-        local lo, hi = hx, hx
-        for _, t in ipairs(has) do
-            if (t.y == hy or t.y == hy + 1) and math.abs(t.x - hx) <= 3 then
-                if t.x < lo then lo = t.x end
-                if t.x > hi then hi = t.x end
-            end
-        end
-        if lo < hx and walkable(hx - 1, lo) then moveTo(lo + 0.5, 1.6) end
-        if hi > hx and walkable(hx + 1, hi) then moveTo(hi + 0.5, 1.6) end
-
-        -- 2) Sapu semua drop di atas kepala (dy == -1 DAN dy == -2) untuk kolom dx = -2 s/d +2
-        for _ = 1, 5 do
-            local cs = PlayerPhysicsState()
-            if not cs or not alive() then break end
-            local cur = math.floor(cs.x)
-            local upTargets = {}
+        local okRun = false
+        pcall(function()
+            -- 1) Sapu drop sebaris (dy == 0 / +1) hingga +-3 tile kiri/kanan
+            local lo, hi = hx, hx
             for _, t in ipairs(has) do
-                if (t.y == hy - 1 or t.y == hy - 2) and math.abs(t.x - hx) <= 2 and ground(t.x) and walkable(cur, t.x) then
-                    local stillHas = false
-                    for _, d in ipairs(t.drops) do
-                        if (d.n or 0) > 0 and table.find(list, d) then stillHas = true; break end
-                    end
-                    if stillHas then
-                        table.insert(upTargets, t)
-                    end
+                if (t.y == hy or t.y == hy + 1) and math.abs(t.x - hx) <= 3 then
+                    if t.x < lo then lo = t.x end
+                    if t.x > hi then hi = t.x end
                 end
             end
-            if #upTargets == 0 then break end
-            table.sort(upTargets, function(p, q) return math.abs(p.x - cur) < math.abs(q.x - cur) end)
-            local first = upTargets[1]
-            if first.x ~= cur then
-                moveTo(first.x + 0.5, 1.5)
-            end
-            local nextX = upTargets[2] and (upTargets[2].x + 0.5) or nil
-            jumpCollect(first.y, nextX)
-        end
+            if lo < hx and walkable(hx - 1, lo) then moveTo(lo + 0.5, 1.5) end
+            if hi > hx and walkable(hx + 1, hi) then moveTo(hi + 0.5, 1.5) end
 
-        -- 3) Kembali ke titik tengah Auto Farm (hx, hy)
-        local ok = moveTo(hx + 0.5, 2.0)
-        AutoInput.left, AutoInput.right, AutoInput.jump = false, false, false
+            -- 2) Sapu drop di atas kepala (dy == -1 dan dy == -2) untuk kolom dx = -2 s/d +2
+            for _ = 1, 5 do
+                local cs = PlayerPhysicsState()
+                if not cs or not alive() or not (Farm.on or Farm.Override ~= nil) then break end
+                local cur = math.floor(cs.x)
+                local upTargets = {}
+                for _, t in ipairs(has) do
+                    if (t.y == hy - 1 or t.y == hy - 2) and math.abs(t.x - hx) <= 2 and ground(t.x) and walkable(cur, t.x) then
+                        local stillHas = false
+                        for _, d in ipairs(t.drops) do
+                            if (d.n or 0) > 0 and table.find(list, d) then stillHas = true; break end
+                        end
+                        if stillHas then
+                            table.insert(upTargets, t)
+                        end
+                    end
+                end
+                if #upTargets == 0 then break end
+                table.sort(upTargets, function(p, q) return math.abs(p.x - cur) < math.abs(q.x - cur) end)
+                local first = upTargets[1]
+                if first.x ~= cur then
+                    moveTo(first.x + 0.5, 1.4)
+                end
+                local nextX = upTargets[2] and (upTargets[2].x + 0.5) or nil
+                jumpCollect(first.y, nextX)
+            end
+
+            -- 3) Kembali ke titik tengah Auto Farm (hx, hy)
+            okRun = moveTo(hx + 0.5, 1.8)
+        end)
+
+        -- Wajib lepaskan seluruh tombol input agar karakter tidak pernah berjalan sendiri!
+        ReleaseInput()
         AutoInput.active = was
-        Drops.waitNearDrops(0.2)
-        return ok
+        Drops.waitNearDrops(0.15)
+        return okRun
     end
 
-    local function takeSingleDrop(d)
-        local w = FindWorld()
-        local worldTake = w and rawget(w, "takeDrop")
-        if type(worldTake) ~= "function" and not TakeDropRemote then return false end
-        local now = os.clock()
-        if not canTryDrop(d, now) then return false end
-
-        local amount = d.n
-        if d.id ~= 112 and Refs.Inv and type(Refs.Inv.room) == "function" then
-            local okR, room = pcall(function() return Refs.Inv:room(d.id) end)
-            if okR and type(room) == "number" then amount = math.min(amount, room) end
-        end
-        if amount <= 0 then
-            if d.uid then DropFailUntil[d.uid] = now + 1 end
-            local lastFull = Webhook.LastFull[d.id]
-            if not lastFull or now - lastFull > 120 then
-                Webhook.LastFull[d.id] = now
-                Webhook.Send("full", "Inventori penuh: " .. ItemName(d.id) .. " tidak bisa diambil lagi")
-            end
-            return false
-        end
-
-        d.taking = true
-        if typeof(d.frame) == "Instance" then pcall(function() d.frame.Visible = false end) end
-
-        local ok, taken
-        if type(worldTake) == "function" then
-            ok, taken = pcall(worldTake, d.uid, amount)
-        else
-            ok, taken = pcall(TakeDropRemote.InvokeServer, TakeDropRemote, d.uid, amount)
-        end
-        d.taking = false
-
-        if not (ok and type(taken) == "number" and taken > 0) then
-            Farm.stats.fail = Farm.stats.fail + 1
-            d.refused = os.clock()
-            d.failN = (d.failN or 0) + 1
-            if d.uid then DropFailUntil[d.uid] = os.clock() + math.min(8, d.failN) end
-            d.flown = nil
-            if typeof(d.frame) == "Instance" then pcall(function() d.frame.Visible = not d.culled end) end
-            return false
-        end
-
-        if d.uid then DropFailUntil[d.uid] = nil end
-        if d.id == 112 then
-            if Refs.Gems and type(Refs.Gems.addGems) == "function" then pcall(Refs.Gems.addGems, taken) end
-        elseif Refs.Inv and type(Refs.Inv.add) == "function" then
-            pcall(function() Refs.Inv:add(d.id, taken) end)
-        end
-        Drops.applyTaken(d, math.max(0, (d.n or 0) - taken))
-
-        Stats.Collected = Stats.Collected + taken
-        Stats.Items[d.id] = (Stats.Items[d.id] or 0) + taken
-        Farm.stats.picked = Farm.stats.picked + taken
-        if Clear.on then Clear.stats.picked = Clear.stats.picked + taken end
-        if Farmer.on then Farmer.stats.picked = Farmer.stats.picked + taken end
-        if DF.on then DF.stats.picked = DF.stats.picked + taken end
-        return true
-    end
+    takeSingleDrop = function(d)
 
     local nextDropScan = 0
     trackConn(RunService.Heartbeat:Connect(function()
@@ -3243,8 +3192,10 @@ do (function()
 
     StopFarm = function()
         if not Farm.on then return false end
-        Farm.token += 1
+        Farm.token = Farm.token + 1
         Farm.on = false
+        ReleaseInput()
+        AutoInput.active = false
         Farm.stats.status = "Mati"
         if UpdateGridVisuals then pcall(UpdateGridVisuals) end
         return true
@@ -3284,6 +3235,8 @@ do (function()
 
         task.spawn(function()
             local ok, err = pcall(FarmLoop, token, anchor)
+            ReleaseInput()
+            AutoInput.active = false
             if not ok then warn("[ANCHHub] Auto Farm error: " .. tostring(err)) end
             if Farm.token == token then
                 Farm.on = false
@@ -6568,26 +6521,89 @@ do (function()
     -- abaikan dialognya dan langsung kirim paket "WorldCommand" ("pull" / "kick" / "ban") "#UserId"
     local origNetCall = (NetOk and type(Net) == "table" and type(Net.call) == "function") and Net.call or nil
     local lastFastWrenchClock = 0
+    local SAFE_GUI_NAMES = {
+        GameGui = true, World = true, Camera = true, Tiles = true, PlayerView = true,
+        NameTag = true, Wrench = true, ChatGui = true, HUD = true, PlayerPanel = true,
+        Topbar = true, Backpack = true, Inventory = true, TouchGui = true,
+    }
+
+    -- Tutup paksa jika ada frame dialog/modal yang sempat muncul di layar
+    local function SuppressWrenchDialogUI()
+        pcall(function()
+            if Refs.Menu and type(Refs.Menu.ui) == "table" then
+                for _, fnName in ipairs({ "close", "hide", "cancel", "closeModal", "closePopup" }) do
+                    local fn = rawget(Refs.Menu.ui, fnName) or rawget(Refs.Menu, fnName)
+                    if type(fn) == "function" then pcall(fn) end
+                end
+            end
+            local gg = PlayerGui:FindFirstChild("GameGui")
+            if gg then
+                for _, ch in ipairs(gg:GetChildren()) do
+                    if ch:IsA("GuiObject") and ch.Visible and not SAFE_GUI_NAMES[ch.Name] then
+                        ch.Visible = false
+                    end
+                end
+            end
+        end)
+    end
+
+    -- Pantau jika ada Frame modal baru yang muncul tepat saat Fast Wrench bekerja (< 0.35 detik)
+    local ggRef = PlayerGui:FindFirstChild("GameGui")
+    if ggRef then
+        trackConn(ggRef.ChildAdded:Connect(function(ch)
+            if alive() and GetActiveFastWrenchCmd() and (os.clock() - lastFastWrenchClock < 0.35) then
+                if ch:IsA("GuiObject") and not SAFE_GUI_NAMES[ch.Name] then
+                    ch.Visible = false
+                    task.defer(function()
+                        pcall(function() ch.Visible = false end)
+                    end)
+                end
+            end
+        end))
+    end
 
     local function FastWrenchInterceptor(callFn, cmdName, arg1, ...)
         local fastCmd, fastLabel = GetActiveFastWrenchCmd()
         if fastCmd then
             if cmdName == "GetPlayerLevel" then
                 local now = os.clock()
-                if now - lastFastWrenchClock > 0.25 then
+                if now - lastFastWrenchClock > 0.20 then
                     lastFastWrenchClock = now
                     local targetUid, targetName = ResolveWrenchedTargetUid(arg1)
                     if targetUid then
+                        -- 1. Kirim paket Pull / Kick / Ban secara instan di thread terpisah
                         task.spawn(function()
                             pcall(callFn, "WorldCommand", fastCmd, "#" .. tostring(targetUid))
                             pcall(callFn, "SetBusy", 0)
-                            Notify(string.format("%s -> %s (#%s)", fastLabel, tostring(targetName or "Player"), tostring(targetUid)), fastLabel)
+                            SuppressWrenchDialogUI()
+                            task.wait(0.05)
+                            SuppressWrenchDialogUI()
+                            Notify(string.format("%s -> %s (#%s)", fastLabel, tostring(targetName or "Player"), tostring(targetUid)), fastLabel, 2)
                         end)
-                        -- Kembalikan nil/false agar dialog Wrench Player batal dibuka oleh game!
-                        return false
+
+                        -- 2. Reset upvalue boolean lock (jika ada) pada fungsi pemanggil di call stack
+                        if debug and debug.info and getupvalueFn and setupvalueFn then
+                            for stackLvl = 2, 5 do
+                                local okF, callerFn = pcall(debug.info, stackLvl, "f")
+                                if okF and type(callerFn) == "function" and callerFn ~= FastWrenchInterceptor then
+                                    for upIdx = 1, 20 do
+                                        local okU, upVal = pcall(getupvalueFn, callerFn, upIdx)
+                                        if not okU then break end
+                                        if upVal == true then
+                                            pcall(setupvalueFn, callerFn, upIdx, false)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+
+                        -- 3. Hentikan thread pembuka dialog wrench di sini agar GUI dialog TIDAK PERNAH DIBUAT!
+                        coroutine.yield()
+                        return nil
                     end
                 end
-            elseif cmdName == "SetBusy" and arg1 == 2 and (os.clock() - lastFastWrenchClock < 1.0) then
+            elseif cmdName == "SetBusy" and arg1 == 2 and (os.clock() - lastFastWrenchClock < 1.2) then
+                SuppressWrenchDialogUI()
                 return false
             end
         end
