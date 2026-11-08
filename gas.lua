@@ -152,6 +152,10 @@ local Config = {
     winDrop = 0,
     pos1 = {},
     pos2 = {},
+    -- Fast Wrench Action (Fast Pull / Fast Kick / Fast Ban)
+    fastPull = false,
+    fastKick = false,
+    fastBan = false,
     -- Sesi & Reconnect
     autoRestore = true,
     autoReload = true,
@@ -2198,18 +2202,15 @@ do (function()
         return ok, ok and 0 or "stuck"
     end
 
-    -- FUNGSI GERAK UTAMA YANG MENGIKUTI PILIHAN USER (LEGIT WALKING VS TELEPORT MODE)
+    -- FUNGSI GERAK UTAMA: Jika Legit Walking dipilih, 100% murni jalan fisik A* TANPA Noclip/Ghost!
     function Nav.Go(tx, ty, cancel, reachRadius, allowScaffold)
         local isTeleport = (Config.moveMethod == "Teleport Mode") or (Config.moveMode == "fly") or (Config.moveMode == "teleport")
         if not isTeleport then
+            -- Matikan semua ghost/noclip agar server tidak melakukan rollback/kick
+            local w = FindWorld()
+            if w and not noclipOn then w.ghost = false end
             local ok, info = Nav.LegitTo(tx, ty, cancel, reachRadius, allowScaffold)
-            if ok or info == "cancel" then
-                return ok, info
-            end
-            if Config.moveMode == "legit" and Config.moveMethod == "Legit Walking" then
-                -- Fallback teraman jika 3x A* gagal: gunakan Teleport Stepper tanpa menembus blok
-                return Nav.StepGoTo(tx, ty, cancel, false)
-            end
+            return ok, info
         end
         return Nav.StepGoTo(tx, ty, cancel, false)
     end
@@ -2692,26 +2693,37 @@ do (function()
         end
     end
 
-    -- Sapu semua drop di tile Grid 5x5 dengan Sentuhan Badan (Jalan Kiri/Kanan + Lompat Kecil Tap Hop)
+    -- Sapu semua drop di tile Grid 5x5 (Mendukung jarak +-2 tile mendatar & +2 tile vertikal ke atas)
     function Drops.touchAll(tiles, hx, hy)
         local list = Drops.list
+        if not list then Refs.Scan(); list = Drops.list end
         if not list or not OrigIsDown then return false end
-        local function dropsAt(t)
+
+        local function getDropsInTile(t)
+            local found = {}
             for _, d in ipairs(list) do
                 if type(d) == "table" and type(d.x) == "number" and (d.n or 0) > 0 and d.armed ~= false
                     and not d.taking and inTile(t, d.x, d.y) then
-                    return true
+                    table.insert(found, d)
                 end
             end
-            return false
+            return found
         end
+
         local has = {}
         for _, t in ipairs(tiles) do
-            if not Nav.SolidAt(t.x, t.y) and dropsAt(t) then table.insert(has, t) end
+            if not Nav.SolidAt(t.x, t.y) then
+                local dList = getDropsInTile(t)
+                if #dList > 0 then
+                    table.insert(has, { x = t.x, y = t.y, drops = dList })
+                end
+            end
         end
         if #has == 0 then return false end
+
         local s0 = PlayerPhysicsState()
         if not s0 or s0.dead or not s0.grounded then return false end
+
         local function ground(c) return Nav.OpenAt(c, hy) and Nav.RealSupport(c, hy) end
         local function walkable(a, b)
             local st = (b >= a) and 1 or -1
@@ -2720,8 +2732,10 @@ do (function()
             end
             return true
         end
+
         local was = AutoInput.active
         AutoInput.active = true
+
         local function steer(s, targetX, tol)
             local dx = targetX - s.x
             local vx = s.vx or 0
@@ -2734,14 +2748,29 @@ do (function()
             AutoInput.left = dir < 0
             AutoInput.right = dir > 0
         end
+
+        -- Ambil drop yang sudah berada tepat di dekat badan saat sedang bergerak/melompat
+        local function grabNearby()
+            local c = PlayerPhysicsState()
+            if not c or not c.x then return end
+            for _, item in ipairs(has) do
+                for _, d in ipairs(item.drops) do
+                    if (d.n or 0) > 0 and not d.taking and math.abs(d.x - c.x) <= 1.8 and math.abs(d.y - (c.y - 0.475)) <= 1.8 then
+                        task.spawn(takeSingleDrop, d)
+                    end
+                end
+            end
+        end
+
         local function moveTo(cx, maxT)
             local t0 = os.clock()
-            while alive() and os.clock() - t0 < (maxT or 1.2) do
+            while alive() and os.clock() - t0 < (maxT or 1.4) do
                 task.wait()
                 local c = PlayerPhysicsState()
                 if not c or c.dead then break end
                 steer(c, cx, 0.1)
-                if c.grounded and math.abs(c.x - cx) <= 0.15 and math.abs(c.vx or 0) < 1.5 then
+                grabNearby()
+                if c.grounded and math.abs(c.x - cx) <= 0.18 and math.abs(c.vx or 0) < 1.8 then
                     AutoInput.left, AutoInput.right = false, false
                     return true
                 end
@@ -2749,54 +2778,80 @@ do (function()
             AutoInput.left, AutoInput.right = false, false
             return false
         end
-        local function hop(toX)
+
+        -- Lompat vertikal (mendukung 1 tile maupun +2 tile di atas kepala!)
+        local function jumpCollect(targetY, toX)
             AutoInput.left, AutoInput.right = false, false
             local c0 = PlayerPhysicsState()
             if not c0 then return end
             local y0 = c0.y
+            local isHighJump = (targetY <= hy - 2) -- Jika +2 tile di atas kepala, tahan tombol lompat lebih lama
             AutoInput.jump = true
             local t0, air = os.clock(), false
-            while alive() and os.clock() - t0 < 1.4 do
+            while alive() and os.clock() - t0 < 1.6 do
                 task.wait()
                 local c = PlayerPhysicsState()
                 if not c or c.dead then break end
                 if not c.grounded then
                     air = true
-                    AutoInput.jump = false
+                    if not isHighJump then
+                        AutoInput.jump = false -- Tap hop untuk 1 tile
+                    elseif c.y <= targetY + 0.6 or (c.vy or 0) >= 0 then
+                        AutoInput.jump = false -- Lepas saat mencapai tinggi +2 tile atau puncak lompatan
+                    end
                 end
-                if toX and air and c.y <= y0 - 0.25 then steer(c, toX, 0.1) else AutoInput.left, AutoInput.right = false, false end
+                if toX and air and c.y <= y0 - 0.25 then
+                    steer(c, toX, 0.1)
+                else
+                    AutoInput.left, AutoInput.right = false, false
+                end
+                grabNearby()
                 if air and c.grounded then break end
-                if not air and os.clock() - t0 > 0.35 then break end
+                if not air and os.clock() - t0 > 0.38 then break end
             end
             AutoInput.jump, AutoInput.left, AutoInput.right = false, false, false
         end
+
+        -- 1) Sapu semua drop sebaris (dy == 0) dan bawah sedikit hingga jarak +-3 tile
         local lo, hi = hx, hx
         for _, t in ipairs(has) do
-            if t.y == hy and math.abs(t.x - hx) <= 3 then
+            if (t.y == hy or t.y == hy + 1) and math.abs(t.x - hx) <= 3 then
                 if t.x < lo then lo = t.x end
                 if t.x > hi then hi = t.x end
             end
         end
-        if lo < hx and walkable(hx - 1, lo) then moveTo(lo + 0.5) end
-        if hi > hx and walkable(hx + 1, hi) then moveTo(hi + 0.5) end
-        for _ = 1, 4 do
+        if lo < hx and walkable(hx - 1, lo) then moveTo(lo + 0.5, 1.6) end
+        if hi > hx and walkable(hx + 1, hi) then moveTo(hi + 0.5, 1.6) end
+
+        -- 2) Sapu semua drop di atas kepala (dy == -1 DAN dy == -2) untuk kolom dx = -2 s/d +2
+        for _ = 1, 5 do
             local cs = PlayerPhysicsState()
             if not cs or not alive() then break end
             local cur = math.floor(cs.x)
-            local cols = {}
+            local upTargets = {}
             for _, t in ipairs(has) do
-                if t.y == hy - 1 and math.abs(t.x - hx) <= 1 and ground(t.x) and walkable(cur, t.x)
-                    and not Nav.SolidAt(t.x, t.y) and dropsAt(t) then
-                    table.insert(cols, t.x)
+                if (t.y == hy - 1 or t.y == hy - 2) and math.abs(t.x - hx) <= 2 and ground(t.x) and walkable(cur, t.x) then
+                    local stillHas = false
+                    for _, d in ipairs(t.drops) do
+                        if (d.n or 0) > 0 and table.find(list, d) then stillHas = true; break end
+                    end
+                    if stillHas then
+                        table.insert(upTargets, t)
+                    end
                 end
             end
-            if #cols == 0 then break end
-            table.sort(cols, function(p, q) return math.abs(p - cur) < math.abs(q - cur) end)
-            local a = cols[1]
-            if a ~= cur then moveTo(a + 0.5) end
-            hop(cols[2] and (cols[2] + 0.5) or nil)
+            if #upTargets == 0 then break end
+            table.sort(upTargets, function(p, q) return math.abs(p.x - cur) < math.abs(q.x - cur) end)
+            local first = upTargets[1]
+            if first.x ~= cur then
+                moveTo(first.x + 0.5, 1.5)
+            end
+            local nextX = upTargets[2] and (upTargets[2].x + 0.5) or nil
+            jumpCollect(first.y, nextX)
         end
-        local ok = moveTo(hx + 0.5, 2)
+
+        -- 3) Kembali ke titik tengah Auto Farm (hx, hy)
+        local ok = moveTo(hx + 0.5, 2.0)
         AutoInput.left, AutoInput.right, AutoInput.jump = false, false, false
         AutoInput.active = was
         Drops.waitNearDrops(0.2)
@@ -4569,11 +4624,8 @@ do (function()
             local dx, dy = math.floor(drop.x), math.floor(drop.y)
             Pabrik.phase = "COLLECT BLOCK"
             Pabrik.status = string.format("Mengambil drop %s di (%d,%d)...", ItemName(blockId), dx, dy)
-            local px, py = GetTile()
-            if py and dy < py then
-                Nav.ClimbUpWithDirt(px, dy, function() return not liveFn() end, true, Config.harvestTpDelay)
-            end
-            Nav.To(dx, dy, function() return not liveFn() end, 0.4, true)
+            -- Jalan murni via A* mengikuti tangga tanpa merusak/menaruh blok
+            Nav.To(dx, dy, function() return not liveFn() end, 0.5, false)
             collectedAny = true
             task.wait(0.45)
         end
@@ -4651,13 +4703,19 @@ do (function()
         end
 
         if okTravel and liveFn() and Config.pabrikDropX >= 0 and Config.pabrikDropY >= 0 then
-            Pabrik.status = string.format("Jalan ke posisi drop (%d,%d)...", Config.pabrikDropX, Config.pabrikDropY)
-            local px, py = GetTile()
-            if py and Config.pabrikDropY < py then
-                Nav.ClimbUpWithDirt(px, Config.pabrikDropY, function() return not liveFn() end, true, Config.harvestTpDelay)
+            Pabrik.status = string.format("Jalan A* ke posisi drop (%d,%d)...", Config.pabrikDropX, Config.pabrikDropY)
+            -- Gunakan allowScaffold = false & R = 0.5 agar murni berjalan kaki lewat tangga tanpa Noclip!
+            local reached = false
+            for try = 1, 3 do
+                if not liveFn() then break end
+                if Nav.To(Config.pabrikDropX, Config.pabrikDropY, function() return not liveFn() end, 0.5, false) then
+                    reached = true
+                    break
+                end
+                task.wait(0.3)
             end
-            if not Nav.To(Config.pabrikDropX, Config.pabrikDropY, function() return not liveFn() end, 0.3, true) then
-                okTravel, errMsg = false, "Tidak bisa jalan ke posisi drop"
+            if not reached then
+                okTravel, errMsg = false, "Tidak bisa jalan ke posisi drop (pastikan tidak terhalang tembok)"
             end
         end
 
@@ -4760,10 +4818,7 @@ do (function()
             local px, py = GetTile()
             if px ~= Config.pabrikBreakX or py ~= Config.pabrikBreakY then
                 Pabrik.status = string.format("Menuju Posisi Break (%d,%d)...", Config.pabrikBreakX, Config.pabrikBreakY)
-                if py and Config.pabrikBreakY < py then
-                    Nav.ClimbUpWithDirt(px, Config.pabrikBreakY, function() return not liveFn() end, true, Config.harvestTpDelay)
-                end
-                if not Nav.To(Config.pabrikBreakX, Config.pabrikBreakY, function() return not liveFn() end, 0.3, true) then
+                if not Nav.To(Config.pabrikBreakX, Config.pabrikBreakY, function() return not liveFn() end, 0.5, false) then
                     Pabrik.status = "Gagal jalan ke Posisi Break, mencoba ulang..."
                     task.wait(2)
                     break
@@ -6343,18 +6398,59 @@ do (function()
         return true
     end
 
+   -- ANTI-AFK 3 LAPIS (Matikan Koneksi Idle Bawaan Roblox + Simulasi Input Tiap 60 Detik)
     local afkConn = nil
+    local VirtualInputManager = cloneref and cloneref(game:GetService("VirtualInputManager")) or game:GetService("VirtualInputManager")
+
+    local function DisableRobloxIdleConnections()
+        if getconnections then
+            pcall(function()
+                for _, conn in ipairs(getconnections(Player.Idled)) do
+                    if conn.Function == nil then
+                        if conn.Disable then conn:Disable()
+                        elseif conn.Disconnect then conn:Disconnect() end
+                    end
+                end
+            end)
+        end
+    end
+
+    local function SendAntiAfkPulse()
+        pcall(function()
+            VirtualUser:CaptureController()
+            local cam = workspace.CurrentCamera
+            local cf = cam and cam.CFrame or CFrame.new()
+            VirtualUser:Button2Down(Vector2.new(0, 0), cf)
+            task.wait(0.08)
+            VirtualUser:Button2Up(Vector2.new(0, 0), cf)
+            VirtualUser:ClickButton2(Vector2.new(0, 0))
+        end)
+        pcall(function()
+            if VirtualInputManager and VirtualInputManager.SendKeyEvent then
+                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.RightControl, false, game)
+                task.wait(0.05)
+                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.RightControl, false, game)
+            end
+        end)
+    end
+
     function StartAntiAfk()
         if antiAfkOn then return true end
         antiAfkOn = true
+        DisableRobloxIdleConnections()
         afkConn = trackConn(Player.Idled:Connect(function()
             if antiAfkOn and alive() then
-                pcall(function()
-                    VirtualUser:CaptureController()
-                    VirtualUser:ClickButton2(Vector2.new())
-                end)
+                DisableRobloxIdleConnections()
+                SendAntiAfkPulse()
             end
         end))
+        task.spawn(function()
+            while antiAfkOn and alive() do
+                DisableRobloxIdleConnections()
+                SendAntiAfkPulse()
+                task.wait(60)
+            end
+        end)
         return true
     end
 
@@ -6363,6 +6459,146 @@ do (function()
         antiAfkOn = false
         if afkConn then afkConn:Disconnect(); afkConn = nil end
         return true
+    end
+
+    -- ====================================================================
+    -- FAST PULL / FAST KICK / FAST BAN (BYPASS DIALOG WRENCH 0ms)
+    -- ====================================================================
+    local lastClickTileX, lastClickTileY = nil, nil
+
+    trackConn(UserInputService.InputBegan:Connect(function(inp, processed)
+        if processed or not alive() then return end
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            local tx, ty = Nav.ScreenToTile(inp.Position)
+            if tx and ty then
+                lastClickTileX, lastClickTileY = tx, ty
+            end
+        end
+    end))
+
+    local function GetActiveFastWrenchCmd()
+        if Config.fastPull then return "pull", "Fast Pull" end
+        if Config.fastKick then return "kick", "Fast Kick" end
+        if Config.fastBan then return "ban", "Fast Ban" end
+        return nil, nil
+    end
+
+    -- Cari UserId (#661788635) dari target yang di-wrench berdasarkan shortId (arg) atau posisi klik
+    local function ResolveWrenchedTargetUid(shortId)
+        local o = Refs.Others
+        if not o then Refs.Scan(); o = Refs.Others end
+        local candidates = {}
+
+        if o and type(rawget(o, "list")) == "function" then
+            local ok, list = pcall(o.list)
+            if ok and type(list) == "table" then
+                for idx, e in pairs(list) do
+                    if type(e) == "table" then
+                        local uid = tonumber(e[1] or e.userId)
+                        local name = tostring(e[2] or e.name or uid or ""):gsub("`.", "")
+                        if uid and uid ~= Player.UserId then
+                            -- Cek apakah shortId cocok dengan field di tabel player atau indeksnya
+                            if shortId ~= nil and (idx == shortId or e.id == shortId or e.pid == shortId or e.netId == shortId or e[3] == shortId or uid == tonumber(shortId)) then
+                                return uid, name
+                            end
+                            table.insert(candidates, { uid = uid, name = name, raw = e })
+                        end
+                    end
+                end
+            end
+        end
+
+        -- Cek berdasarkan posisi tile yang baru saja diklik/di-tap (Others.playerAt / Others.where)
+        if o and lastClickTileX and lastClickTileY then
+            if type(rawget(o, "playerAt")) == "function" then
+                local okP, pAt = pcall(o.playerAt, lastClickTileX, lastClickTileY)
+                if okP and pAt then
+                    local uid = (type(pAt) == "table" and tonumber(pAt[1] or pAt.userId)) or tonumber(pAt)
+                    if uid and uid ~= Player.UserId then
+                        return uid, tostring(uid)
+                    end
+                end
+            end
+            if type(rawget(o, "where")) == "function" and #candidates > 0 then
+                local bestUid, bestName, bestDist = nil, nil, math.huge
+                for _, c in ipairs(candidates) do
+                    local okW, wx, wy = pcall(o.where, c.uid)
+                    if okW and type(wx) == "table" then wx, wy = wx.x or wx[1], wx.y or wx[2] end
+                    if okW and type(wx) == "number" and type(wy) == "number" then
+                        local dist = math.abs(wx - lastClickTileX) + math.abs(wy - lastClickTileY)
+                        if dist < bestDist then
+                            bestUid, bestName, bestDist = c.uid, c.name, dist
+                        end
+                    end
+                end
+                if bestUid and bestDist <= 4 then
+                    return bestUid, bestName
+                end
+            end
+        end
+
+        -- Jika hanya ada 1 player lain di world, langsung gunakan UserId-nya
+        if #candidates == 1 then
+            return candidates[1].uid, candidates[1].name
+        end
+
+        -- Fallback ke player terdekat dari posisi karakter kita
+        if o and type(rawget(o, "where")) == "function" and #candidates > 0 then
+            local mx, my = GetGridState()
+            if mx and my then
+                local bestUid, bestName, bestDist = nil, nil, math.huge
+                for _, c in ipairs(candidates) do
+                    local okW, wx, wy = pcall(o.where, c.uid)
+                    if okW and type(wx) == "table" then wx, wy = wx.x or wx[1], wx.y or wx[2] end
+                    if okW and type(wx) == "number" and type(wy) == "number" then
+                        local dist = math.abs(wx - mx) + math.abs(wy - my)
+                        if dist < bestDist then
+                            bestUid, bestName, bestDist = c.uid, c.name, dist
+                        end
+                    end
+                end
+                if bestUid then return bestUid, bestName end
+            end
+        end
+
+        return nil, nil
+    end
+
+    -- Hook Net.call & World.call: Saat "GetPlayerLevel" dipanggil (Wrench Player),
+    -- abaikan dialognya dan langsung kirim paket "WorldCommand" ("pull" / "kick" / "ban") "#UserId"
+    local origNetCall = (NetOk and type(Net) == "table" and type(Net.call) == "function") and Net.call or nil
+    local lastFastWrenchClock = 0
+
+    local function FastWrenchInterceptor(callFn, cmdName, arg1, ...)
+        local fastCmd, fastLabel = GetActiveFastWrenchCmd()
+        if fastCmd then
+            if cmdName == "GetPlayerLevel" then
+                local now = os.clock()
+                if now - lastFastWrenchClock > 0.25 then
+                    lastFastWrenchClock = now
+                    local targetUid, targetName = ResolveWrenchedTargetUid(arg1)
+                    if targetUid then
+                        task.spawn(function()
+                            pcall(callFn, "WorldCommand", fastCmd, "#" .. tostring(targetUid))
+                            pcall(callFn, "SetBusy", 0)
+                            Notify(string.format("%s -> %s (#%s)", fastLabel, tostring(targetName or "Player"), tostring(targetUid)), fastLabel)
+                        end)
+                        -- Kembalikan nil/false agar dialog Wrench Player batal dibuka oleh game!
+                        return false
+                    end
+                end
+            elseif cmdName == "SetBusy" and arg1 == 2 and (os.clock() - lastFastWrenchClock < 1.0) then
+                return false
+            end
+        end
+        return callFn(cmdName, arg1, ...)
+    end
+
+    if origNetCall then
+        Net.call = function(cmdName, arg1, ...)
+            if not alive() then return origNetCall(cmdName, arg1, ...) end
+            return FastWrenchInterceptor(origNetCall, cmdName, arg1, ...)
+        end
     end
 
     function StartAutoRejoin()
@@ -7205,6 +7441,59 @@ SafeUI("Tab:Character", function()
         Desc = "Tampilkan gerakan tangan saat break/place di layar sendiri.",
         Value = Config.visualAnim,
         Callback = function(on) Config.visualAnim = on; SaveConfig() end,
+    })
+
+    Tab:Space()
+    Tab:Section({ Title = "Fast Wrench Action (Bypass Dialog Wrench)" })
+
+    local fpToggle, fkToggle, fbToggle
+
+    fpToggle = Tab:Toggle({
+        Title = "Fast Pull (Wrench = Langsung Pull)",
+        Desc = "Abaikan dialog wrench & langsung kirim paket Pull saat wrench player.",
+        Value = Config.fastPull,
+        Callback = function(on)
+            Config.fastPull = on
+            if on then
+                Config.fastKick, Config.fastBan = false, false
+                if fkToggle and fkToggle.Set then pcall(function() fkToggle:Set(false) end) end
+                if fbToggle and fbToggle.Set then pcall(function() fbToggle:Set(false) end) end
+                Notify("Fast Pull AKTIF! Wrench player untuk langsung Pull.")
+            end
+            SaveConfig()
+        end,
+    })
+
+    fkToggle = Tab:Toggle({
+        Title = "Fast Kick (Wrench = Langsung Kick)",
+        Desc = "Abaikan dialog wrench & langsung kirim paket Kick saat wrench player.",
+        Value = Config.fastKick,
+        Callback = function(on)
+            Config.fastKick = on
+            if on then
+                Config.fastPull, Config.fastBan = false, false
+                if fpToggle and fpToggle.Set then pcall(function() fpToggle:Set(false) end) end
+                if fbToggle and fbToggle.Set then pcall(function() fbToggle:Set(false) end) end
+                Notify("Fast Kick AKTIF! Wrench player untuk langsung Kick.")
+            end
+            SaveConfig()
+        end,
+    })
+
+    fbToggle = Tab:Toggle({
+        Title = "Fast Ban (Wrench = Langsung Ban)",
+        Desc = "Abaikan dialog wrench & langsung kirim paket Ban saat wrench player.",
+        Value = Config.fastBan,
+        Callback = function(on)
+            Config.fastBan = on
+            if on then
+                Config.fastPull, Config.fastKick = false, false
+                if fpToggle and fpToggle.Set then pcall(function() fpToggle:Set(false) end) end
+                if fkToggle and fkToggle.Set then pcall(function() fkToggle:Set(false) end) end
+                Notify("Fast Ban AKTIF! Wrench player untuk langsung Ban.")
+            end
+            SaveConfig()
+        end,
     })
 
     task.spawn(function()
@@ -8746,6 +9035,9 @@ Session.Cleanup = function()
     StopNoclip()
     StopUjump()
     StopGod()
+    if origNetCall and NetOk and type(Net) == "table" then
+        Net.call = origNetCall
+    end
     LiteMode.Set(false)
     if Session.RestoreWatermark then pcall(Session.RestoreWatermark) end
     if OrigIsDown and MenuModOk and rawget(MenuModule, "isDown") ~= OrigIsDown then
@@ -8758,6 +9050,7 @@ Session.Cleanup = function()
 end
 
 task.spawn(function()
+    StartAntiAfk()
     Refs.Scan()
     Stats.Reset()
     if Config.liteMode then LiteMode.Set(true) end
