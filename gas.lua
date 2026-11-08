@@ -659,12 +659,12 @@ do (function()
     end
 
     function Refs.Scan()
-        scanViaConnections()
-        if not getgcFn then return false end
         Refs.World, Refs.Inv, Refs.InvTable, Refs.SetTile, Refs.Punch, Refs.State, Refs.Menu, Refs.Gems, Refs.Hud, Refs.Others =
             nil, nil, nil, nil, nil, nil, nil, nil, nil, nil
         Refs.Particles = {}
-        for _, v in ipairs(getgcFn(true)) do
+        scanViaConnections()
+        if getgcFn then
+            for _, v in ipairs(getgcFn(true)) do
             local tv = type(v)
             if tv == "table" then
                 if not Refs.World then
@@ -742,6 +742,7 @@ do (function()
                 end
             end
         end
+    end
 
         if Refs.World and (not Refs.SetTile or not Refs.Punch) and debug and debug.info then
             for _, fn in ipairs(getgcFn(true)) do
@@ -779,18 +780,18 @@ do (function()
         end
 
         Drops.list, Drops.update = nil, nil
+        if Refs.World and type(rawget(Refs.World, "dropList")) == "function" then
+            local okL, l = pcall(Refs.World.dropList)
+            if okL and type(l) == "table" then Drops.list = l end
+        end
         local wd = Refs.World and rawget(Refs.World, "dropTaken")
-        if Drops.list and not Drops.update and type(wd) == "function" then
+        if type(wd) == "function" then
             for _, u in pairs(GetUpvalues(wd)) do
-                if type(u) == "function" then
-                    for _, uu in pairs(GetUpvalues(u)) do
-                        if rawequal(uu, Drops.list) then
-                            Drops.update = u
-                            break
-                        end
-                    end
+                if not Drops.list and isDropList(u) then
+                    Drops.list = u
+                elseif not Drops.update and type(u) == "function" then
+                    Drops.update = u
                 end
-                if Drops.update then break end
             end
         end
         if not Drops.list and Refs.World and type(rawget(Refs.World, "dropList")) == "function" then
@@ -1495,6 +1496,12 @@ do (function()
                         end
                     end
                 end
+                for dy = 1, 3 do
+                    if not open(x, y - dy) then break end
+                    if open(x, y - dy - 1) and open(ax, y - dy) and sup(ax, y - dy) and open(ax, y - dy - 1) then
+                        add(ax, y - dy, "jump", 1 + 1.5 * dy, false)
+                    end
+                end
                 -- Tangga lahan/DF: naik 1-2 tile ke lorong setinggi 1 tile (atap langsung di atas kepala)
                 for dy = 1, 2 do
                     if open(x, y - 1) and (dy == 1 or open(x, y - 2)) and open(ax, y - dy) and sup(ax, y - dy)
@@ -1901,10 +1908,10 @@ do (function()
             elseif e.kind == "gap" then
                 ok = execGap(e, cancel)
                 cleanupScaffolds()
-            end
             elseif e.kind == "stair" then
                 ok = execStair(e, cancel)
                 cleanupScaffolds()
+            end
             ReleaseInput()
             if not ok then
                 Nav.BadEdge[e.key] = os.clock() + 20
