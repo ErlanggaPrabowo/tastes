@@ -2801,41 +2801,27 @@ do (function()
         return true
     end
 
-    -- Mode Sentuhan Murni (Tanpa Remote): Karakter menyapu kiri/kanan & lompat kecil menyentuh drop
-    function Drops.touchAll(tiles, hx, hy)
-        if not Drops.list and Drops.findRefs then Drops.findRefs() end
-        local list = Drops.list
-        if not list or not OrigIsDown then return false end
+    -- Mode Sentuhan Simpel: Setelah break, karakter langsung bergerak mengunjungi tile yang habis di-break lalu kembali ke (hx, hy)
+    function Drops.touchAll(brokenTiles, hx, hy)
+        if type(brokenTiles) ~= "table" or #brokenTiles == 0 then return false end
 
-        local function dropsAt(t)
-            for _, d in ipairs(list) do
-                if type(d) == "table" and type(d.x) == "number" and (d.n or 0) > 0 and d.armed ~= false
-                    and not d.taking and inTile(t, d.x, d.y) then
-                    return true
-                end
-            end
-            return false
-        end
-
-        local has = {}
-        for _, t in ipairs(tiles) do
-            if not Nav.SolidAt(t.x, t.y) and dropsAt(t) then
-                has[#has + 1] = t
+        local targets = {}
+        for _, t in ipairs(brokenTiles) do
+            if not Nav.SolidAt(t.x, t.y) then
+                table.insert(targets, { x = t.x, y = t.y })
             end
         end
-        if #has == 0 then return false end
+        if #targets == 0 then return false end
 
-        local s0 = PlayerPhysicsState()
-        if not s0 or s0.dead or not s0.grounded then return false end
+        -- Urutkan dari tile yang paling dekat dengan posisi awal (hx, hy)
+        table.sort(targets, function(a, b)
+            local da = math.abs(a.x - hx) + math.abs(a.y - hy) * 1.5
+            local db = math.abs(b.x - hx) + math.abs(b.y - hy) * 1.5
+            return da < db
+        end)
 
-        local function ground(c) return Nav.OpenAt(c, hy) and Nav.RealSupport(c, hy) end
-        local function walkable(a, b)
-            local st = (b >= a) and 1 or -1
-            for c = a, b, st do
-                if not ground(c) then return false end
-            end
-            return true
-        end
+        local was = AutoInput.active
+        AutoInput.active = true
 
         local function steer(s, targetX, tol)
             local dx = targetX - s.x
@@ -2852,91 +2838,94 @@ do (function()
             AutoInput.right = dir > 0
         end
 
-        local was = AutoInput.active
-        AutoInput.active = true
-
-        local function moveTo(cx, maxT)
+        -- Gerakkan karakter secara fisik ke kolom targetTileX
+        local function walkToColumn(targetTileX, maxT)
+            local cx = targetTileX + 0.5
+            local s0 = PlayerPhysicsState()
+            local startX = s0 and s0.x or (hx + 0.5)
             local t0 = os.clock()
-            while alive() and (Farm.on or Farm.Override ~= nil) and os.clock() - t0 < (maxT or 1.2) do
-                task.wait()
+            local moved = false
+
+            while alive() and (Farm.on or Farm.Override ~= nil) and os.clock() - t0 < (maxT or 1.5) do
                 local c = PlayerPhysicsState()
                 if not c or c.dead then break end
-                steer(c, cx, 0.1)
-                if c.grounded and math.abs(c.x - cx) <= 0.15 and math.abs(c.vx or 0) < 1.5 then
-                    AutoInput.left, AutoInput.right = false, false
+                if math.abs(c.x - startX) > 0.08 then moved = true end
+                steer(c, cx, 0.08)
+                if math.abs(c.x - cx) <= 0.20 and math.abs(c.vx or 0) < 2.5 then
+                    ReleaseInput()
                     return true
                 end
+                -- Fallback jika dalam 0.45 detik fisik tertahan/tidak bergeser, dorong dengan goTo
+                if not moved and os.clock() - t0 > 0.45 then
+                    local w = FindWorld()
+                    if w and type(w.goTo) == "function" then
+                        pcall(w.goTo, targetTileX, hy)
+                    end
+                    moved = true
+                end
+                task.wait()
             end
-            AutoInput.left, AutoInput.right = false, false
+            ReleaseInput()
             return false
         end
 
-        local function hop(toX, highJump)
-            AutoInput.left, AutoInput.right = false, false
-            local c0 = PlayerPhysicsState()
-            if not c0 then return end
-            local y0 = c0.y
+        -- Lompat untuk mengambil drop di tile atas kepala (targetY < hy)
+        local function jumpAtColumn(targetY)
+            ReleaseInput()
+            task.wait()
+            local isHigh = (targetY <= hy - 2)
             AutoInput.jump = true
-            local t0, air = os.clock(), false
-            while alive() and (Farm.on or Farm.Override ~= nil) and os.clock() - t0 < 1.4 do
-                task.wait()
+            local t0 = os.clock()
+            local airborne = false
+            while alive() and (Farm.on or Farm.Override ~= nil) and os.clock() - t0 < 1.3 do
                 local c = PlayerPhysicsState()
                 if not c or c.dead then break end
                 if not c.grounded then
-                    air = true
-                    if not highJump or c.y <= y0 - 1.2 or (c.vy or 0) >= 0 then
+                    airborne = true
+                    if not isHigh or c.y <= targetY + 0.55 or (c.vy or 0) >= 0 then
                         AutoInput.jump = false
                     end
                 end
-                if toX and air and c.y <= y0 - 0.25 then
-                    steer(c, toX, 0.1)
-                else
-                    AutoInput.left, AutoInput.right = false, false
-                end
-                if air and c.grounded then break end
-                if not air and os.clock() - t0 > 0.35 then break end
+                if airborne and c.grounded then break end
+                if not airborne and os.clock() - t0 > 0.35 then break end
+                task.wait()
             end
-            AutoInput.jump, AutoInput.left, AutoInput.right = false, false, false
+            ReleaseInput()
         end
 
-        -- 1. Baris sejajar badan (t.y == hy): susuri sampai tile terjauh di kiri & kanan
-        local lo, hi = hx, hx
-        for _, t in ipairs(has) do
-            if t.y == hy and math.abs(t.x - hx) <= 3 then
-                if t.x < lo then lo = t.x end
-                if t.x > hi then hi = t.x end
-            end
-        end
-        if lo < hx and walkable(hx - 1, lo) then moveTo(lo + 0.5) end
-        if hi > hx and walkable(hx + 1, hi) then moveTo(hi + 0.5) end
+        pcall(function()
+            for _, t in ipairs(targets) do
+                if not alive() or not (Farm.on or Farm.Override ~= nil) then break end
+                if not Nav.SolidAt(t.x, t.y) then
+                    -- 1. Berjalan menuju kolom X tile yang telah di-break
+                    local cNow = PlayerPhysicsState()
+                    if not cNow or math.abs(cNow.x - (t.x + 0.5)) > 0.20 then
+                        walkToColumn(t.x, 1.5)
+                    end
 
-        -- 2. Baris di atas kepala (t.y == hy - 1 atau hy - 2): lompat di bawah tile yang ada drop-nya
-        for _ = 1, 4 do
-            local cs = PlayerPhysicsState()
-            if not cs or not alive() or not (Farm.on or Farm.Override ~= nil) then break end
-            local cur = math.floor(cs.x)
-            local cols = {}
-            local needHigh = false
-            for _, t in ipairs(has) do
-                if (t.y == hy - 1 or t.y == hy - 2) and math.abs(t.x - hx) <= 2 and ground(t.x) and walkable(cur, t.x)
-                    and not Nav.SolidAt(t.x, t.y) and dropsAt(t) then
-                    cols[#cols + 1] = t.x
-                    if t.y == hy - 2 then needHigh = true end
+                    -- 2. Jika tile berada di atas karakter (dy < 0), lompat untuk menyentuh drop-nya
+                    if t.y < hy then
+                        jumpAtColumn(t.y)
+                    else
+                        -- Diam sejenak di tile tersebut agar dropped item tersentuh badan
+                        task.wait(0.14)
+                    end
                 end
             end
-            if #cols == 0 then break end
-            table.sort(cols, function(p, q) return math.abs(p - cur) < math.abs(q - cur) end)
-            local a = cols[1]
-            if a ~= cur then moveTo(a + 0.5) end
-            hop(cols[2] and (cols[2] + 0.5) or nil, needHigh)
-        end
 
-        -- 3. Kembali ke posisi tengah Auto Farm (hx, hy)
-        local ok = moveTo(hx + 0.5, 2.0)
-        AutoInput.left, AutoInput.right, AutoInput.jump = false, false, false
+            -- 3. Kembali ke posisi awal (hx, hy) setelah selesai memungut semua tile
+            if alive() and (Farm.on or Farm.Override ~= nil) then
+                walkToColumn(hx, 1.6)
+                local fx, fy = GetTile()
+                if fx and (fx ~= hx or fy ~= hy) then
+                    Nav.To(hx, hy, function() return not (Farm.on or Farm.Override ~= nil) end, 0.25, false)
+                end
+            end
+        end)
+
+        ReleaseInput()
         AutoInput.active = was
-        Drops.waitNearDrops(0.2)
-        return ok
+        return true
     end
 
     local nextDropScan = 0
@@ -3184,6 +3173,9 @@ do (function()
             if not Farm.on or Farm.token ~= token then break end
 
             -- 2) Break semua tile sampai hancur
+            local brokenTiles = {}
+            local brokenSeen = {}
+
             if doBreak then
                 Farm.stats.status = "Break (" .. (raymanOn() and "Rayman" or ("Multi " .. Config.farmMultiTarget)) .. ")"
                 local K = math.clamp(math.floor(Config.farmMultiTarget or 1), 1, 5)
@@ -3215,17 +3207,19 @@ do (function()
                         if i > 1 then task.wait(0.05) end
                         local r = TryBreakOnce(a.x, a.y, Config.farmBreakBg)
                         a.n += 1
-                        if r then hitAny, acted = true, true end
-                        if r == "broke" or (r == nil and a.n > 1 and not breakableAt(w, a.x, a.y)) then
-                            if r ~= "broke" then
-                                Stats.Broken += 1
-                                Drops.brokeAt[a.x .. "," .. a.y] = os.clock()
+                        if r then
+                            hitAny, acted = true, true
+                            local bKey = a.x .. "," .. a.y
+                            if not brokenSeen[bKey] then
+                                brokenSeen[bKey] = true
+                                table.insert(brokenTiles, { x = a.x, y = a.y })
                             end
+                        end
+                        if r == "broke" then
                             Farm.stats.broken += 1
                             brokeAny = true
                         end
-                        if r == nil or a.n > 80 or not breakableAt(w, a.x, a.y) then
-                            Drops.brokeAt[a.x .. "," .. a.y] = Drops.brokeAt[a.x .. "," .. a.y] or os.clock()
+                        if r == nil or a.n > 80 or (r == "broke" and not breakableAt(w, a.x, a.y)) then
                             a.done = true
                         end
                         a.used = true
@@ -3247,19 +3241,18 @@ do (function()
                         local rest = gap - (os.clock() - t0)
                         if rest > 0.005 then task.wait(rest) end
                     end
-                    -- Hanya tunggu farmAfterBreakMs jika masih ada tile lain di antrian active
                     if brokeAny and #active > 0 and Config.farmAfterBreakMs > 0 then
                         task.wait(Config.farmAfterBreakMs / 1000)
                     end
                 end
             end
 
-            -- 3) Begitu selesai break, langsung tunggu drop spawn & sapu dengan sentuhan badan!
-            if (Config.farmTake or Farm.Override) and Config.collectMode == "Sentuhan" then
-                Farm.stats.status = "Mengambil drop (Sentuhan)..."
-                Drops.waitSpawn(tiles)
+            -- Setelah selesai break, langsung bergerak ke tile yang telah di-break untuk mengambil drop!
+            if #brokenTiles > 0 and (Config.farmTake or Farm.Override) and Config.collectMode == "Sentuhan" then
+                Farm.stats.status = "Bergerak ambil drop..."
+                task.wait(0.15) -- beri waktu singkat agar drop keluar dari blok yang baru pecah
                 if Drops.touchAll then
-                    Drops.touchAll(tiles, anchor.x, anchor.y)
+                    Drops.touchAll(brokenTiles, anchor.x, anchor.y)
                 end
             end
 
@@ -6506,11 +6499,10 @@ do (function()
     end
 
     -- ====================================================================
-    -- FAST PULL / FAST KICK / FAST BAN (BYPASS DIALOG WRENCH 0ms & ANTI-CRASH)
+    -- FAST PULL / FAST KICK / FAST BAN (ABORT DIALOG THREAD & AMAN BAGI UI)
     -- ====================================================================
     local lastClickTileX, lastClickTileY = nil, nil
     local lastPlayerAtUid, lastPlayerAtName, lastPlayerAtClock = nil, nil, 0
-    local recentModalFrames = {}
 
     local function ExtractUidFromEntry(entry)
         if type(entry) == "number" and entry > 1000 and entry ~= Player.UserId then
@@ -6534,7 +6526,6 @@ do (function()
         return nil, nil
     end
 
-    -- Jangan blokir `processed == true` karena klik world 2D di GrowBlox selalu dianggap GUI klik!
     trackConn(UserInputService.InputBegan:Connect(function(inp)
         if not alive() then return end
         if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
@@ -6553,12 +6544,10 @@ do (function()
     end
 
     local function ResolveWrenchedTargetUid(arg1)
-        -- 0. Jika baru saja terdeteksi oleh hook Others.playerAt
         if lastPlayerAtUid and (os.clock() - lastPlayerAtClock < 0.6) then
             return lastPlayerAtUid, lastPlayerAtName
         end
 
-        -- 1. Cek jika arg1 langsung berisi UserId (> 1000) atau Nama Player
         if arg1 ~= nil then
             local uid, name = ExtractUidFromEntry(arg1)
             if uid then return uid, name or tostring(uid) end
@@ -6573,7 +6562,6 @@ do (function()
             end
         end
 
-        -- 2. Cari UserId dari Upvalues fungsi pemanggil di Call Stack (saat GetPlayerLevel dipanggil)
         if debug and debug.info then
             for stackLvl = 2, 8 do
                 local okF, callerFn = pcall(debug.info, stackLvl, "f")
@@ -6585,13 +6573,11 @@ do (function()
             end
         end
 
-        -- 3. Cari dari tabel Refs.Others (termasuk tabel Upvalue internal yang memetakan netId `2` -> UserId)
         local o = Refs.Others
         if not o then Refs.Scan(); o = Refs.Others end
         local candidates = {}
 
         if o then
-            -- 3a. Cek upvalue internal dari Others.list / Others.playerAt / Others.where untuk key [arg1] (misal [2])
             for _, fnName in ipairs({ "list", "playerAt", "where" }) do
                 local fn = rawget(o, fnName)
                 if type(fn) == "function" then
@@ -6614,15 +6600,13 @@ do (function()
                 end
             end
 
-            -- 3b. Cek dari Others.list()
             if type(rawget(o, "list")) == "function" then
                 local ok, list = pcall(o.list)
                 if ok and type(list) == "table" then
                     for idx, e in pairs(list) do
                         local uid, name = ExtractUidFromEntry(e)
                         if uid then
-                            -- Catatan: di Others.list(), player ke-1 seringkali punya netId = 2 (karena 1 adalah LocalPlayer)
-                            if arg1 ~= nil and (idx == arg1 or ( tonumber(arg1) and idx == tonumber(arg1) - 1 )) then
+                            if arg1 ~= nil and (idx == arg1 or (tonumber(arg1) and idx == tonumber(arg1) - 1)) then
                                 if #list == 1 or idx == arg1 then
                                     return uid, name or tostring(uid)
                                 end
@@ -6633,7 +6617,6 @@ do (function()
                 end
             end
 
-            -- 3c. Cek dari posisi tile yang diklik (Others.playerAt & Others.where)
             if lastClickTileX and lastClickTileY then
                 if type(rawget(o, "playerAt")) == "function" then
                     local okP, pAt = pcall(o.playerAt, lastClickTileX, lastClickTileY)
@@ -6681,86 +6664,9 @@ do (function()
     local origPlayerAt = nil
     local lastFastWrenchClock = 0
 
-    local SAFE_GUI_NAMES = {
-        GameGui = true, World = true, Camera = true, Tiles = true, PlayerView = true,
-        NameTag = true, Wrench = true, ChatGui = true, HUD = true, PlayerPanel = true,
-        Topbar = true, Backpack = true, Inventory = true, TouchGui = true,
-    }
-
-    local function SuppressWrenchDialogUI()
-        pcall(function()
-            if Refs.Menu then
-                for _, fnName in ipairs({ "close", "hide", "cancel", "closeModal", "closePopup" }) do
-                    local fn = (type(Refs.Menu.ui) == "table" and rawget(Refs.Menu.ui, fnName)) or rawget(Refs.Menu, fnName)
-                    if type(fn) == "function" then pcall(fn) end
-                end
-                if type(Refs.Menu.ui) == "table" then
-                    for k, v in pairs(Refs.Menu.ui) do
-                        if typeof(v) == "Instance" and v:IsA("GuiObject") and not SAFE_GUI_NAMES[v.Name] then
-                            local lk = tostring(k):lower()
-                            if lk:find("modal") or lk:find("popup") or lk:find("dialog") or lk:find("wrench") or lk:find("player") or lk:find("menu") then
-                                v.Visible = false
-                            end
-                        end
-                    end
-                end
-            end
-            for i = #recentModalFrames, 1, -1 do
-                local fr = recentModalFrames[i]
-                if fr and fr.Parent and fr:IsA("GuiObject") and not SAFE_GUI_NAMES[fr.Name] then
-                    fr.Visible = false
-                end
-                recentModalFrames[i] = nil
-            end
-            local gg = PlayerGui:FindFirstChild("GameGui")
-            if gg then
-                for _, ch in ipairs(gg:GetChildren()) do
-                    if ch:IsA("GuiObject") and ch.Visible and not SAFE_GUI_NAMES[ch.Name] then
-                        ch.Visible = false
-                    end
-                end
-            end
-        end)
-    end
-
-    local function ExecuteFastWrenchOn(callFn, fastCmd, fastLabel, targetUid, targetName)
-        lastFastWrenchClock = os.clock()
-        SuppressWrenchDialogUI()
-        task.spawn(function()
-            -- Kirim langsung paket WorldCommand (pull / kick / ban) + "#UserId" sesuai hasil Spy
-            pcall(callFn, "WorldCommand", fastCmd, "#" .. tostring(targetUid))
-            pcall(callFn, "SetBusy", 0)
-            SuppressWrenchDialogUI()
-            task.wait(0.05)
-            SuppressWrenchDialogUI()
-            pcall(callFn, "SetBusy", 0)
-            Notify(string.format("%s -> %s (#%s)", fastLabel, tostring(targetName or "Player"), tostring(targetUid)), fastLabel, 2)
-        end)
-    end
-
-    -- Pantau elemen UI baru di GameGui saat Wrench diklik untuk langsung disembunyikan
-    local ggRef = PlayerGui:FindFirstChild("GameGui")
-    if ggRef then
-        trackConn(ggRef.DescendantAdded:Connect(function(desc)
-            if not alive() or not GetActiveFastWrenchCmd() then return end
-            if desc:IsA("GuiObject") then
-                local topChild = desc
-                while topChild and topChild.Parent and topChild.Parent ~= ggRef and topChild.Parent.Name ~= "World" do
-                    topChild = topChild.Parent
-                end
-                if topChild and topChild:IsA("GuiObject") and not SAFE_GUI_NAMES[topChild.Name] then
-                    table.insert(recentModalFrames, topChild)
-                    if os.clock() - lastFastWrenchClock < 0.6 then
-                        topChild.Visible = false
-                    end
-                end
-            end
-        end))
-    end
-
     local function ResetCallerBusyUpvalues()
         if not (debug and debug.info and getupvalueFn and setupvalueFn) then return end
-        for stackLvl = 2, 6 do
+        for stackLvl = 2, 7 do
             local okF, callerFn = pcall(debug.info, stackLvl, "f")
             if not okF or type(callerFn) ~= "function" then break end
             if not (isexecutorclosure and pcall(isexecutorclosure, callerFn) and isexecutorclosure(callerFn)) then
@@ -6775,37 +6681,39 @@ do (function()
         end
     end
 
+    local function ExecuteFastWrenchOn(callFn, fastCmd, fastLabel, targetUid, targetName)
+        lastFastWrenchClock = os.clock()
+        task.spawn(function()
+            pcall(callFn, "WorldCommand", fastCmd, "#" .. tostring(targetUid))
+            pcall(callFn, "SetBusy", 0)
+            Notify(string.format("%s -> %s (#%s)", fastLabel, tostring(targetName or "Player"), tostring(targetUid)), fastLabel, 2)
+        end)
+    end
+
     local function FastWrenchInterceptor(callFn, cmdName, arg1, ...)
         local fastCmd, fastLabel = GetActiveFastWrenchCmd()
         if fastCmd then
             if cmdName == "GetPlayerLevel" or cmdName == "WrenchPlayer" or cmdName == "PlayerInfo" then
                 local targetUid, targetName = ResolveWrenchedTargetUid(arg1)
-                if targetUid and (os.clock() - lastFastWrenchClock > 0.15) then
-                    ExecuteFastWrenchOn(callFn, fastCmd, fastLabel, targetUid, targetName)
+                if targetUid then
+                    if os.clock() - lastFastWrenchClock > 0.15 then
+                        ExecuteFastWrenchOn(callFn, fastCmd, fastLabel, targetUid, targetName)
+                    end
                     ResetCallerBusyUpvalues()
-                    return nil
+                    -- Hentikan eksekusi fungsi pembuka Dialog Wrench tepat di baris ini
+                    -- supaya game batal membuat/menampilkan Dialog Wrench tanpa merusak UI GrowBlox!
+                    error("ANCH_FAST_WRENCH_ABORT", 0)
                 end
             elseif cmdName == "SetBusy" and arg1 == 2 then
                 if os.clock() - lastFastWrenchClock < 0.8 then
                     ResetCallerBusyUpvalues()
-                    SuppressWrenchDialogUI()
                     return false
-                end
-                local targetUid, targetName = ResolveWrenchedTargetUid(nil)
-                if targetUid then
-                    local px, py = GetTile()
-                    if not (px and lastClickTileX and px == lastClickTileX and py == lastClickTileY) then
-                        ExecuteFastWrenchOn(callFn, fastCmd, fastLabel, targetUid, targetName)
-                        ResetCallerBusyUpvalues()
-                        return false
-                    end
                 end
             end
         end
         return callFn(cmdName, arg1, ...)
     end
 
-    -- Pasang hook pada Net.call, Refs.World.call, dan Refs.Others.playerAt (Tanpa getgc loop!)
     local function HookFastWrenchTargets()
         if origNetCall and NetOk and type(Net) == "table" then
             Net.call = function(cmdName, arg1, ...)
