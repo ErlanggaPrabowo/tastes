@@ -1,6 +1,5 @@
 --[[
-    ANCH HUB | GrowBlox  (v1 Ultimate - All-in-One WindUI)
-    Gabungan penuh ANCH Hub + SkyP v1.2 Engine (ByteNet & Classic Compatible)
+    ANCH HUB | GrowBlox  (v1.1 Ultimate - All-in-One WindUI)
 
     Daftar Perintah Chat (Prefix default "/"):
       wld|wd <jumlah>             Drop World Lock
@@ -60,6 +59,35 @@ local function trackConn(conn)
         table.insert(Session.Connections, conn)
     end
     return conn
+end
+
+-- Pelaksana UI dengan izin thread awal (mencegah error capability pada Dropdown)
+do
+    local getId = getthreadidentity or get_thread_identity or getidentity or (syn and syn.get_thread_identity)
+    if type(getId) == "function" then pcall(function() Session.Ident = getId() end) end
+    Session.Exec = coroutine.create(function(job)
+        while true do
+            local ok, err = pcall(job)
+            job = coroutine.yield(ok, err)
+        end
+    end)
+end
+
+local function ExecUI(fn)
+    local setId = setthreadidentity or set_thread_identity or setidentity or (syn and syn.set_thread_identity)
+    local function elevate()
+        if Session.Ident and type(setId) == "function" then pcall(setId, Session.Ident) end
+    end
+    local co = Session.Exec
+    if co and coroutine.status(co) == "suspended" then
+        local okR, ok = coroutine.resume(co, function()
+            elevate()
+            fn()
+        end)
+        if okR and ok ~= false then return true end
+    end
+    elevate()
+    return pcall(fn)
 end
 
 ----------------------------------------------------------------------
@@ -141,15 +169,23 @@ local Config = {
     -- Karakter & Misc
     walkSpeed = 100,
     mutePunch = true,
+    visualAnim = true, -- Animasi ayunan tangan & efek partikel saat place/break
     liteMode = false,
     customWatermark = true,
     watermarkText = "ANCH HUB",
     selectedRole = "none",
     calibX = 0,
     calibY = 0,
-    -- Auto Collect Global
+    -- Auto Collect Global ("Sentuhan" = fisik badan anti-tolak server | "Remote" = jarak jauh)
+    collectMode = "Sentuhan",
     collectAround = false,
     collectRadius = 3,
+    -- Vending Machine
+    vendMode = "Isi stock dari drop",
+    vendPoint = "",
+    vendDropX = -1,
+    vendDropY = -1,
+    vendItems = {},
     -- Auto Farm (+ Auto Save/Drop Seed)
     farmMode = "Place + Break",
     farmPlaceMs = 250,
@@ -337,7 +373,8 @@ local Refs = {
     Particles = {},
 }
 
-local Drops = { list = nil, update = nil }
+local Drops = { list = nil, update = nil, brokeAt = {}, seen = {}, nextTick = 0 }
+local Anim = { fn = nil, idx = nil, set = nil, Particles = nil }
 local DropFailUntil = {}
 local PlacedAt = {}
 local HitCount = {}
@@ -498,7 +535,131 @@ do (function()
         return type(first) == "table" and rawget(first, "uid") ~= nil and rawget(first, "frame") ~= nil
     end
 
+    function Anim.isArmFn(fn)
+        if not getconstsFn or (islclosure and not islclosure(fn)) then return false end
+        local ok, consts = pcall(getconstsFn, fn)
+        if not ok or type(consts) ~= "table" then return false end
+        local a, b, c = false, false, false
+        for _, k in pairs(consts) do
+            if k == "forearm" then a = true
+            elseif k == "heldReach" then b = true
+            elseif k == "punchReach" then c = true end
+        end
+        return a and b and c
+    end
+
+    function Anim.bind(fn)
+        if not (getupvalueFn and setupvalueFn) then return false end
+        local vals, last = {}, 0
+        for i = 1, 16 do
+            local ok, v = pcall(getupvalueFn, fn, i)
+            if not ok then break end
+            vals[i] = v
+            if v ~= nil then last = i end
+        end
+        for i = 1, last - 1 do
+            local v = vals[i]
+            if v == nil or (type(v) == "table" and rawget(v, "t") ~= nil and rawget(v, "facing") ~= nil) then
+                Anim.fn, Anim.idx, Anim.set = fn, i, setupvalueFn
+                return true
+            end
+        end
+        return false
+    end
+
+    -- Cari World, Inv, dan fungsi Animasi langsung dari koneksi RunService (Tanpa getgc!)
+    local function scanViaConnections()
+        if not getconnections then return end
+        local queue, seen, n = {}, {}, 0
+        for _, sigName in ipairs({ "RenderStepped", "Heartbeat", "Stepped" }) do
+            local okS, sig = pcall(function() return RunService[sigName] end)
+            if okS and sig then
+                local okC, conns = pcall(getconnections, sig)
+                if okC and type(conns) == "table" then
+                    for _, c in ipairs(conns) do
+                        local okF, fn = pcall(function() return c.Function end)
+                        if okF and type(fn) == "function" then
+                            table.insert(queue, fn)
+                        end
+                    end
+                end
+            end
+        end
+        local i = 1
+        while i <= #queue and n < 450 do
+            local fn = queue[i]
+            i = i + 1
+            if not seen[fn] then
+                seen[fn] = true
+                n = n + 1
+                if not Anim.fn and Anim.isArmFn(fn) then Anim.bind(fn) end
+                for _, u in pairs(GetUpvalues(fn)) do
+                    local tu = type(u)
+                    if tu == "table" then
+                        if not Refs.World then
+                            local ok, valid = pcall(function()
+                                return type(rawget(u, "fg")) == "table" and type(rawget(u, "bg")) == "table"
+                                    and type(rawget(u, "w")) == "number" and rawget(u, "w") > 0
+                                    and rawget(u, "spawn") ~= nil
+                            end)
+                            if ok and valid then Refs.World = u end
+                        end
+                        if not Refs.Inv and InvModOk and InventoryModule then
+                            local ok, valid = pcall(function()
+                                return getmetatable(u) == InventoryModule and type(rawget(u, "slots")) == "table"
+                            end)
+                            if ok and valid then Refs.Inv = u end
+                        end
+                        if not Refs.State then
+                            local ok, valid = pcall(isStateHolder, u)
+                            if ok and valid then Refs.State = rawget(u, "state") end
+                        end
+                    elseif tu == "function" and not seen[u] then
+                        if not Anim.fn and Anim.isArmFn(u) then Anim.bind(u) end
+                        table.insert(queue, u)
+                    end
+                end
+            end
+        end
+    end
+
+    -- Cari Tabel Pohon dari struktur World.tileChanged (tetap ketemu walau world kosong tanpa pohon)
+    local function findTreesFromWorldStruct()
+        local w = Refs.World
+        if not w then return false end
+        for _, fname in ipairs({ "tileChanged", "treeChanged", "setTree" }) do
+            local root = rawget(w, fname)
+            if type(root) == "function" then
+                local ups = GetUpvalues(root)
+                local tset = {}
+                for _, u in pairs(ups) do
+                    if type(u) == "table" and u ~= w then tset[u] = true end
+                end
+                for _, g in pairs(ups) do
+                    if type(g) == "function" then
+                        local gu = GetUpvalues(g)
+                        local hasW, nT, shared = false, 0, {}
+                        for _, v in pairs(gu) do
+                            if rawequal(v, w) then
+                                hasW = true
+                            elseif type(v) == "table" then
+                                nT = nT + 1
+                                if tset[v] then table.insert(shared, v) end
+                            end
+                        end
+                        if hasW and nT <= 3 and #shared == 1 then
+                            Refs.Trees = shared[1]
+                            return true
+                        end
+                    end
+                end
+            end
+        end
+        return false
+    end
+
     function Refs.Scan()
+        scanViaConnections()
         if not getgcFn then return false end
         Refs.World, Refs.Inv, Refs.InvTable, Refs.SetTile, Refs.Punch, Refs.State, Refs.Menu, Refs.Gems, Refs.Hud, Refs.Others =
             nil, nil, nil, nil, nil, nil, nil, nil, nil, nil
@@ -619,10 +780,17 @@ do (function()
 
         Drops.list, Drops.update = nil, nil
         local wd = Refs.World and rawget(Refs.World, "dropTaken")
-        if type(wd) == "function" then
+        if Drops.list and not Drops.update and type(wd) == "function" then
             for _, u in pairs(GetUpvalues(wd)) do
-                if not Drops.list and isDropList(u) then Drops.list = u
-                elseif not Drops.update and type(u) == "function" then Drops.update = u end
+                if type(u) == "function" then
+                    for _, uu in pairs(GetUpvalues(u)) do
+                        if rawequal(uu, Drops.list) then
+                            Drops.update = u
+                            break
+                        end
+                    end
+                end
+                if Drops.update then break end
             end
         end
         if not Drops.list and Refs.World and type(rawget(Refs.World, "dropList")) == "function" then
@@ -631,6 +799,7 @@ do (function()
         end
 
         Refs.Trees = nil
+        if not Refs.Trees then findTreesFromWorldStruct() end
         if Refs.World and type(rawget(Refs.World, "treeLook")) == "function" and getupvalueFn then
             local okT, tMap = pcall(getupvalueFn, Refs.World.treeLook, 8)
             if okT and type(tMap) == "table" then
@@ -757,6 +926,24 @@ local function GetDirtSeedId()
     return 3
 end
 
+local function GetGuiCameraState()
+    local gg = PlayerGui:FindFirstChild("GameGui")
+    local worldGui = gg and gg:FindFirstChild("World")
+    local cam = worldGui and worldGui:FindFirstChild("Camera")
+    local tiles = cam and cam:FindFirstChild("Tiles")
+    local pv = cam and cam:FindFirstChild("PlayerView")
+    if not (tiles and pv and tiles:IsA("GuiObject") and pv:IsA("GuiObject")) then return nil end
+    local sample = tiles:FindFirstChildWhichIsA("ImageLabel")
+    local ts = (sample and sample.AbsoluteSize.X > 0) and sample.AbsoluteSize.X or 64
+    local center = pv.AbsolutePosition + (pv.AbsoluteSize / 2)
+    local rel = center - tiles.AbsolutePosition
+    return {
+        x = rel.X / ts,
+        y = (rel.Y / ts) + 0.475,
+        vx = 0, vy = 0, facing = 1, grounded = true, dead = false, active = true,
+    }
+end
+
 local function PlayerPhysicsState()
     if not Refs.State then Refs.Scan() end
     if Refs.State then
@@ -765,7 +952,7 @@ local function PlayerPhysicsState()
             return s
         end
     end
-    return nil
+    return GetGuiCameraState()
 end
 
 local function GetGridState()
@@ -773,27 +960,25 @@ local function GetGridState()
     if s then
         return s.x + Config.calibX, s.y + Config.calibY, (s.facing and s.facing < 0) and -1 or 1
     end
-    local inv = FindInventory()
-    if not inv then
-        return nil, "Inventory game tidak ditemukan"
+    return nil, "Karakter belum berada di world"
+end
+
+function Anim.Swing(x, y, kind)
+    if not Config.visualAnim or not (Anim.fn and Anim.idx and Anim.set) then return end
+    local s = PlayerPhysicsState()
+    local facing = (s and x + 0.5 < s.x) and -1 or 1
+    pcall(Anim.set, Anim.fn, Anim.idx, { t = os.clock(), x = x + 0.5, y = y + 0.5, facing = facing, kind = kind })
+end
+
+function Anim.Place(x, y, id)
+    if not Config.visualAnim then return end
+    Anim.Swing(x, y, "build")
+    local it = ItemDB[id]
+    if it and it.kind ~= "seed" and Refs.Particles and #Refs.Particles > 0 then
+        local pick = Anim.Particles or Refs.Particles[1]
+        Anim.Particles = pick
+        pcall(function() pick:place(x + 0.5, y + 0.5) end)
     end
-    local canDropUp = GetUpvalues(inv.canDrop)
-    local x = canDropUp[2]
-    local facing = canDropUp[3]
-    if type(x) ~= "number" or type(facing) ~= "number" then
-        return nil, "Upvalue X/arah tidak cocok"
-    end
-    local nums = {}
-    for _, value in ipairs(GetUpvalues(inv.onDrop)) do
-        if type(value) == "number" then
-            table.insert(nums, value)
-        end
-    end
-    local y = nums[3]
-    if type(y) ~= "number" then
-        return nil, "Upvalue Y tidak ditemukan"
-    end
-    return x + Config.calibX, y + Config.calibY, (facing >= 0) and 1 or -1
 end
 
 local function GetTile()
@@ -848,6 +1033,7 @@ end
 -- AKSI DASAR: PLACE & BREAK (KOMPATIBEL BYTENET + CLASSIC)
 ----------------------------------------------------------------------
 local function SendSetTile(layer, x, y, id, facingLeft)
+    if id ~= 0 and Anim.Place then Anim.Place(x, y, id) end
     if not Refs.SetTile then Refs.Scan() end
     if Refs.SetTile then
         local ok = pcall(Refs.SetTile, layer, x, y, id, false, facingLeft == true)
@@ -940,6 +1126,8 @@ local function TryBreakOnce(x, y, includeBg)
         if not ok then return nil end
         if TileValue(w, layer, x, y) ~= id then
             Stats.Broken += 1
+            Anim.Swing(x, y, "punch")
+            Drops.brokeAt[x .. "," .. y] = os.clock()
             return "broke", id, layer
         end
         return "hit", id, layer
@@ -1137,6 +1325,38 @@ do (function()
     Nav.StateReaches = stateReaches
     Nav.PlaceOk = placeOk
 
+    -- Cek apakah target tidak terhalang blok lantai/atap di antaranya
+    function Nav.Los(nx, ny, tx, ty)
+        if ty - ny >= 2 then
+            for y = ny + 1, ty - 1 do
+                if solidAt(tx, y) then return false end
+            end
+        elseif ny - ty >= 2 then
+            for y = ty + 1, ny - 1 do
+                if solidAt(tx, y) then return false end
+            end
+        end
+        return true
+    end
+
+    -- Lepaskan karakter jika nyangkut di udara / pinggir blok > 3 detik
+    function Nav.AirCheck(s)
+        if not s or s.grounded then
+            Nav.AirAt = nil
+            return
+        end
+        if not Nav.AirAt then
+            Nav.AirAt = os.clock()
+        elseif os.clock() - Nav.AirAt > 3 then
+            Nav.AirAt = nil
+            local right = (s.facing or 1) < 0
+            AutoInput.active = true
+            AutoInput.right, AutoInput.left = right, not right
+            task.wait(0.2)
+            AutoInput.right, AutoInput.left = false, false
+        end
+    end
+
     local function heapPush(hf, hi, n, f, i)
         n += 1
         local k = n
@@ -1275,10 +1495,11 @@ do (function()
                         end
                     end
                 end
-                for dy = 1, 3 do
-                    if not open(x, y - dy) then break end
-                    if open(x, y - dy - 1) and open(ax, y - dy) and sup(ax, y - dy) and open(ax, y - dy - 1) then
-                        add(ax, y - dy, "jump", 1 + 1.5 * dy, false)
+                -- Tangga lahan/DF: naik 1-2 tile ke lorong setinggi 1 tile (atap langsung di atas kepala)
+                for dy = 1, 2 do
+                    if open(x, y - 1) and (dy == 1 or open(x, y - 2)) and open(ax, y - dy) and sup(ax, y - dy)
+                        and not (open(x, y - dy - 1) and open(ax, y - dy - 1)) then
+                        add(ax, y - dy, "stair", 3 + 1.5 * dy, false)
                     end
                 end
             end
@@ -1495,6 +1716,63 @@ do (function()
         return false
     end
 
+    local function execStair(e, cancel)
+        if not execWalk(e.fx, e.fy, cancel) then return false end
+        AutoInput.active = true
+        local dir = (e.x > e.fx) and 1 or -1
+        local top = e.y + 1
+        local hug = e.fx + 0.5 + dir * 0.17
+        for try = 1, 3 do
+            local t0 = os.clock()
+            while os.clock() - t0 <= 0.8 and alive() do
+                if cancel and cancel() then ReleaseInput(); return false end
+                local s = PlayerPhysicsState()
+                if not s or s.dead then ReleaseInput(); return false end
+                steerX(s, hug, 0.03)
+                if abs(s.x - hug) <= 0.06 and abs(s.vx or 0) < 1 then break end
+                task.wait()
+            end
+            ReleaseInput()
+            task.wait()
+            local s0 = PlayerPhysicsState()
+            if not s0 then return false end
+            local y0 = s0.y
+            AutoInput.jump = true
+            t0 = os.clock()
+            local airborne, landed = false, nil
+            while os.clock() - t0 <= 1.8 and alive() do
+                if cancel and cancel() then ReleaseInput(); return false end
+                local s = PlayerPhysicsState()
+                if not s or s.dead then ReleaseInput(); return false end
+                if not s.grounded then airborne = true end
+                if AutoInput.jump and (s.y <= top - 0.1 or (airborne and (s.vy or 0) >= 0)) then
+                    AutoInput.jump = false
+                end
+                local press = (try == 1 and s.y <= top + 0.02)
+                    or (try == 2 and s.y <= y0 - 0.15)
+                    or (try == 3 and s.y <= top + 0.25)
+                if airborne and press then
+                    AutoInput.right, AutoInput.left = dir > 0, dir < 0
+                else
+                    steerX(s, hug, 0.03)
+                end
+                if airborne and s.grounded then
+                    landed = floor(s.y - 0.475)
+                    break
+                end
+                if not airborne and os.clock() - t0 > 0.35 then break end
+                task.wait()
+            end
+            ReleaseInput()
+            if landed == e.y then
+                return execWalk(e.x, e.y, cancel)
+            end
+            if landed ~= nil and landed ~= e.fy then return false end
+            if not execWalk(e.fx, e.fy, cancel) then return false end
+        end
+        return false
+    end
+
     local function execPillar(e, cancel)
         if not execWalk(e.fx, e.fy, cancel) then return false end
         if fgIdAt(e.fx, e.fy) ~= 0 then return false end
@@ -1624,6 +1902,9 @@ do (function()
                 ok = execGap(e, cancel)
                 cleanupScaffolds()
             end
+            elseif e.kind == "stair" then
+                ok = execStair(e, cancel)
+                cleanupScaffolds()
             ReleaseInput()
             if not ok then
                 Nav.BadEdge[e.key] = os.clock() + 20
@@ -2308,9 +2589,13 @@ local function CanPlantAt(w, x, y, seedId)
 end
 
 ----------------------------------------------------------------------
--- FAST PARALLEL AUTO-COLLECT (RADIUS + DROP ZONE PABRIK + WEBHOOK FULL)
+-- FAST AUTO-COLLECT DUAL MODE ("Sentuhan" Badan Fisik & "Remote")
 ----------------------------------------------------------------------
 do (function()
+    local function inTile(t, x, y)
+        return x >= t.x - 0.15 and x < t.x + 1.15 and y >= t.y - 0.15 and y < t.y + 1.15
+    end
+
     local function canTryDrop(d, now)
         if type(d) ~= "table" or d.taking or d.pending or d.display or (d.n or 0) <= 0 or type(d.x) ~= "number" then
             return false
@@ -2320,21 +2605,195 @@ do (function()
         return not (fail and now < fail)
     end
 
-    local busyFarCollect = false
-
-    local function stepTowardsDrop(w, fromX, fromY, targetX, targetY)
-        if not w or type(w.goTo) ~= "function" then return end
-        local cx, cy = fromX, fromY
-        local guard = 0
-        while (math.abs(targetX - cx) > 2 or math.abs(targetY - cy) > 2) and guard < 10 and alive() do
-            guard = guard + 1
-            local sx = (targetX > cx and 1) or (targetX < cx and -1) or 0
-            local sy = (targetY > cy and 1) or (targetY < cy and -1) or 0
-            cx = cx + sx
-            cy = cy + sy
-            pcall(w.goTo, cx, cy)
-            task.wait(0.08)
+    -- Hapus/kurangi visual drop secara akurat seperti fungsi asli game
+    function Drops.applyTaken(d, left)
+        local list = Drops.list
+        if not list or not table.find(list, d) then return end
+        if Drops.update then
+            local ok = pcall(Drops.update, d, left)
+            if ok then
+                if left > 0 then
+                    d.flown = nil
+                    if typeof(d.frame) == "Instance" then pcall(function() d.frame.Visible = not d.culled end) end
+                end
+                return
+            end
         end
+        d.n = left
+        if left > 0 then
+            d.flown = nil
+            if typeof(d.frame) == "Instance" then pcall(function() d.frame.Visible = not d.culled end) end
+        else
+            local i = table.find(list, d)
+            if i then table.remove(list, i) end
+            if typeof(d.frame) == "Instance" then pcall(function() d.frame:Destroy() end) end
+        end
+    end
+
+    -- Tunggu drop yang menempel badan selesai dipungut server
+    function Drops.waitNearDrops(maxSec)
+        local list = Drops.list
+        if not list then return end
+        task.wait(0.15)
+        local t0 = os.clock()
+        while os.clock() - t0 < (maxSec or 0.5) and alive() do
+            local s = PlayerPhysicsState()
+            if not s or not s.x then return end
+            local busy = false
+            for _, d in ipairs(list) do
+                if type(d) == "table" and type(d.x) == "number" and (d.n or 0) > 0 and d.armed ~= false
+                    and math.abs(d.x - s.x) < 0.6 and d.y + 0.3 > s.y - 0.95 and d.y - 0.3 < s.y then
+                    local room = true
+                    if d.id ~= 112 and Refs.Inv and type(Refs.Inv.room) == "function" then
+                        local okr, r = pcall(function() return Refs.Inv:room(d.id) end)
+                        if okr and type(r) == "number" and r <= 0 then room = false end
+                    end
+                    if room then busy = true; break end
+                end
+            end
+            if not busy then return end
+            task.wait()
+        end
+    end
+
+    -- Tunggu drop dari blok yang baru saja pecah muncul dari server (menyesuaikan Ping jaringan)
+    function Drops.waitSpawn(tiles)
+        local ping = 0.1
+        pcall(function() ping = Player:GetNetworkPing() end)
+        local limit = math.clamp(0.15 + 2.5 * ping, 0.25, 0.8)
+        local newest = nil
+        for _, t in ipairs(tiles) do
+            local b = Drops.brokeAt[t.x .. "," .. t.y]
+            if b and os.clock() - b < limit and (not newest or b > newest) then newest = b end
+        end
+        if not newest then return end
+        local list = Drops.list
+        while os.clock() - newest < limit and alive() do
+            if list then
+                for _, d in ipairs(list) do
+                    if type(d) == "table" and type(d.x) == "number" and (d.born or 0) >= newest then
+                        for _, t in ipairs(tiles) do
+                            if inTile(t, d.x, d.y) then
+                                task.wait(0.05)
+                                return
+                            end
+                        end
+                    end
+                end
+            end
+            task.wait()
+        end
+    end
+
+    -- Sapu semua drop di tile Grid 5x5 dengan Sentuhan Badan (Jalan Kiri/Kanan + Lompat Kecil Tap Hop)
+    function Drops.touchAll(tiles, hx, hy)
+        local list = Drops.list
+        if not list or not OrigIsDown then return false end
+        local function dropsAt(t)
+            for _, d in ipairs(list) do
+                if type(d) == "table" and type(d.x) == "number" and (d.n or 0) > 0 and d.armed ~= false
+                    and not d.taking and inTile(t, d.x, d.y) then
+                    return true
+                end
+            end
+            return false
+        end
+        local has = {}
+        for _, t in ipairs(tiles) do
+            if not Nav.SolidAt(t.x, t.y) and dropsAt(t) then table.insert(has, t) end
+        end
+        if #has == 0 then return false end
+        local s0 = PlayerPhysicsState()
+        if not s0 or s0.dead or not s0.grounded then return false end
+        local function ground(c) return Nav.OpenAt(c, hy) and Nav.RealSupport(c, hy) end
+        local function walkable(a, b)
+            local st = (b >= a) and 1 or -1
+            for c = a, b, st do
+                if not ground(c) then return false end
+            end
+            return true
+        end
+        local was = AutoInput.active
+        AutoInput.active = true
+        local function steer(s, targetX, tol)
+            local dx = targetX - s.x
+            local vx = s.vx or 0
+            local decel = s.grounded and 48 or 17
+            local dir = 0
+            if math.abs(dx) > tol then
+                dir = dx > 0 and 1 or -1
+                if vx * dir > 0 and (vx * vx) / (2 * decel) >= math.abs(dx) - tol * 0.5 then dir = 0 end
+            end
+            AutoInput.left = dir < 0
+            AutoInput.right = dir > 0
+        end
+        local function moveTo(cx, maxT)
+            local t0 = os.clock()
+            while alive() and os.clock() - t0 < (maxT or 1.2) do
+                task.wait()
+                local c = PlayerPhysicsState()
+                if not c or c.dead then break end
+                steer(c, cx, 0.1)
+                if c.grounded and math.abs(c.x - cx) <= 0.15 and math.abs(c.vx or 0) < 1.5 then
+                    AutoInput.left, AutoInput.right = false, false
+                    return true
+                end
+            end
+            AutoInput.left, AutoInput.right = false, false
+            return false
+        end
+        local function hop(toX)
+            AutoInput.left, AutoInput.right = false, false
+            local c0 = PlayerPhysicsState()
+            if not c0 then return end
+            local y0 = c0.y
+            AutoInput.jump = true
+            local t0, air = os.clock(), false
+            while alive() and os.clock() - t0 < 1.4 do
+                task.wait()
+                local c = PlayerPhysicsState()
+                if not c or c.dead then break end
+                if not c.grounded then
+                    air = true
+                    AutoInput.jump = false
+                end
+                if toX and air and c.y <= y0 - 0.25 then steer(c, toX, 0.1) else AutoInput.left, AutoInput.right = false, false end
+                if air and c.grounded then break end
+                if not air and os.clock() - t0 > 0.35 then break end
+            end
+            AutoInput.jump, AutoInput.left, AutoInput.right = false, false, false
+        end
+        local lo, hi = hx, hx
+        for _, t in ipairs(has) do
+            if t.y == hy and math.abs(t.x - hx) <= 3 then
+                if t.x < lo then lo = t.x end
+                if t.x > hi then hi = t.x end
+            end
+        end
+        if lo < hx and walkable(hx - 1, lo) then moveTo(lo + 0.5) end
+        if hi > hx and walkable(hx + 1, hi) then moveTo(hi + 0.5) end
+        for _ = 1, 4 do
+            local cs = PlayerPhysicsState()
+            if not cs or not alive() then break end
+            local cur = math.floor(cs.x)
+            local cols = {}
+            for _, t in ipairs(has) do
+                if t.y == hy - 1 and math.abs(t.x - hx) <= 1 and ground(t.x) and walkable(cur, t.x)
+                    and not Nav.SolidAt(t.x, t.y) and dropsAt(t) then
+                    table.insert(cols, t.x)
+                end
+            end
+            if #cols == 0 then break end
+            table.sort(cols, function(p, q) return math.abs(p - cur) < math.abs(q - cur) end)
+            local a = cols[1]
+            if a ~= cur then moveTo(a + 0.5) end
+            hop(cols[2] and (cols[2] + 0.5) or nil)
+        end
+        local ok = moveTo(hx + 0.5, 2)
+        AutoInput.left, AutoInput.right, AutoInput.jump = false, false, false
+        AutoInput.active = was
+        Drops.waitNearDrops(0.2)
+        return ok
     end
 
     local function takeSingleDrop(d)
@@ -2359,27 +2818,8 @@ do (function()
             return false
         end
 
-        local sx, sy = GetGridState()
-        local origTx, origTy = GetTile()
-        local needStep = false
-        if sx and sy then
-            local dist = math.max(math.abs(d.x - sx), math.abs(d.y - (sy - 0.475)))
-            if dist > 2.4 then
-                if busyFarCollect or AutoInput.active then return false end
-                needStep = true
-                busyFarCollect = true
-            end
-        end
-
         d.taking = true
-        d.flown = true
         if typeof(d.frame) == "Instance" then pcall(function() d.frame.Visible = false end) end
-
-        -- Jika drop berada di jarak > 2.4 tile, melangkah 1-tile bertahap mendekati drop agar server menerima TakeDrop
-        if needStep and origTx and origTy then
-            stepTowardsDrop(w, origTx, origTy, math.floor(d.x), math.floor(d.y))
-            task.wait(0.05)
-        end
 
         local ok, taken
         if type(worldTake) == "function" then
@@ -2387,22 +2827,13 @@ do (function()
         else
             ok, taken = pcall(TakeDropRemote.InvokeServer, TakeDropRemote, d.uid, amount)
         end
-
-        if needStep and origTx and origTy then
-            local curX, curY = GetTile()
-            if curX and curY and (curX ~= origTx or curY ~= origTy) then
-                stepTowardsDrop(w, curX, curY, origTx, origTy)
-                if w and type(w.goTo) == "function" then pcall(w.goTo, origTx, origTy) end
-            end
-            task.delay(0.15, function() busyFarCollect = false end)
-        end
-
         d.taking = false
 
         if not (ok and type(taken) == "number" and taken > 0) then
             Farm.stats.fail = Farm.stats.fail + 1
             d.refused = os.clock()
-            if d.uid then DropFailUntil[d.uid] = os.clock() + 1 end
+            d.failN = (d.failN or 0) + 1
+            if d.uid then DropFailUntil[d.uid] = os.clock() + math.min(8, d.failN) end
             d.flown = nil
             if typeof(d.frame) == "Instance" then pcall(function() d.frame.Visible = not d.culled end) end
             return false
@@ -2414,9 +2845,7 @@ do (function()
         elseif Refs.Inv and type(Refs.Inv.add) == "function" then
             pcall(function() Refs.Inv:add(d.id, taken) end)
         end
-        if Drops.list and Drops.update and table.find(Drops.list, d) then
-            pcall(Drops.update, d, d.n - taken)
-        end
+        Drops.applyTaken(d, math.max(0, (d.n or 0) - taken))
 
         Stats.Collected = Stats.Collected + taken
         Stats.Items[d.id] = (Stats.Items[d.id] or 0) + taken
@@ -2440,10 +2869,14 @@ do (function()
             or Pabrik.on
         if not farmArea and not nearArea then return end
 
+        local tnow = os.clock()
+        if tnow < (Drops.nextTick or 0) then return end
+        Drops.nextTick = tnow + ((Config.collectMode == "Remote") and 0.1 or 0.2)
+
         local list = Drops.list
         if not list then
-            if os.clock() >= nextDropScan then
-                nextDropScan = os.clock() + 4
+            if tnow >= nextDropScan then
+                nextDropScan = tnow + 4
                 Refs.Scan()
             end
             return
@@ -2453,18 +2886,38 @@ do (function()
         local x, y = GetGridState()
         if not x then return end
         local cx, cy = x, y - 0.475
-        local ptx, pty = math.floor(cx), math.floor(cy)
-        local now = os.clock()
-        local radius = (tonumber(Config.collectRadius) or 3) + 0.25
 
-        local dropZone = Pabrik.Zone
-        if dropZone and dropZone.world ~= CurrentWorldName() then
-            dropZone = nil
+        -- Jika Mode "Sentuhan": hitung drop yang terambil oleh sentuhan fisik badan
+        if Config.collectMode ~= "Remote" then
+            local seen = {}
+            for _, d in ipairs(list) do
+                if type(d) == "table" and type(d.x) == "number" and math.abs(d.x - cx) <= 1.5 and math.abs(d.y - cy) <= 1.5 then
+                    seen[d] = d.n or 0
+                end
+            end
+            for d, n in pairs(Drops.seen or {}) do
+                if seen[d] == nil and not table.find(list, d) and d.id and n > 0 then
+                    Stats.Collected = Stats.Collected + n
+                    Stats.Items[d.id] = (Stats.Items[d.id] or 0) + n
+                    Farm.stats.picked = Farm.stats.picked + n
+                    if Clear.on then Clear.stats.picked = Clear.stats.picked + n end
+                    if Farmer.on then Farmer.stats.picked = Farmer.stats.picked + n end
+                    if DF.on then DF.stats.picked = DF.stats.picked + n end
+                end
+            end
+            Drops.seen = seen
+            return
         end
+
+        -- Jika Mode "Remote": ambil langsung via world.takeDrop
+        local ptx, pty = math.floor(cx), math.floor(cy)
+        local radius = (tonumber(Config.collectRadius) or 3) + 0.25
+        local dropZone = Pabrik.Zone
+        if dropZone and dropZone.world ~= CurrentWorldName() then dropZone = nil end
 
         for i = #list, 1, -1 do
             local d = list[i]
-            if canTryDrop(d, now) and not (dropZone and math.abs(d.x - dropZone.x) <= 2.5 and math.abs(d.y - dropZone.y) <= 2.5) then
+            if canTryDrop(d, tnow) and not (dropZone and math.abs(d.x - dropZone.x) <= 2.5 and math.abs(d.y - dropZone.y) <= 2.5) then
                 local hit = nearArea and math.abs(d.x - cx) <= radius and math.abs(d.y - cy) <= radius
                 if not hit and farmArea then
                     for key, on in pairs(activeGrid) do
@@ -2472,7 +2925,7 @@ do (function()
                             local dx, dy = tostring(key):match("^(-?%d+),(-?%d+)$")
                             if dx and dy then
                                 local tx, ty = ptx + tonumber(dx), pty + tonumber(dy)
-                                if d.x >= tx - 0.15 and d.x < tx + 1.15 and d.y >= ty - 0.15 and d.y < ty + 1.15 then
+                                if inTile({ x = tx, y = ty }, d.x, d.y) then
                                     hit = true
                                     break
                                 end
@@ -2480,9 +2933,7 @@ do (function()
                         end
                     end
                 end
-                if hit then
-                    task.spawn(takeSingleDrop, d)
-                end
+                if hit then task.spawn(takeSingleDrop, d) end
             end
         end
     end))
@@ -2616,6 +3067,12 @@ do (function()
             end
 
             local acted, outOfBlock = false, false
+
+            -- Sapu drop di semua tile Grid dengan sentuhan badan sebelum memasang blok baru
+            if (Config.farmTake or Farm.Override) and Config.collectMode == "Sentuhan" then
+                Drops.waitSpawn(tiles)
+                if Drops.touchAll then Drops.touchAll(tiles, px, py) end
+            end
 
             if doPlace then
                 Farm.stats.status = "Place " .. ItemName(id)
@@ -4322,33 +4779,20 @@ do (function()
             local fToken = Farm.token
             Farm.on = true
 
+            local lastActs = Stats.Placed + Stats.Broken
+            local lastActAt = os.clock()
             task.spawn(function()
                 while Farm.on and Farm.token == fToken do
                     task.wait(0.4)
+                    local acts = Stats.Placed + Stats.Broken
+                    if acts ~= lastActs then lastActs, lastActAt = acts, os.clock() end
                     local sCount = CountItem(seedId)
                     local bCount = CountItem(blockId)
-                    local w = FindWorld()
-                    local anyTileLeft = false
-                    if w then
-                        for key, on in pairs(Config.pabrikTiles) do
-                            if on then
-                                local dx, dy = tostring(key):match("^(-?%d+),(-?%d+)$")
-                                if dx and dy then
-                                    local tx, ty = anchor.x + tonumber(dx), anchor.y + tonumber(dy)
-                                    local fg = TileValue(w, "fg", tx, ty) or 0
-                                    local bg = TileValue(w, "bg", tx, ty) or 0
-                                    if (fg ~= 0 and CanBreakId(fg)) or (Config.farmBreakBg and bg ~= 0 and CanBreakId(bg)) then
-                                        anyTileLeft = true
-                                        break
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    -- Berhenti sesi break jika blok sudah benar-benar habis (0 di tas & 0 terpasang) atau seed mencapai >= 180
+                    local maxSeed = math.max(1, tonumber(Config.pabrikMaxSeed) or 100)
                     if not liveFn()
-                        or (bCount <= 0 and not anyTileLeft)
-                        or (Config.pabrikDrop and sCount >= (tonumber(Config.pabrikDropAt) or 180)) then
+                        or bCount <= 0
+                        or (Config.pabrikDrop and sCount > maxSeed and sCount >= 180)
+                        or (os.clock() - lastActAt > 8) then
                         Farm.on = false
                     end
                 end
@@ -4779,6 +5223,168 @@ do (function()
             task.wait(2.5)
         end
     end)
+end)() end
+
+----------------------------------------------------------------------
+-- 7B. VENDING MACHINE BOT (ISI STOCK DARI DROP & KOSONGKAN VENDING)
+----------------------------------------------------------------------
+local Vend = { on = false, token = 0, status = "Mati", stocked = 0, taken = 0, dropped = 0, picked = {}, carry = {} }
+
+do (function()
+    function Vend.ParsePoint()
+        local raw = tostring(Config.vendPoint or ""):gsub("%s", "")
+        local name, door = string.match(raw, "^([^:|]*)[:|](.+)$")
+        if not name then name = raw end
+        name = string.upper(name):gsub("[^A-Z0-9]", "")
+        if door == "" then door = nil end
+        return name, door
+    end
+
+    function Vend.Sellable(id)
+        if type(id) ~= "number" or id == 112 then return false end
+        local it = ItemDB[id]
+        if not it or it.kind == "tool" then return false end
+        if it.lock or it.area or it.guildLock or it.untradeable or it.vend or it.hub then return false end
+        return true
+    end
+
+    function Vend.Allow(id)
+        if not Vend.Sellable(id) then return false end
+        if type(Config.vendItems) == "table" and #Config.vendItems > 0 and not table.find(Config.vendItems, id) then
+            return false
+        end
+        return true
+    end
+
+    function Vend.Machines()
+        local w = FindWorld()
+        local out = {}
+        if not w then return out end
+        local vends = rawget(w, "vends")
+        local owner = rawget(w, "vendOwner")
+        for y = 0, w.h - 1 do
+            local row = w.fg[y]
+            if row then
+                for x = 0, w.w - 1 do
+                    local id = row[x] or 0
+                    local it = id ~= 0 and ItemDB[id]
+                    if it and it.vend then
+                        local okO, mine = true, true
+                        if type(owner) == "function" then okO, mine = pcall(owner, x, y) end
+                        if okO and mine then
+                            local d = nil
+                            if type(vends) == "table" and type(vends.get) == "function" then
+                                local okD, v = pcall(vends.get, x, y)
+                                if okD and type(v) == "table" then d = v end
+                            end
+                            d = d or {}
+                            if not d.shop then
+                                table.insert(out, {
+                                    x = x, y = y, fg = id, id = d.id,
+                                    stock = tonumber(d.stock) or 0,
+                                    cap = (id == 9268) and 10398 or 5199,
+                                })
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        return out
+    end
+
+    function Vend.Call(...)
+        local w = FindWorld()
+        local f = w and rawget(w, "vendCall")
+        if type(f) ~= "function" then return false end
+        local ok, res = pcall(f, ...)
+        return ok and res == true
+    end
+
+    local function VendLoop(token, homeWorld)
+        local function liveFn() return Vend.on and Vend.token == token and alive() end
+        while liveFn() do
+            local machines = Vend.Machines()
+            if #machines == 0 then
+                Vend.status = "Tidak ada Vending milikmu di world ini!"
+                break
+            end
+            if Config.vendMode == "Kosongkan sampai habis" then
+                local emptiedAny = false
+                for _, m in ipairs(machines) do
+                    if not liveFn() then break end
+                    if m.id and m.stock > 0 and Vend.Allow(m.id) then
+                        Vend.status = string.format("Mengambil %s dari Vending (%d,%d)...", ItemName(m.id), m.x, m.y)
+                        Nav.To(m.x, m.y, function() return not liveFn() end, 0.4, false)
+                        local before = CountItem(m.id)
+                        Vend.Call("empty", m.x, m.y)
+                        task.wait(0.45)
+                        local got = CountItem(m.id) - before
+                        if got > 0 then
+                            Vend.taken = Vend.taken + got
+                            emptiedAny = true
+                        end
+                        if CountItem(m.id) >= 190 and Pabrik and Pabrik.ExternalDropSeed then
+                            Pabrik.ExternalDropSeed(m.id, CountItem(m.id), Config.vendPoint, Config.vendDropX, Config.vendDropY, homeWorld, m.x, m.y, liveFn)
+                        end
+                    end
+                end
+                if not emptiedAny then
+                    Vend.status = "Semua Vending sudah kosong!"
+                    break
+                end
+            else
+                -- Mode Isi Stock dari Drop / Tas
+                local stockedAny = false
+                for _, m in ipairs(machines) do
+                    if not liveFn() then break end
+                    local id = (m.id and m.stock > 0) and m.id or nil
+                    if id and Vend.Allow(id) then
+                        local n = math.min(CountItem(id), m.cap - m.stock)
+                        if n > 0 then
+                            Vend.status = string.format("Mengisi %s +%d ke Vending (%d,%d)...", ItemName(id), n, m.x, m.y)
+                            Nav.To(m.x, m.y, function() return not liveFn() end, 0.4, false)
+                            if Vend.Call("stock", m.x, m.y, id, n) then
+                                Vend.stocked = Vend.stocked + n
+                                stockedAny = true
+                                task.wait(0.35)
+                            end
+                        end
+                    end
+                end
+                if not stockedAny then
+                    Vend.status = "Menunggu item di tas / drop untuk dimasukkan ke Vending..."
+                    task.wait(2)
+                end
+            end
+            task.wait(0.5)
+        end
+    end
+
+    function Vend.Stop()
+        if not Vend.on then return false end
+        Vend.token = Vend.token + 1
+        Vend.on = false
+        Vend.status = "Mati"
+        return true
+    end
+
+    function Vend.Start()
+        if Vend.on then return true end
+        Vend.token = Vend.token + 1
+        local token = Vend.token
+        Vend.on = true
+        Vend.status = "Mulai..."
+        local home = CurrentWorldName()
+        task.spawn(function()
+            pcall(VendLoop, token, home)
+            if Vend.token == token then
+                Vend.on = false
+                if RefreshHub then RefreshHub() end
+            end
+        end)
+        return true
+    end
 end)() end
 
 ----------------------------------------------------------------------
@@ -6395,7 +7001,7 @@ Window:DisableTopbarButtons({
 
 pcall(function()
     Window:Tag({
-        Title = "v1 Beta",
+        Title = "v1.1 Beta",
         Icon = "github",
         Color = Color3.fromHex("#1c1c1c"),
         Border = true,
@@ -6573,6 +7179,25 @@ SafeUI("Tab:Character", function()
             SaveConfig()
             Notify("Metode bergerak diubah ke: " .. Config.moveMethod)
         end,
+    })
+
+    Tab:Dropdown({
+        Title = "Mode Auto Collect (Sentuhan Badan / Remote)",
+        Desc = "Sentuhan = Sapu fisik & lompat kecil (tidak ditolak server). Remote = Ambil jarak jauh.",
+        Values = { "Sentuhan", "Remote" },
+        Value = Config.collectMode or "Sentuhan",
+        Callback = function(v)
+            Config.collectMode = v or "Sentuhan"
+            SaveConfig()
+            Notify("Mode Auto Collect: " .. Config.collectMode)
+        end,
+    })
+
+    Tab:Toggle({
+        Title = "Animasi Ayunan Tangan & Efek Place",
+        Desc = "Tampilkan gerakan tangan saat break/place di layar sendiri.",
+        Value = Config.visualAnim,
+        Callback = function(on) Config.visualAnim = on; SaveConfig() end,
     })
 
     task.spawn(function()
@@ -7835,7 +8460,7 @@ SafeUI("Tab:Settings", function()
             end
             local prev = Config.webhookOn
             Config.webhookOn = true
-            Webhook.Send("test", "Tes notifikasi dari ANCH Hub v1 Ultimate!")
+            Webhook.Send("test", "Tes notifikasi dari ANCH Hub v1.1 Ultimate!")
             Config.webhookOn = prev
             Notify("Pesan tes masuk antrian kirim Discord.")
         end,
@@ -7913,7 +8538,7 @@ SafeUI("Tab:Help", function()
     hub.tabs.help = HelpTab
 
     HelpTab:Paragraph({
-        Title = "Daftar Perintah Chat ANCH Hub v1 Beta",
+        Title = "Daftar Perintah Chat ANCH Hub v1.1 Beta",
         Desc = table.concat({
             "/af [on/off]  —  Auto Farm (Multi-Target + Rayman)",
             "/ac [on/off]  —  Auto Clear World (ModFly + Berdiri di Atas Blok)",
@@ -8144,5 +8769,5 @@ task.spawn(function()
     end
     task.spawn(Reconnect.CheckStartup)
     task.spawn(Pabrik.CheckStartup)
-    Notify("ANCH HUB v1 Beta Loaded! Semua tab & fitur siap digunakan.")
+    Notify("ANCH HUB v1.1 Beta Loaded! Semua tab & fitur siap digunakan.")
 end)
