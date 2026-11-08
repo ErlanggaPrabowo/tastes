@@ -1,1 +1,9236 @@
-local _a=(getgenv and getgenv())or _G for _b,_c in ipairs({string.char(95,95,65,78,67,72,72,117,98,83,101,115,115,105,111,110),string.char(95,95,65,108,102,105,97,110),string.char(95,95,71,84,70,97,114,109)})do if _a[_c]and _a[_c].Cleanup then pcall(_a[_c].Cleanup)end _a[_c]=nil end local _d={Alive=true,Connections={}}_a.__ANCHHubSession=_d _a.ANCHHubGB_Loaded=os.clock()local function _e()return _d.Alive and _a.__ANCHHubSession==_d end local function _f(_g)if _g then table.insert(_d.Connections,_g)end return _g end do local _h=getthreadidentity or get_thread_identity or getidentity or(syn and syn.get_thread_identity)if type(_h)==string.char(102,117,110,99,116,105,111,110)then pcall(function()_d.Ident=_h()end)end _d.Exec=coroutine.create(function(_i)while true do local _j,_k=pcall(_i)_i=coroutine.yield(_j,_k)end end)end local function _l(_m)local _n=setthreadidentity or set_thread_identity or setidentity or(syn and syn.set_thread_identity)local function _o()if _d.Ident and type(_n)==string.char(102,117,110,99,116,105,111,110)then pcall(_n,_d.Ident)end end local _p=_d.Exec if _p and coroutine.status(_p)==string.char(115,117,115,112,101,110,100,101,100)then local _q,_r=coroutine.resume(_p,function()_o()_m()end)if _q and _r~=false then return true end end _o()return pcall(_m)end local _t=(cloneref or clonereference or function(_s)return _s end)local _u=_t(game:GetService(string.char(80,108,97,121,101,114,115)))local _v=_t(game:GetService(string.char(82,101,112,108,105,99,97,116,101,100,83,116,111,114,97,103,101)))local _w=_t(game:GetService(string.char(83,116,97,114,116,101,114,71,117,105)))local _x=_t(game:GetService(string.char(71,117,105,83,101,114,118,105,99,101)))local _y=_t(game:GetService(string.char(85,115,101,114,73,110,112,117,116,83,101,114,118,105,99,101)))local _z=_t(game:GetService(string.char(72,116,116,112,83,101,114,118,105,99,101)))local _A=_t(game:GetService(string.char(84,119,101,101,110,83,101,114,118,105,99,101)))local _B=_t(game:GetService(string.char(82,117,110,83,101,114,118,105,99,101)))local _C=_t(game:GetService(string.char(84,101,108,101,112,111,114,116,83,101,114,118,105,99,101)))local _D=_t(game:GetService(string.char(86,105,114,116,117,97,108,85,115,101,114)))local _E=_t(game:GetService(string.char(84,101,120,116,67,104,97,116,83,101,114,118,105,99,101)))local _F=_t(game:GetService(string.char(84,101,120,116,83,101,114,118,105,99,101)))local _H=_u.LocalPlayer local _I=_H:WaitForChild(string.char(80,108,97,121,101,114,71,117,105))local _J=_v:WaitForChild(string.char(83,104,97,114,101,100),10)local _K=_v:WaitForChild(string.char(87,111,114,108,100,82,101,109,111,116,101,115),10)local _L=_K and _K:WaitForChild(string.char(68,114,111,112,73,116,101,109),5)local _M=_K and _K:FindFirstChild(string.char(83,101,116,84,105,108,101))local _N=_K and _K:FindFirstChild(string.char(84,97,107,101,68,114,111,112))local _O=_K and _K:FindFirstChild(string.char(80,105,99,107,84,105,116,108,101))local _P=_K and _K:FindFirstChild(string.char(87,111,114,108,100,67,108,111,115,101,100))local _Q=_J and require(_J:WaitForChild(string.char(73,116,101,109,68,66),5))or{}local _R,_S=pcall(function()return require(_J:WaitForChild(string.char(73,110,118,101,110,116,111,114,121),5))end)local _T,_U=pcall(function()return require(_J:WaitForChild(string.char(78,101,116),5))end)local _V,_W=pcall(function()return require(_J:FindFirstChild(string.char(82,111,108,101,115)))end)local _X,_Y=pcall(function()return require(_J:FindFirstChild(string.char(83,102,120)))end)local _Z,_ba=pcall(function()return require(_J:FindFirstChild(string.char(83,112,108,105,99,101)))end)local _bb=_I:WaitForChild(string.char(71,97,109,101,71,117,105),10)local _bc,_bd=pcall(function()return require(_bb:WaitForChild(string.char(80,97,114,116,105,99,108,101,115),5))end)local _be,_bf=pcall(function()return require(_bb:WaitForChild(string.char(87,111,114,108,100,77,101,110,117),5))end)local _bg=string.char(65,78,67,72,72,117,98,95,71,114,111,119,66,108,111,120,46,106,115,111,110)local _bh=string.char(65,78,67,72,72,117,98,95,82,101,106,111,105,110,95)..tostring(_H.UserId)..string.char(46,106,115,111,110)local _bi=string.char(65,78,67,72,72,117,98,95,80,97,98,114,105,107,95)..tostring(_H.UserId)..string.char(46,106,115,111,110)local _bj=string.char(65,78,67,72,72,117,98,95,71,114,111,119,66,108,111,120,46,108,117,97)local _bk=10000 local _bl=0.3 local _bm=0.34 local _bn={prefix=string.char(47),dropId=242,longhandRange=3,blinkMin=0.2,blinkMax=0.5,winDrop=0,pos1={},pos2={},fastPull=false,fastKick=false,fastBan=false,autoRestore=true,autoReload=true,autoWarp=false,launcher=true,lastWorld="",scriptUrl="",session={},reconnectOn=false,reconnectWorld=true,reconnectServer=true,reconnectKeep=false,reconnectDelay=5,targetWorld="",walkSpeed=100,mutePunch=true,visualAnim=true,liteMode=false,customWatermark=true,watermarkText=string.char(65,78,67,72,32,72,85,66),selectedRole=string.char(110,111,110,101),calibX=0,calibY=0,collectMode=string.char(83,101,110,116,117,104,97,110),collectAround=false,collectRadius=3,vendMode=string.char(73,115,105,32,115,116,111,99,107,32,100,97,114,105,32,100,114,111,112),vendPoint="",vendDropX=-1,vendDropY=-1,vendItems={},farmMode=string.char(80,108,97,99,101,32,43,32,66,114,101,97,107),farmPlaceMs=250,farmDelay=0.22,farmAfterBreakMs=300,farmMultiTarget=1,farmHitsOverride=0,farmBreakBg=true,farmPlaceId=2,farmGrid={[string.char(49,44,48)]=true},farmTake=true,farmAutoDropSeed=false,farmSeedDropAt=200,farmSeedKeep=0,farmDropWorld="",farmDropX=-1,farmDropY=-1,clearSweep=string.char(90,105,103,45,122,97,103),clearIncludeBg=true,clearBreakDelay=0.16,clearTpDelay=0.22,clearTake=true,clearModFly=true,harvestDoHarvest=true,harvestDoPlant=false,harvestSeedId=3,harvestUseBlock=false,harvestScaffoldId=2,harvestDelay=0.22,harvestPlantDelay=0.25,harvestTpDelay=0.30,harvestTake=true,harvestModFly=false,dfBreakDelay=0.15,dfTpDelay=0.28,dfTake=true,dfModFly=true,dfReplacePlatform=true,spliceA=3,spliceB=5,spliceRoam=true,spliceMs=300,pabrikSeedId=3,pabrikMaxSeed=100,pabrikWholeWorld=true,pabrikTiles={[string.char(49,44,48)]=true},pabrikBreakX=-1,pabrikBreakY=-1,pabrikBreakSec=120,pabrikDrop=true,pabrikDropWorld="",pabrikDropX=-1,pabrikDropY=-1,trashOn=false,trashList={},trashAt=150,trashKeep=0,convertLockOn=false,moveMode=string.char(108,101,103,105,116),moveMethod=string.char(76,101,103,105,116,32,87,97,108,107,105,110,103),navSpeed=1,moveStepDelay=0.28,clickTpShift=false,guardWho=string.char(83,116,97,102,102,32,40,77,111,100,47,68,101,118,41),guardStopAll=true,guardLeave=false,guardAutoBack=true,guardBackSec=60,guardCalmSec=5,chatText="",chatInterval=6,bonusAutoQuest=false,bonusAutoRedeem=false,scanAuto=false,scanLayer=string.char(83,101,109,117,97),scanFilter="",webhookOn=false,webhookUrl="",webhookReportMin=0,whPenjaga=true,whStop=true,whFull=true,whBonus=true,whRejoin=true,whPabrik=true,}local function _bo()pcall(function()if isfile and readfile and isfile(_bg)then local _bp=_z:JSONDecode(readfile(_bg))for _bq,_br in pairs(_bp)do if _bn[_bq]~=nil and type(_br)==type(_bn[_bq])then _bn[_bq]=_br end end end end)end local function _bs()pcall(function()if writefile then writefile(_bg,_z:JSONEncode(_bn))end end)end _bo()local _bt=getgc or(debug and debug.getgc)local _bu=(debug and debug.getupvalue)or getupvalue local _bv=(debug and debug.setupvalue)or setupvalue local _bw=(debug and debug.getconstants)or getconstants local function _bx(_by)if debug and debug.getupvalues then local _bz,_bA=pcall(debug.getupvalues,_by)if _bz and type(_bA)==string.char(116,97,98,108,101)then return _bA end end local _bB={}if _bu then for _bC=1,255 do local _bD,_bE=pcall(_bu,_by,_bC)if not _bD then break end _bB[_bC]=_bE end end return _bB end local function _bF(_bG)return(tostring(_bG or""):gsub(string.char(94,37,115,43),""):gsub(string.char(37,115,43,36),""))end local _bH=nil local function _bI(_bJ,_bK,_bL)if _bH then local _bM=pcall(_bH,tostring(_bJ),_bK,_bL)if _bM then return end end pcall(function()_w:SetCore(string.char(83,101,110,100,78,111,116,105,102,105,99,97,116,105,111,110),{Title=_bK or string.char(65,78,67,72,32,72,85,66,32,124,32,71,114,111,119,66,108,111,120),Text=tostring(_bJ),Duration=_bL or 4,})end)end local _bN={World=nil,Inv=nil,InvTable=nil,SetTile=nil,Punch=nil,State=nil,Menu=nil,Gems=nil,Hud=nil,Trees=nil,Others=nil,Rigs=nil,Particles={},}local _bO={list=nil,update=nil,brokeAt={},seen={},nextTick=0}local _bP={fn=nil,idx=nil,set=nil,Particles=nil}local _bQ={}local _bR={}local _bS={}local _bT=nil local _bU=nil local _bV={T0=os.clock(),Gems0=nil,Placed=0,Broken=0,Collected=0,Harvested=0,Planted=0,Items={},}local _bW={Queue={},LastFull={},Status=string.char(45),}do(function()local function _bX()return(syn and syn.request)or(http and http.request)or http_request or request or(fluxus and fluxus.request)end function _bW.Valid(_bY)_bY=tostring(_bY or"")for _bZ,_ca in ipairs({string.char(100,105,115,99,111,114,100,46,99,111,109),string.char(100,105,115,99,111,114,100,97,112,112,46,99,111,109),string.char(112,116,98,46,100,105,115,99,111,114,100,46,99,111,109),string.char(99,97,110,97,114,121,46,100,105,115,99,111,114,100,46,99,111,109)})do if string.sub(_bY,1,#_ca+22)==string.char(104,116,116,112,115,58,47,47).._ca..string.char(47,97,112,105,47,119,101,98,104,111,111,107,115,47)then return true end end return false end function _bW.Send(_cb,_cc)if not _bn.webhookOn or not _bW.Valid(_bn.webhookUrl)then return end local _cd=_cb==string.char(116,101,115,116)or _cb==string.char(114,101,112,111,114,116)or(_cb==string.char(112,101,110,106,97,103,97)and _bn.whPenjaga)or(_cb==string.char(115,116,111,112)and _bn.whStop)or(_cb==string.char(102,117,108,108)and _bn.whFull)or(_cb==string.char(98,111,110,117,115)and _bn.whBonus)or(_cb==string.char(114,101,106,111,105,110)and _bn.whRejoin)or(_cb==string.char(112,97,98,114,105,107)and _bn.whPabrik)if not _cd or#_bW.Queue>=20 then return end table.insert(_bW.Queue,tostring(_cc))end task.spawn(function()while _e()do local _ce=table.remove(_bW.Queue,1)if not _ce then task.wait(0.5)else local _cf=_bX()if not _cf then _bW.Status=string.char(69,120,101,99,117,116,111,114,32,116,105,100,97,107,32,109,101,110,100,117,107,117,110,103,32,114,101,113,117,101,115,116,32,72,84,84,80)else local _cg=_z:JSONEncode({username=string.char(65,78,67,72,32,72,117,98,32,124,32,71,114,111,119,66,108,111,120),content=string.format(string.char(42,42,91,37,115,93,42,42,32,37,115),_H.Name,_ce),})local _ch,_ci=pcall(_cf,{Url=_bn.webhookUrl,Method=string.char(80,79,83,84),Headers={[string.char(67,111,110,116,101,110,116,45,84,121,112,101)]=string.char(97,112,112,108,105,99,97,116,105,111,110,47,106,115,111,110)},Body=_cg,})local _cj=_ch and type(_ci)==string.char(116,97,98,108,101)and tonumber(_ci.StatusCode or _ci.Status)or nil if _ch and(_cj==nil or _cj<300)then _bW.Status=string.char(84,101,114,107,105,114,105,109,32)..os.date(string.char(37,72,58,37,77,58,37,83))else _bW.Status=string.char(71,97,103,97,108,32,107,105,114,105,109,32,40)..tostring(_cj or _ci)..string.char(41)end end task.wait(2.5)end end end)end)()end local _ck={active=false,left=false,right=false,jump=false,down=false}local _cl={up=false,down=false}local _cm=_t(game:GetService(string.char(86,105,114,116,117,97,108,73,110,112,117,116,77,97,110,97,103,101,114)))local _cn={left=false,right=false,jump=false}local function _co(_cp,_cq,_cr)if _cn[_cp]==_cr then return end _cn[_cp]=_cr pcall(function()if _cm and _cm.SendKeyEvent then _cm:SendKeyEvent(_cr,_cq,false,game)end end)end local function _cs()if not _ck.active then _co(string.char(108,101,102,116),Enum.KeyCode.A,false)_co(string.char(114,105,103,104,116),Enum.KeyCode.D,false)_co(string.char(106,117,109,112),Enum.KeyCode.Space,false)return end _co(string.char(108,101,102,116),Enum.KeyCode.A,_ck.left==true)_co(string.char(114,105,103,104,116),Enum.KeyCode.D,_ck.right==true)_co(string.char(106,117,109,112),Enum.KeyCode.Space,_ck.jump==true)end local function _ct()_ck.left,_ck.right,_ck.jump,_ck.down=false,false,false,false _co(string.char(108,101,102,116),Enum.KeyCode.A,false)_co(string.char(114,105,103,104,116),Enum.KeyCode.D,false)_co(string.char(106,117,109,112),Enum.KeyCode.Space,false)end local _cu=_a.__ANCH_TrueOrigIsDown local function _cv(_cw,_cx,...)if _e()then if _ck.active then if _cx==string.char(107,101,121,76,101,102,116)then return _ck.left end if _cx==string.char(107,101,121,82,105,103,104,116)then return _ck.right end if _cx==string.char(107,101,121,74,117,109,112)then return _ck.jump end if _cx==string.char(107,101,121,68,111,119,110)then return _ck.down end end if _cl.up and _cx==string.char(107,101,121,74,117,109,112)then return true end if _cl.down and _cx==string.char(107,101,121,68,111,119,110)then return true end end if _cu then return _cu(_cw,_cx,...)end return false end local function _cy()if _be and type(_bf)==string.char(116,97,98,108,101)and type(rawget(_bf,string.char(105,115,68,111,119,110)))==string.char(102,117,110,99,116,105,111,110)then local _cz=rawget(_bf,string.char(105,115,68,111,119,110))if not _cu and not(isexecutorclosure and pcall(isexecutorclosure,_cz)and isexecutorclosure(_cz))then _cu=_cz _a.__ANCH_TrueOrigIsDown=_cz end rawset(_bf,string.char(105,115,68,111,119,110),_cv)end if _bt then for _cA,_cB in ipairs(_bt(true))do if type(_cB)==string.char(116,97,98,108,101)then local _cC=rawget(_cB,string.char(105,115,68,111,119,110))if type(_cC)==string.char(102,117,110,99,116,105,111,110)then if not _cu and not(isexecutorclosure and pcall(isexecutorclosure,_cC)and isexecutorclosure(_cC))then _cu=_cC _a.__ANCH_TrueOrigIsDown=_cC end rawset(_cB,string.char(105,115,68,111,119,110),_cv)end end end end end _cy()do(function()local function _cD(_cE)if not _bw or(islclosure and not islclosure(_cE))then return false end local _cF,_cG=pcall(_bw,_cE)if not _cF or type(_cG)~=string.char(116,97,98,108,101)then return false end local _cH,_cI,_cJ=false,false,false for _cK,_cL in pairs(_cG)do if _cL==string.char(116,105,108,101)or _cL==string.char(83,101,116,84,105,108,101)then _cH=true elseif _cL==string.char(112,108,97,99,101,100,65,116)then _cI=true elseif _cL==string.char(102,108,105,112,115)then _cJ=true end end return _cH and _cI and _cJ end local function _cM(_cN)if not _bw or(islclosure and not islclosure(_cN))then return false end local _cO,_cP=pcall(_bw,_cN)if not _cO or type(_cP)~=string.char(116,97,98,108,101)then return false end local _cQ,_cR=false,false for _cS,_cT in pairs(_cP)do if _cT==string.char(69,109,112,116,121,32,116,104,101,32,86,101,110,100,105,110,103,32,77,97,99,104,105,110,101,32,102,105,114,115,116,33)then _cQ=true elseif _cT==string.char(110,101,119,67,114,97,99,107)or _cT==string.char(72,97,114,118,101,115,116,80,114,111,118,105,100,101,114)then _cR=true end end return _cQ and _cR end local function _cU(_cV)local _cW=rawget(_cV,string.char(115,116,97,116,101))if type(_cW)~=string.char(102,117,110,99,116,105,111,110)then return false end local _cX,_cY=pcall(_cW)return _cX and type(_cY)==string.char(116,97,98,108,101)and type(_cY.x)==string.char(110,117,109,98,101,114)and type(_cY.y)==string.char(110,117,109,98,101,114)and _cY.facing~=nil and _cY.vx~=nil end local function _cZ(_da)if _da==_cD or _da==_cM then return false end if isexecutorclosure then local _db,_dc=pcall(isexecutorclosure,_da)if _db and _dc then return false end end return true end local function _dd(_de)if type(_de)~=string.char(116,97,98,108,101)or _de==_bN.World then return false end local _df=rawget(_de,1)if _df==nil then return next(_de)==nil end return type(_df)==string.char(116,97,98,108,101)and rawget(_df,string.char(117,105,100))~=nil and rawget(_df,string.char(102,114,97,109,101))~=nil end function _bP.isArmFn(_dg)if not _bw or(islclosure and not islclosure(_dg))then return false end local _dh,_di=pcall(_bw,_dg)if not _dh or type(_di)~=string.char(116,97,98,108,101)then return false end local _dj,_dk,_dl=false,false,false for _dm,_dn in pairs(_di)do if _dn==string.char(102,111,114,101,97,114,109)then _dj=true elseif _dn==string.char(104,101,108,100,82,101,97,99,104)then _dk=true elseif _dn==string.char(112,117,110,99,104,82,101,97,99,104)then _dl=true end end return _dj and _dk and _dl end function _bP.bind(_do)if not(_bu and _bv)then return false end local _dp,_dq={},0 for _dr=1,16 do local _ds,_dt=pcall(_bu,_do,_dr)if not _ds then break end _dp[_dr]=_dt if _dt~=nil then _dq=_dr end end for _du=1,_dq-1 do local _dv=_dp[_du]if _dv==nil or(type(_dv)==string.char(116,97,98,108,101)and rawget(_dv,string.char(116))~=nil and rawget(_dv,string.char(102,97,99,105,110,103))~=nil)then _bP.fn,_bP.idx,_bP.set=_do,_du,_bv return true end end return false end local function _dw()if not getconnections then return end local _dx,_dy,_dz={},{},0 for _dA,_dB in ipairs({string.char(82,101,110,100,101,114,83,116,101,112,112,101,100),string.char(72,101,97,114,116,98,101,97,116),string.char(83,116,101,112,112,101,100)})do local _dC,_dD=pcall(function()return _B[_dB]end)if _dC and _dD then local _dE,_dF=pcall(getconnections,_dD)if _dE and type(_dF)==string.char(116,97,98,108,101)then for _dG,_dH in ipairs(_dF)do local _dI,_dJ=pcall(function()return _dH.Function end)if _dI and type(_dJ)==string.char(102,117,110,99,116,105,111,110)then table.insert(_dx,_dJ)end end end end end local _dK=1 while _dK<=#_dx and _dz<450 do local _dL=_dx[_dK]_dK=_dK+1 if not _dy[_dL]then _dy[_dL]=true _dz=_dz+1 if not _bP.fn and _bP.isArmFn(_dL)then _bP.bind(_dL)end for _dM,_dN in pairs(_bx(_dL))do local _dO=type(_dN)if _dO==string.char(116,97,98,108,101)then if not _bN.World then local _dP,_dQ=pcall(function()return type(rawget(_dN,string.char(102,103)))==string.char(116,97,98,108,101)and type(rawget(_dN,string.char(98,103)))==string.char(116,97,98,108,101)and type(rawget(_dN,string.char(119)))==string.char(110,117,109,98,101,114)and rawget(_dN,string.char(119))>0 and rawget(_dN,string.char(115,112,97,119,110))~=nil end)if _dP and _dQ then _bN.World=_dN end end if not _bN.Inv and _R and _S then local _dR,_dS=pcall(function()return getmetatable(_dN)==_S and type(rawget(_dN,string.char(115,108,111,116,115)))==string.char(116,97,98,108,101)end)if _dR and _dS then _bN.Inv=_dN end end if not _bN.State then local _dT,_dU=pcall(_cU,_dN)if _dT and _dU then _bN.State=rawget(_dN,string.char(115,116,97,116,101))end end elseif _dO==string.char(102,117,110,99,116,105,111,110)and not _dy[_dN]then if not _bP.fn and _bP.isArmFn(_dN)then _bP.bind(_dN)end table.insert(_dx,_dN)end end end end end local function _dV()local _dW=_bN.World if not _dW then return false end for _dX,_dY in ipairs({string.char(116,105,108,101,67,104,97,110,103,101,100),string.char(116,114,101,101,67,104,97,110,103,101,100),string.char(115,101,116,84,114,101,101)})do local _dZ=rawget(_dW,_dY)if type(_dZ)==string.char(102,117,110,99,116,105,111,110)then local _ea=_bx(_dZ)local _eb={}for _ec,_ed in pairs(_ea)do if type(_ed)==string.char(116,97,98,108,101)and _ed~=_dW then _eb[_ed]=true end end for _ee,_ef in pairs(_ea)do if type(_ef)==string.char(102,117,110,99,116,105,111,110)then local _eg=_bx(_ef)local _eh,_ei,_ej=false,0,{}for _ek,_el in pairs(_eg)do if rawequal(_el,_dW)then _eh=true elseif type(_el)==string.char(116,97,98,108,101)then _ei=_ei+1 if _eb[_el]then table.insert(_ej,_el)end end end if _eh and _ei<=3 and#_ej==1 then _bN.Trees=_ej[1]return true end end end end end return false end function _bN.Scan()_bN.World,_bN.Inv,_bN.InvTable,_bN.SetTile,_bN.Punch,_bN.State,_bN.Menu,_bN.Gems,_bN.Hud,_bN.Others=nil,nil,nil,nil,nil,nil,nil,nil,nil,nil _bN.Particles={}_dw()if _bt then for _em,_en in ipairs(_bt(true))do local _eo=type(_en)if _eo==string.char(116,97,98,108,101)then if not _bN.World then local _ep,_eq=pcall(function()return type(rawget(_en,string.char(102,103)))==string.char(116,97,98,108,101)and type(rawget(_en,string.char(98,103)))==string.char(116,97,98,108,101)and type(rawget(_en,string.char(119)))==string.char(110,117,109,98,101,114)and type(rawget(_en,string.char(104)))==string.char(110,117,109,98,101,114)and rawget(_en,string.char(115,112,97,119,110))~=nil end)if _ep and _eq then _bN.World=_en end end if not _bN.InvTable then local _er,_es=pcall(function()return type(rawget(_en,string.char(111,110,68,114,111,112)))==string.char(102,117,110,99,116,105,111,110)and type(rawget(_en,string.char(99,97,110,68,114,111,112)))==string.char(102,117,110,99,116,105,111,110)and type(rawget(_en,string.char(105,115,87,111,114,110)))==string.char(102,117,110,99,116,105,111,110)end)if _er and _es then _bN.InvTable=_en _bN.Hud=_bN.Hud or _en end end if not _bN.Inv and _R and _S then local _et,_eu=pcall(function()return getmetatable(_en)==_S and type(rawget(_en,string.char(115,108,111,116,115)))==string.char(116,97,98,108,101)end)if _et and _eu then _bN.Inv=_en end end if not _bN.State then local _ev,_ew=pcall(_cU,_en)if _ev and _ew then _bN.State=rawget(_en,string.char(115,116,97,116,101))end end if not _bN.Menu then local _ex,_ey=pcall(function()return type(rawget(_en,string.char(111,112,101,110,66,97,99,107,112,97,99,107)))==string.char(102,117,110,99,116,105,111,110)and type(rawget(_en,string.char(117,105)))==string.char(116,97,98,108,101)end)if _ex and _ey then _bN.Menu=_en end end if not _bN.Gems then local _ez,_eA=pcall(function()return type(rawget(_en,string.char(97,100,100,71,101,109,115)))==string.char(102,117,110,99,116,105,111,110)end)if _ez and _eA then _bN.Gems=_en end end if not _bN.Hud then local _eB,_eC=pcall(function()return type(rawget(_en,string.char(112,117,110,99,104,82,97,110,103,101)))==string.char(102,117,110,99,116,105,111,110)and type(rawget(_en,string.char(98,117,105,108,100,82,97,110,103,101)))==string.char(102,117,110,99,116,105,111,110)end)if _eB and _eC then _bN.Hud=_en end end if not _bN.Others then local _eD,_eE=pcall(function()return type(rawget(_en,string.char(108,105,115,116)))==string.char(102,117,110,99,116,105,111,110)and type(rawget(_en,string.char(119,104,101,114,101)))==string.char(102,117,110,99,116,105,111,110)and type(rawget(_en,string.char(112,108,97,121,101,114,65,116)))==string.char(102,117,110,99,116,105,111,110)end)if _eD and _eE then _bN.Others=_en end end if not _bN.Rigs then local _eH,_eI=pcall(function()local _eF,_eG=rawget(_en,1),rawget(_en,-1)return type(_eF)==string.char(116,97,98,108,101)and type(_eG)==string.char(116,97,98,108,101)and typeof(rawget(_eF,string.char(98,111,100,121)))==string.char(73,110,115,116,97,110,99,101)and typeof(rawget(_eG,string.char(104,101,97,100)))==string.char(73,110,115,116,97,110,99,101)end)if _eH and _eI then _bN.Rigs=_en end end if _bc and _bd then local _eJ,_eK=pcall(function()return getmetatable(_en)==_bd and type(rawget(_en,string.char(108,105,118,101)))==string.char(116,97,98,108,101)end)if _eJ and _eK then table.insert(_bN.Particles,_en)end end elseif _eo==string.char(102,117,110,99,116,105,111,110)and _cZ(_en)then if not _bN.SetTile and _cD(_en)then _bN.SetTile=_en elseif not _bN.Punch and _cM(_en)then _bN.Punch=_en end end end end if _bN.World and(not _bN.SetTile or not _bN.Punch)and debug and debug.info then for _eL,_eM in ipairs(_bt(true))do if type(_eM)==string.char(102,117,110,99,116,105,111,110)then local _eN,_eO=pcall(debug.info,_eM,string.char(110))if _eN and(_eO==string.char(115,101,116,84,105,108,101)or _eO==string.char(104,105,116))then for _eP,_eQ in pairs(_bx(_eM))do if _eQ==_bN.World then if _eO==string.char(115,101,116,84,105,108,101)and not _bN.SetTile then _bN.SetTile=_eM end if _eO==string.char(104,105,116)and not _bN.Punch then _bN.Punch=_eM end end end end end end end if not _bN.Inv and _bN.World and type(rawget(_bN.World,string.char(98,97,99,107,112,97,99,107,78,111,119)))==string.char(102,117,110,99,116,105,111,110)then for _eR,_eS in pairs(_bx(_bN.World.backpackNow))do if type(_eS)==string.char(116,97,98,108,101)and type(_eS.slots)==string.char(116,97,98,108,101)then _bN.Inv=_eS break end end end if _bT then pcall(function()_bT:Disconnect()end);_bT=nil end if _bN.Inv and typeof(_bN.Inv.changed)==string.char(73,110,115,116,97,110,99,101)then _bT=_f(_bN.Inv.changed.Event:Connect(function()if _e()and _bU then pcall(_bU)end end))end function _bO.findUpdate()local _eT,_eU=_bN.World,_bO.list local _eV=_eT and rawget(_eT,string.char(100,114,111,112,84,97,107,101,110))if type(_eV)~=string.char(102,117,110,99,116,105,111,110)or not _eU then return false end for _eW,_eX in pairs(_bx(_eV))do if type(_eX)==string.char(102,117,110,99,116,105,111,110)then for _eY,_eZ in pairs(_bx(_eX))do if rawequal(_eZ,_eU)then _bO.update=_eX return true end end end end return false end function _bO.findRefs()local _fa=_bN.World local _fb=_fa and rawget(_fa,string.char(100,114,111,112,76,105,115,116))if type(_fb)==string.char(102,117,110,99,116,105,111,110)then local _fc,_fd=pcall(_fb)if _fc and _dd(_fd)then if _bO.list~=_fd then _bO.update=nil end _bO.list=_fd if not _bO.update then _bO.findUpdate()end return true end end _bO.list,_bO.update=nil,nil local _fe=_fa and rawget(_fa,string.char(100,114,111,112,84,97,107,101,110))if type(_fe)==string.char(102,117,110,99,116,105,111,110)then for _ff,_fg in pairs(_bx(_fe))do if not _bO.list and _dd(_fg)then _bO.list=_fg elseif not _bO.update and type(_fg)==string.char(102,117,110,99,116,105,111,110)then _bO.update=_fg end end if _bO.list and not _bO.update then _bO.findUpdate()end end local _fh=_K and _K:FindFirstChild(string.char(68,114,111,112,84,97,107,101,110))if not _bO.list and _fh and getconnections then local _fi,_fj=pcall(getconnections,_fh.OnClientEvent)if _fi and type(_fj)==string.char(116,97,98,108,101)then for _fk,_fl in ipairs(_fj)do local _fm,_fn=pcall(function()return _fl.Function end)if _fm and type(_fn)==string.char(102,117,110,99,116,105,111,110)then for _fo,_fp in pairs(_bx(_fn))do if not _bO.list and _dd(_fp)then _bO.list=_fp elseif not _bO.update and type(_fp)==string.char(102,117,110,99,116,105,111,110)then _bO.update=_fp end end end if _bO.list then break end end end end return _bO.list~=nil end _bO.findRefs()_bN.Trees=nil if not _bN.Trees then _dV()end if _bN.World and type(rawget(_bN.World,string.char(116,114,101,101,76,111,111,107)))==string.char(102,117,110,99,116,105,111,110)and _bu then local _fq,_fr=pcall(_bu,_bN.World.treeLook,8)if _fq and type(_fr)==string.char(116,97,98,108,101)then _bN.Trees=_fr end end local _fs=_K and _K:FindFirstChild(string.char(84,114,101,101,67,104,97,110,103,101,100))if not _bN.Trees and _fs and getconnections then local _ft,_fu=pcall(getconnections,_fs.OnClientEvent)if _ft and type(_fu)==string.char(116,97,98,108,101)then for _fv,_fw in ipairs(_fu)do local _fx,_fy=pcall(function()return _fw.Function end)if _fx and type(_fy)==string.char(102,117,110,99,116,105,111,110)then for _fz,_fA in pairs(_bx(_fy))do if type(_fA)==string.char(116,97,98,108,101)and _fA~=_bN.World and rawget(_fA,string.char(102,103))==nil then local _fB,_fC=next(_fA)if _fC==nil or(type(_fC)==string.char(116,97,98,108,101)and type(rawget(_fC,string.char(112)))==string.char(110,117,109,98,101,114))then _bN.Trees=_fA break end end end end if _bN.Trees then break end end end end return _bN.World~=nil end end)()end local function _fD()if _bN.World and type(rawget(_bN.World,string.char(102,103)))==string.char(116,97,98,108,101)then return _bN.World end _bN.Scan()return _bN.World end local function _fE()if _bN.InvTable then return _bN.InvTable end _bN.Scan()return _bN.InvTable end local function _fF()if _bN.Rigs then return _bN.Rigs end _bN.Scan()return _bN.Rigs end local function _fG(_fH)local _fI=_Q and _Q[_fH]return(type(_fI)==string.char(116,97,98,108,101)and type(_fI.name)==string.char(115,116,114,105,110,103))and _fI.name or(string.char(73,116,101,109,32,35)..tostring(_fH))end local function _fJ(_fK)if not _fK then return 0 end if not _bN.Inv then _bN.Scan()end local _fL=_bN.Inv if not _fL then return 0 end if type(_fL.count)==string.char(102,117,110,99,116,105,111,110)then local _fM,_fN=pcall(function()return _fL:count(_fK)end)if _fM and type(_fN)==string.char(110,117,109,98,101,114)then return _fN end end local _fO=0 if type(_fL.slots)==string.char(116,97,98,108,101)then for _fP,_fQ in pairs(_fL.slots)do if type(_fQ)==string.char(116,97,98,108,101)and _fQ.id==_fK then _fO=_fO+((_fQ.n or 0))end end end return _fO end local function _fR(_fS)local _fT=_fS and _Q[_fS]if not _fT then return nil end local _fU=_fT.seedId or(_fS+1)local _fV=_Q[_fU]return(_fV and _fV.kind==string.char(115,101,101,100))and _fU or nil end local function _fW(_fX)if not _fX then return nil end local _fY=_fX-1 local _fZ=_Q[_fY]if _fZ and _fZ.kind~=string.char(115,101,101,100)and(_fZ.seedId==nil or _fZ.seedId==_fX)then return _fY end return nil end local _ga=nil local function _gb()if _ga then return _ga end if _Q[2]and type(_Q[2].name)==string.char(115,116,114,105,110,103)and _Q[2].name:lower()==string.char(100,105,114,116)then _ga=2 return 2 end for _gc,_gd in pairs(_Q)do if type(_gc)==string.char(110,117,109,98,101,114)and type(_gd)==string.char(116,97,98,108,101)and type(_gd.name)==string.char(115,116,114,105,110,103)and _gd.name:lower()==string.char(100,105,114,116)then _ga=_gc return _gc end end return 2 end local _ge=nil local function _gf()if _ge then return _ge end local _gg=_fR(_gb())if _gg then _ge=_gg return _gg end return 3 end local function _gh()local _gi=_I:FindFirstChild(string.char(71,97,109,101,71,117,105))local _gj=_gi and _gi:FindFirstChild(string.char(87,111,114,108,100))local _gk=_gj and _gj:FindFirstChild(string.char(67,97,109,101,114,97))local _gl=_gk and _gk:FindFirstChild(string.char(84,105,108,101,115))local _gm=_gk and _gk:FindFirstChild(string.char(80,108,97,121,101,114,86,105,101,119))if not(_gl and _gm and _gl:IsA(string.char(71,117,105,79,98,106,101,99,116))and _gm:IsA(string.char(71,117,105,79,98,106,101,99,116)))then return nil end local _gn=_gl:FindFirstChildWhichIsA(string.char(73,109,97,103,101,76,97,98,101,108))local _go=(_gn and _gn.AbsoluteSize.X>0)and _gn.AbsoluteSize.X or 64 local _gp=_gm.AbsolutePosition+(_gm.AbsoluteSize/2)local _gq=_gp-_gl.AbsolutePosition return{x=_gq.X/_go,y=(_gq.Y/_go)+0.475,vx=0,vy=0,facing=1,grounded=true,dead=false,active=true,}end local function _gr()if not _bN.State then _bN.Scan()end if _bN.State then local _gs,_gt=pcall(_bN.State)if _gs and type(_gt)==string.char(116,97,98,108,101)and type(_gt.x)==string.char(110,117,109,98,101,114)and type(_gt.y)==string.char(110,117,109,98,101,114)and _gt.active~=false then return _gt end end return _gh()end local function _gu()local _gv=_gr()if _gv then return _gv.x+_bn.calibX,_gv.y+_bn.calibY,(_gv.facing and _gv.facing<0)and-1 or 1 end return nil,string.char(75,97,114,97,107,116,101,114,32,98,101,108,117,109,32,98,101,114,97,100,97,32,100,105,32,119,111,114,108,100)end function _bP.Swing(_gw,_gx,_gy)if not _bn.visualAnim or not(_bP.fn and _bP.idx and _bP.set)then return end local _gz=_gr()local _gA=(_gz and _gw+0.5<_gz.x)and-1 or 1 pcall(_bP.set,_bP.fn,_bP.idx,{t=os.clock(),x=_gw+0.5,y=_gx+0.5,facing=_gA,kind=_gy})end function _bP.Place(_gB,_gC,_gD)if not _bn.visualAnim then return end _bP.Swing(_gB,_gC,string.char(98,117,105,108,100))local _gE=_Q[_gD]if _gE and _gE.kind~=string.char(115,101,101,100)and _bN.Particles and#_bN.Particles>0 then local _gF=_bP.Particles or _bN.Particles[1]_bP.Particles=_gF pcall(function()_gF:place(_gB+0.5,_gC+0.5)end)end end local function _gG()local _gH,_gI=_gu()if not _gH then return nil end return math.floor(_gH),math.floor(_gI-0.475)end local function _gJ()local _gK=_fD()local _gL=_gK and rawget(_gK,string.char(110,97,109,101))return type(_gL)==string.char(115,116,114,105,110,103)and _gL or""end local function _gM(_gN,_gO,_gP,_gQ)local _gR=_gN or _fD()if not _gR or _gP<0 or _gQ<0 or _gP>=_gR.w or _gQ>=_gR.h then return nil end local _gS=rawget(_gR,_gO)local _gT=_gS and _gS[_gQ]return _gT and(_gT[_gP]or 0)or nil end local function _gU(_gV,_gW,_gX)local _gY=_gV or _fD()return _gY and type(_gY.w)==string.char(110,117,109,98,101,114)and _gW>=0 and _gX>=0 and _gW<_gY.w and _gX<_gY.h end local function _gZ(_ha)local _hb=_Q and _Q[_ha]return(type(_hb)==string.char(116,97,98,108,101)and _hb.background)and string.char(98,103)or string.char(102,103)end local function _hc()local _hd=_bN.Hud or _fE()if _hd and type(_hd.punchRange)==string.char(102,117,110,99,116,105,111,110)then local _he,_hf=pcall(_hd.punchRange)if _he and type(_hf)==string.char(110,117,109,98,101,114)and _hf>0 then return _hf end end return 2.5 end local function _hg()local _hh=_bN.Hud or _fE()if _hh and type(_hh.buildRange)==string.char(102,117,110,99,116,105,111,110)then local _hi,_hj=pcall(_hh.buildRange)if _hi and type(_hj)==string.char(110,117,109,98,101,114)and _hj>0 then return _hj end end return 2.5 end local function _hk(_hl,_hm,_hn,_ho,_hp)if _ho~=0 and _bP.Place then _bP.Place(_hm,_hn,_ho)end if not _bN.SetTile then _bN.Scan()end if _bN.SetTile then local _hq=pcall(_bN.SetTile,_hl,_hm,_hn,_ho,false,_hp==true)if _hq then _bR[_hm..string.char(44).._hn]=os.clock()return true end end if _T and type(_U)==string.char(116,97,98,108,101)and type(_U.tile)==string.char(116,97,98,108,101)then local _hr=pcall(_U.tile.send,{layer=(_hl==string.char(98,103))and 2 or 1,x=_hm,y=_hn,id=_ho,flip=_hp==true,})if _hr then local _hs=_fD()if _hs and _hs[_hl]and _hs[_hl][_hn]then _hs[_hl][_hn][_hm]=_ho end _bR[_hm..string.char(44).._hn]=os.clock()return true end elseif _M then pcall(function()_M:FireServer(_hl,_hm,_hn,_ho,_hp==true)end)local _ht=_fD()if _ht and _ht[_hl]and _ht[_hl][_hn]then _ht[_hl][_hn][_hm]=_ho end _bR[_hm..string.char(44).._hn]=os.clock()return true end return false end local function _hu(_hv,_hw,_hx)if not _hv or _hv<=0 then return false end if _fJ(_hv)<=0 then return false end local _hy=_gZ(_hv)local _hz=_hk(_hy,_hw.x,_hw.y,_hv,(_hx or 1)<0)if not _hz then return false end if _bN.Inv and type(_bN.Inv.remove)==string.char(102,117,110,99,116,105,111,110)then pcall(function()_bN.Inv:remove(_hv,1)end)end _bV.Placed=_bV.Placed+(1)return true end local function _hA(_hB,_hC)local _hD=_hB..string.char(44).._hC local _hE=_bR[_hD]if _hE then local _hF=os.clock()-_hE if _hF<_bm then task.wait(_bm-_hF)end _bR[_hD]=nil end end local function _hG(_hH)if not _hH or _hH==0 then return false end local _hI=_Q[_hH]if not _hI then return true end if _hI.lock or _hI.area or _hI.guildLock or _hI.vend or _hI.display then return false end local _hJ=type(_hI.name)==string.char(115,116,114,105,110,103)and _hI.name:lower()or""if _hJ:find(string.char(98,101,100,114,111,99,107),1,true)or _hJ:find(string.char(109,97,105,110,32,100,111,111,114),1,true)or _hJ:find(string.char(119,104,105,116,101,32,100,111,111,114),1,true)then return false end local _hK=(_hI.kind==string.char(115,101,101,100))and 20 or _hI.hits if type(_hK)==string.char(110,117,109,98,101,114)and _hK>0 then return true end local _hL=_fD()if _hI.staffHits and _hL and _hL.areas and _hL.areas.staff then return true end return _hK==nil end local function _hM(_hN,_hO,_hP)if _hP==nil then _hP=true end local _hQ=_fD()if not _hQ then return nil end local _hR=_gM(_hQ,string.char(102,103),_hN,_hO)if _hR==nil then return nil end local _hS=_gM(_hQ,string.char(98,103),_hN,_hO)local _hT,_hU if _hR~=0 then _hT,_hU=string.char(102,103),_hR elseif _hP and _hS and _hS~=0 then _hT,_hU=string.char(98,103),_hS end if not _hT or not _hG(_hU)then return nil end _hA(_hN,_hO)if not _bN.Punch then _bN.Scan()end if _bN.Punch then local _hV=pcall(_bN.Punch,_hN,_hO,_bn.mutePunch or nil,nil)if not _hV then return nil end _bP.Swing(_hN,_hO,string.char(112,117,110,99,104))if _gM(_hQ,_hT,_hN,_hO)~=_hU then _bV.Broken=_bV.Broken+(1)_bO.brokeAt[_hN..string.char(44).._hO]=os.clock()return string.char(98,114,111,107,101),_hU,_hT end return string.char(104,105,116),_hU,_hT end return nil end local _hW=false local _hX={}local _hY=nil local function _hZ()if _hW then return true end for _ia,_ib in pairs(_hX)do if _ib then return true end end return false end local function _ic()local _id=_fD()if not _id then return end if _hZ()then _id.ghost=true else _cl.up,_cl.down=false,false _id.ghost=(_H:GetAttribute(string.char(71,104,111,115,116))==true)end if _hY then _hY.Enabled=_hW end end local function _ie(_if,_ig)_hX[_if]=_ig and true or nil _ic()end local function _ih()_hW=true _ic()return true end local function _ii()_hW=false _ic()return true end _f(_B.Heartbeat:Connect(function()if not _e()then return end local _ij=_bN.World if not _ij then return end if _bO.collecting then _ij.speedScale=1 elseif _bn.walkSpeed~=100 then _ij.speedScale=_bn.walkSpeed/100 end if _hZ()and _ij.ghost~=true then _ij.ghost=true end end))local _ik={clickOn=false,token=0,conn=nil,last=string.char(45),BadEdge={},PlacedScaffolds=0,}do(function()local _il,_im=math.floor,math.abs local function _in(_io,_ip)local _iq=_fD()local _ir=_iq and _iq.fg and _iq.fg[_ip]return(_ir and _ir[_io])or 0 end local function _is(_it,_iu)local _iv=_in(_it,_iu)if _iv~=0 then return _Q[_iv]end return nil end local function _iw(_ix,_iy)local _iz=_fD()if not _iz then return true end if _ix<0 or _ix>=_iz.w or _iy>=_iz.h then return true end if _iy<0 then return false end local _iA=_is(_ix,_iy)if not _iA then return false end if _iA.combiner then local _iB,_iC=pcall(_iz.combinerShut,_ix,_iy)return(not _iB)or(_iC and true or false)end if _iA.vip then local _iD,_iE=pcall(_iz.vipMay,_ix,_iy)return not(_iD and _iE)end if _iA.entrance then local _iF=_iz.switches and _iz.switches[_iy*_iz.w+_ix]if _iA.gate then return not(_iF and _iF.off==true)end if _iF and _iF.public then return false end local _iG,_iH=pcall(function()return _iz.areas.mayBuild(_iz.lock,_ix,_iy)end)return not(_iG and _iH)end return _iA.solid and true or false end local function _iI(_iJ,_iK)local _iL=_is(_iJ,_iK)return _iL~=nil and(_iL.deadly or _iL.hurts or _iL.laser)and true or false end local function _iM(_iN,_iO)local _iP=_is(_iN,_iO)return _iP~=nil and _iP.platform and true or false end local function _iQ(_iR,_iS)return not _iw(_iR,_iS)and not _iI(_iR,_iS)end local function _iT(_iU,_iV)return not _iI(_iU,_iV+1)and(_iw(_iU,_iV+1)or _iM(_iU,_iV+1))end local function _iW(_iX,_iY,_iZ,_ja)return _im(_iY+0.5-_iX.x)<=_ja and _im(_iZ+0.5-(_iX.y-0.475))<=_ja end local function _jb(_jc,_jd)local _je=_fD()if not _je or _jc<0 or _jd<0 or _jc>=_je.w or _jd>=_je.h then return false end if _in(_jc,_jd)~=0 then return false end local _jf,_jg=pcall(function()if _je.areas and type(_je.areas.canEdit)==string.char(102,117,110,99,116,105,111,110)and not _je.areas.canEdit(_jc,_jd)then return false end if type(_je.builderOk)==string.char(102,117,110,99,116,105,111,110)and not _je.builderOk(_jc,_jd,true)then return false end return true end)return(not _jf)or _jg end local function _jh()local _ji={_bn.harvestScaffoldId,_gb(),_bn.farmPlaceId,}for _jj,_jk in ipairs(_ji)do if type(_jk)==string.char(110,117,109,98,101,114)and _jk>0 and _fJ(_jk)>0 then local _jl=_Q[_jk]if _jl and _jl.solid and _jl.kind~=string.char(115,101,101,100)then return _jk end end end if _bN.Inv and type(_bN.Inv.slots)==string.char(116,97,98,108,101)then for _jm,_jn in ipairs(_bN.Inv.slots)do local _jo=_jn.id and _Q[_jn.id]if _jo and _jo.solid and _jo.kind~=string.char(115,101,101,100)and not _jo.lock and(_jn.n or 0)>0 then return _jn.id end end end return _gb()end local function _jp(_jq,_jr)local _js=_jh()if not _js or _fJ(_js)<=0 or not _jb(_jq,_jr)then return false end local _jt=_gr()if _jt and not _iW(_jt,_jq,_jr,_hg()+0.5)then return false end if _hu(_js,{x=_jq,y=_jr},1)then _ik.PlacedScaffolds=_ik.PlacedScaffolds+(1)return true end return false end _ik.SolidAt=_iw _ik.OpenAt=_iQ _ik.RealSupport=_iT _ik.PlaceScaffold=_jp _ik.StateReaches=_iW _ik.PlaceOk=_jb function _ik.Los(_ju,_jv,_jw,_jx)if _jx-_jv>=2 then for _jy=_jv+1,_jx-1 do if _iw(_jw,_jy)then return false end end elseif _jv-_jx>=2 then for _jz=_jx+1,_jv-1 do if _iw(_jw,_jz)then return false end end end return true end function _ik.AirCheck(_jA)if not _jA or _jA.grounded then _ik.AirAt=nil return end if not _ik.AirAt then _ik.AirAt=os.clock()elseif os.clock()-_ik.AirAt>3 then _ik.AirAt=nil local _jB=(_jA.facing or 1)<0 _ck.active=true _ck.right,_ck.left=_jB,not _jB task.wait(0.2)_ck.right,_ck.left=false,false end end local function _jC(_jD,_jE,_jF,_jG,_jH)_jF=_jF+(1)local _jI=_jF while _jI>1 do local _jJ=math.floor(_jI/2)if _jD[_jJ]<=_jG then break end _jD[_jI],_jE[_jI]=_jD[_jJ],_jE[_jJ]_jI=_jJ end _jD[_jI],_jE[_jI]=_jG,_jH return _jF end local function _jK(_jL,_jM,_jN)local _jO=_jM[1]local _jP,_jQ=_jL[_jN],_jM[_jN]_jL[_jN],_jM[_jN]=nil,nil _jN=_jN-(1)if _jN>0 then local _jR=1 while true do local _jS=_jR*2 if _jS>_jN then break end if _jS<_jN and _jL[_jS+1]<_jL[_jS]then _jS=_jS+(1)end if _jP<=_jL[_jS]then break end _jL[_jR],_jM[_jR]=_jL[_jS],_jM[_jS]_jR=_jS end _jL[_jR],_jM[_jR]=_jP,_jQ end return _jO,_jN end function _ik.AStar(_jT,_jU,_jV,_jW,_jX,_jY,_jZ,_ka)local _kb=_fD()if not _kb then return nil,false,{}end local _kc,_kd=_kb.w,_kb.h local _ke=_kc*_kd _jY=_jY or 0.4 local _kf=_il(_jY)local _kg=math.ceil(-_jY+0.025)local _kh=_il(_jY+0.025)local _ki,_kj,_kk={},{},{}local function _kl(_km,_kn)if _km<0 or _km>=_kc or _kn>=_kd then return false end if _kn<0 then return true end local _ko=_kn*_kc+_km local _kp=_ki[_ko]if _kp==nil then _kp=_iQ(_km,_kn);_ki[_ko]=_kp end return _kp end local function _kq(_kr,_ks)if _kr<0 or _kr>=_kc or _ks<0 or _ks>=_kd then return false end local _kt=_ks*_kc+_kr local _ku=_kj[_kt]if _ku==nil then _ku=_iT(_kr,_ks);_kj[_kt]=_ku end return _ku end local function _kv(_kw,_kx)if not _jZ or _kw<0 or _kw>=_kc or _kx<0 or _kx>=_kd then return false end local _ky=_kx*_kc+_kw local _kz=_kk[_ky]if _kz==nil then _kz=_jb(_kw,_kx);_kk[_ky]=_kz end return _kz end local function _kA(_kB,_kC)local _kD=_im(_jW-_kB)-_jY local _kE=_jX-_kC local _kF=_im(_kE)-_jY local _kG=(_kE<0)and 1.5 or 0.5 return(_kD>0 and _kD or 0)+_kG*(_kF>0 and _kF or 0)end local function _kH(_kI,_kJ)if _jV[_kJ*_kc+_kI]then return true end if _jY>=1 then for _kK=_kJ+_kg,_kJ+_kh do if _kK>=0 and _kK<_kd then local _kL=_kK*_kc for _kM=_kI-_kf,_kI+_kf do if _kM>=0 and _kM<_kc and _jV[_kL+_kM]and not(_kM==_kI and _kK==_kJ+1)then return true end end end end end return false end local _kN,_kO,_kP,_kQ,_kR={},{},{},{},{}local _kS=0 local function _kT(_kU,_kV,_kW,_kX,_kY)_kS=_kS+(1)_kN[_kS],_kO[_kS],_kP[_kS],_kQ[_kS],_kR[_kS]=_kU,_kV,_kW,_kX,_kY end local function _kZ(_la,_lb)_kS=0 for _lc=-1,1,2 do local _ld=_la+_lc if _kl(_ld,_lb)then if _kq(_ld,_lb)then _kT(_ld,_lb,string.char(119,97,108,107),1,false)else if _kv(_ld,_lb+1)then _kT(_ld,_lb,string.char(119,97,108,107),3,true)end local _le=_lb+1 while _le<_kd and _le-_lb<=40 and _kl(_ld,_le)and not _kq(_ld,_le)do _le=_le+(1)end if _le<_kd and _kl(_ld,_le)and _kq(_ld,_le)then _kT(_ld,_le,string.char(102,97,108,108),1+0.5*(_le-_lb),false)end if _kl(_la,_lb-1)and _kl(_la,_lb-2)then for _lf=2,3 do local _lg=_la+(_lf-1)*_lc if not(_kl(_lg,_lb)and _kl(_lg,_lb-1)and _kl(_lg,_lb-2))then break end if _lf==3 and _kq(_lg,_lb)then break end local _lh=_la+_lf*_lc if _kl(_lh,_lb-1)and _kl(_lh,_lb-2)then for _li=0,2 do if not _kl(_lh,_lb+_li)then break end if _kq(_lh,_lb+_li)then _kT(_lh,_lb+_li,string.char(103,97,112),_lf+0.5+0.5*_li,false)break end end end end end end end for _lj=1,3 do if not _kl(_la,_lb-_lj)then break end if _kl(_la,_lb-_lj-1)and _kl(_ld,_lb-_lj)and _kq(_ld,_lb-_lj)and _kl(_ld,_lb-_lj-1)then _kT(_ld,_lb-_lj,string.char(106,117,109,112),1+1.5*_lj,false)end end for _lk=1,2 do if _kl(_la,_lb-1)and(_lk==1 or _kl(_la,_lb-2))and _kl(_ld,_lb-_lk)and _kq(_ld,_lb-_lk)and not(_kl(_la,_lb-_lk-1)and _kl(_ld,_lb-_lk-1))then _kT(_ld,_lb-_lk,string.char(115,116,97,105,114),3+1.5*_lk,false)end end end if _jZ and _kl(_la,_lb-1)and _kl(_la,_lb-2)and _kl(_la,_lb-3)and _kv(_la,_lb)then _kT(_la,_lb-1,string.char(112,105,108,108,97,114),4,true)end return _kS end local _ll=_jU*_kc+_jT local _lm,_ln,_lo,_lp,_lq={[_ll]=0},{},{},{},{}local _lr,_ls,_lt={},{},0 _lt=_jC(_lr,_ls,_lt,_kA(_jT,_jU),_ll)local _lu=0 local _lv=os.clock()while _lt>0 do local _lw _lw,_lt=_jK(_lr,_ls,_lt)if not _lq[_lw]then _lq[_lw]=true local _lx,_ly=_lw%_kc,math.floor(_lw/_kc)if _kH(_lx,_ly)then local _lz={}local _lA=_lw while _lA~=_ll do local _lB=_ln[_lA]table.insert(_lz,1,{fx=_lB%_kc,fy=math.floor(_lB/_kc),x=_lA%_kc,y=math.floor(_lA/_kc),kind=_lo[_lA],build=_lp[_lA],key=_lB*_ke+_lA,})_lA=_lB end return _lz,false,_lq end _lu=_lu+(1)if _lu>6500 then return nil,false,_lq end if _lu%400==0 then task.wait()if _ka and _ka()then return nil,false,_lq end end local _lC=_lm[_lw]local _lD=_kZ(_lx,_ly)for _lE=1,_lD do local _lF=_kO[_lE]*_kc+_kN[_lE]if not _lq[_lF]then local _lG=_ik.BadEdge[_lw*_ke+_lF]if not(_lG and _lG>_lv)then local _lH=_lC+_kQ[_lE]local _lI=_lm[_lF]if _lI==nil or _lH<_lI then _lm[_lF],_ln[_lF],_lo[_lF],_lp[_lF]=_lH,_lw,_kP[_lE],_kR[_lE]_lt=_jC(_lr,_ls,_lt,_lH+_kA(_kN[_lE],_kO[_lE]),_lF)end end end end end end return nil,true,_lq end local function _lJ(_lK,_lL,_lM)local _lN=_lL-_lK.x local _lO=_lK.vx or 0 local _lP=_lK.grounded and 48 or 17 local _lQ=0 if _im(_lN)>_lM then _lQ=_lN>0 and 1 or-1 if _lO*_lQ>0 and(_lO*_lO)/(2*_lP)>=_im(_lN)-_lM*0.5 then _lQ=0 end end _ck.left=_lQ<0 _ck.right=_lQ>0 end local function _lR(_lS,_lT,_lU)local _lV=_fD()if not _cu or not _gr()then if _lV and _lV.goTo then pcall(_lV.goTo,_lS,_lT)task.wait(math.max(0.25,_bn.moveStepDelay))return true end return false end _ck.active=true local _lW=_lS+0.5 local _lX=_gr()if not _lX then _ct();return false end local _lY=1.6+_im(_lW-_lX.x)*0.38 local _lZ=os.clock()while os.clock()-_lZ<=_lY and _e()do if _lU and _lU()then _ct();return false end local _ma=_gr()if not _ma or _ma.dead then _ct();return false end local _mb,_mc=_il(_ma.x),_il(_ma.y-0.475)if _ma.grounded and _mc~=_lT then _ct();return false end _lJ(_ma,_lW,0.1)if _mb==_lS and _im(_ma.x-_lW)<=0.22 and _ma.grounded and _im(_ma.vx or 0)<2.2 then _ct()return true end task.wait()end _ct()return false end local function _md(_me,_mf)_ck.active=true local _mg=_me.x+0.5 local _mh=1.6+0.3*(_me.y-_me.fy)local _mi=os.clock()while os.clock()-_mi<=_mh and _e()do if _mf and _mf()then _ct();return false end local _mj=_gr()if not _mj or _mj.dead then _ct();return false end _lJ(_mj,_mg,0.1)if _mj.grounded then local _mk,_ml=_il(_mj.x),_il(_mj.y-0.475)if _ml==_me.y then if _mk==_me.x and _im(_mj.x-_mg)<=0.25 then _ct()return true end elseif _ml~=_me.fy then _ct()return false end end task.wait()end _ct()return false end local function _mm(_mn,_mo)if not _lR(_mn.fx,_mn.fy,_mo)then return false end _ck.active=true local _mp=_mn.fy-_mn.y local _mq=_mn.y+1 local _mr=_mq-((_mp==1)and 0 or 0.4)local _ms=_mn.x+0.5 _ct()task.wait()_ck.jump=true local _mt=os.clock()local _mu=false while os.clock()-_mt<=1.8 and _e()do if _mo and _mo()then _ct();return false end local _mv=_gr()if not _mv or _mv.dead then _ct();return false end if not _mv.grounded then _mu=true end if _ck.jump and(_mv.y<=_mr or(_mu and(_mv.vy or 0)>=0))then _ck.jump=false end if _mv.y<=_mq+0.25 then _lJ(_mv,_ms,0.1)else _lJ(_mv,_mn.fx+0.5,0.15)end if _mu and _mv.grounded then local _mw,_mx=_il(_mv.x),_il(_mv.y-0.475)_ct()return(_mx==_mn.y and _mw==_mn.x and _im(_mv.x-_ms)<=0.26)end if not _mu and os.clock()-_mt>0.38 then break end task.wait()end _ct()return false end local function _my(_mz,_mA)if not _lR(_mz.fx,_mz.fy,_mA)then return false end _ck.active=true local _mB=_gr()if not _mB then _ct();return false end local _mC=(_mz.x>_mz.fx)and 1 or-1 local _mD=_mz.fx+0.5+_mC*0.6 local _mE=_mB.y local _mF=_mz.x+0.5 _ct()local _mG=os.clock()local _mH,_mI,_mJ=false,false,0 while os.clock()-_mG<=2.2 and _e()do if _mA and _mA()then _ct();return false end local _mK=_gr()if not _mK or _mK.dead then _ct();return false end if not _mH then _ck.left,_ck.right=_mC<0,_mC>0 if(_mK.x-_mD)*_mC>=0 or not _mK.grounded then _mH,_mJ=true,os.clock()_ck.jump=_mK.grounded end else if not _mK.grounded then _mI=true end if _ck.jump and(_mK.y<=_mE-1 or(_mI and(_mK.vy or 0)>=0))then _ck.jump=false end _lJ(_mK,_mF,0.1)if _mI and _mK.grounded then local _mL,_mM=_il(_mK.x),_il(_mK.y-0.475)_ct()return(_mM==_mz.y and _mL==_mz.x and _im(_mK.x-_mF)<=0.26)end if not _mI and os.clock()-_mJ>0.38 then break end end task.wait()end _ct()return false end local function _mN(_mO,_mP)if not _lR(_mO.fx,_mO.fy,_mP)then return false end _ck.active=true local _mQ=(_mO.x>_mO.fx)and 1 or-1 local _mR=_mO.y+1 local _mS=_mO.fx+0.5+_mQ*0.17 for _mT=1,3 do local _mU=os.clock()while os.clock()-_mU<=0.8 and _e()do if _mP and _mP()then _ct();return false end local _mV=_gr()if not _mV or _mV.dead then _ct();return false end _lJ(_mV,_mS,0.03)if _im(_mV.x-_mS)<=0.06 and _im(_mV.vx or 0)<1 then break end task.wait()end _ct()task.wait()local _mW=_gr()if not _mW then return false end local _mX=_mW.y _ck.jump=true _mU=os.clock()local _mY,_mZ=false,nil while os.clock()-_mU<=1.8 and _e()do if _mP and _mP()then _ct();return false end local _na=_gr()if not _na or _na.dead then _ct();return false end if not _na.grounded then _mY=true end if _ck.jump and(_na.y<=_mR-0.1 or(_mY and(_na.vy or 0)>=0))then _ck.jump=false end local _nb=(_mT==1 and _na.y<=_mR+0.02)or(_mT==2 and _na.y<=_mX-0.15)or(_mT==3 and _na.y<=_mR+0.25)if _mY and _nb then _ck.right,_ck.left=_mQ>0,_mQ<0 else _lJ(_na,_mS,0.03)end if _mY and _na.grounded then _mZ=_il(_na.y-0.475)break end if not _mY and os.clock()-_mU>0.35 then break end task.wait()end _ct()if _mZ==_mO.y then return _lR(_mO.x,_mO.y,_mP)end if _mZ~=nil and _mZ~=_mO.fy then return false end if not _lR(_mO.fx,_mO.fy,_mP)then return false end end return false end local function _nc(_nd,_ne)if not _lR(_nd.fx,_nd.fy,_ne)then return false end if _in(_nd.fx,_nd.fy)~=0 then return false end _ck.active=true _ct()task.wait()_ck.jump=true local _nf=os.clock()local _ng,_nh=false,false while os.clock()-_nf<=1.8 and _e()do if _ne and _ne()then _ct();return false end local _ni=_gr()if not _ni or _ni.dead then _ct();return false end if not _ni.grounded then _nh=true end _lJ(_ni,_nd.fx+0.5,0.12)if _ck.jump and(_ni.y<_nd.fy-0.9 or(_nh and(_ni.vy or 0)>=0))then _ck.jump=false end if not _ng and _nh and _ni.y<_nd.fy-0.25 and((_ni.vy or 0)>-6 or _ni.y<_nd.fy-0.8)then _ng=_jp(_nd.fx,_nd.fy)if not _ng then _ct();return false end end if _ni.grounded and _nh then _ct()local _nj,_nk=_il(_ni.x),_il(_ni.y-0.475)return _ng and _nj==_nd.x and _nk==_nd.y end if not _nh and os.clock()-_nf>0.38 then break end task.wait()end _ct()return false end _ik.ExecWalk=_lR _ik.ExecPillar=_nc function _ik.FollowPath(_nl,_nm)local _nn={}for _no,_np in pairs(_hX)do _nn[_no]=_np end table.clear(_hX)local _nq=_hW _hW=false _ic()_ck.active=true local _nr={}local function _ns()if#_nr==0 then return end for _nt=#_nr,1,-1 do local _nu=_nr[_nt]local _nv,_nw=_gG()if not(_nv==_nu.x and _nw==_nu.y-1)then local _nx=_gr()if _nx and _iW(_nx,_nu.x,_nu.y,_hc()-0.1)and _in(_nu.x,_nu.y)~=0 and _hG(_in(_nu.x,_nu.y))then _hA(_nu.x,_nu.y)local _ny=os.clock()while _in(_nu.x,_nu.y)~=0 and os.clock()-_ny<3.0 and _e()do if _nm and _nm()then break end _hM(_nu.x,_nu.y,false)task.wait(0.15)end end if _in(_nu.x,_nu.y)==0 then table.remove(_nr,_nt)end end end end local function _nz(_nA)_ns()_ct()_ck.active=false _hW=_nq for _nB,_nC in pairs(_nn)do _hX[_nB]=_nC end _ic()return _nA end local _nD=1 while _nD<=#_nl and _e()do if _nm and _nm()then return _nz(false)end local _nE=_nl[_nD]local _nF,_nG=_nD,false if _nE.kind==string.char(119,97,108,107)then local _nH=_nE.x-_nE.fx while _nl[_nF+1]and _nl[_nF+1].kind==string.char(119,97,108,107)and(_nl[_nF+1].x-_nl[_nF+1].fx)==_nH do _nF=_nF+(1)end local _nI=false for _nJ=_nD,_nF do if _nl[_nJ].build then _nI=true;break end end if _nI then _nG=true for _nK=_nD,_nF do if _nm and _nm()then return _nz(false)end local _nL=_nl[_nK]if _nL.build and not _iT(_nL.x,_nL.y)then if not _jp(_nL.x,_nL.y+1)then _nG=false;break end table.insert(_nr,{x=_nL.x,y=_nL.y+1})task.wait(0.14)end if not _lR(_nL.x,_nL.y,_nm)then _nG=false;break end _ns()end else _nG=_lR(_nl[_nF].x,_nl[_nF].y,_nm)_ns()end elseif _nE.kind==string.char(112,105,108,108,97,114)then _nG=_nc(_nE,_nm)if _nG then table.insert(_nr,{x=_nE.fx,y=_nE.fy})task.wait(0.08)_ns()end elseif _nE.kind==string.char(102,97,108,108)then _nG=_md(_nE,_nm)_ns()elseif _nE.kind==string.char(106,117,109,112)then _nG=_mm(_nE,_nm)_ns()elseif _nE.kind==string.char(103,97,112)then _nG=_my(_nE,_nm)_ns()elseif _nE.kind==string.char(115,116,97,105,114)then _nG=_mN(_nE,_nm)_ns()end _ct()if not _nG then _ik.BadEdge[_nE.key]=os.clock()+20 return _nz(false)end _nD=_nF+1 end return _nz(true)end function _ik.ClimbUpWithDirt(_nM,_nN,_nO,_nP,_nQ,_nR)local _nS=_fD()if not _nS then return false end if _nP==nil then _nP=true end if _nR==nil then _nR=false end local _nT=math.max(0.28,tonumber(_nQ)or tonumber(_bn.moveStepDelay)or 0.30)local _nU={}for _nV,_nW in pairs(_hX)do _nU[_nV]=_nW end table.clear(_hX)local _nX=_hW _hW=false _ic()_ck.active=true _ct()local function _nY()_ct()_ck.active=false _hW=_nX for _nZ,_oa in pairs(_nU)do _hX[_nZ]=_oa end _ic()end local _ob,_oc=_gG()if not _ob then _nY();return false end if _ob~=_nM then if not _lR(_nM,_oc,_nO)then pcall(_nS.goTo,_nM,_oc)task.wait(_nT)end _ob,_oc=_gG()if not _ob then _nY();return false end end local _od={}local _oe=_jh()if _gU(_nS,_nM,_oc+1)and not _iT(_nM,_oc)then if _in(_nM,_oc+1)==0 and _jp(_nM,_oc+1)then _od[_oc+1]=_oe task.wait(_bm)end end local _of=0 while _oc>_nN and _e()do if _nO and _nO()then _nY();return false end local _og=_oc-1 if not _nR and _in(_nM,_og)~=0 and _iw(_nM,_og)then _nY()return false end if _nR then for _oh=_og,math.max(0,_og-2),-1 do local _oi=_in(_nM,_oh)if _oi~=0 and _hG(_oi)then local _oj=os.clock()while _in(_nM,_oh)~=0 and os.clock()-_oj<4 do if _nO and _nO()then _nY();return false end _hM(_nM,_oh,false)task.wait(0.16)end end end end local _ok,_ol=_gG()local _om=_nc({fx=_nM,fy=_oc,x=_nM,y=_og},_nO)if _om then _od[_oc]=_oe else if _in(_nM,_oc)==0 then _jp(_nM,_oc)_od[_oc]=_oe end task.wait(0.15)pcall(_nS.goTo,_nM,_og)end task.wait(math.max(_bm,_nT))local _on,_oo=_gG()if _oo and _oo<(_ol or _oc)then _oc=_oo _of=0 else _of=_of+1 if _of>=3 then _nY()return false end end if _nP then for _op,_oq in pairs(_od)do if _op>=_oc+2 and math.abs(_op-_oc)<=3 and _in(_nM,_op)~=0 and _hG(_in(_nM,_op))then _hA(_nM,_op)local _or=os.clock()while _in(_nM,_op)~=0 and os.clock()-_or<3.5 do if _nO and _nO()then _nY();return false end _hM(_nM,_op,false)task.wait(0.16)end if _in(_nM,_op)==0 then _od[_op]=nil end end end end end if _nP and next(_od)~=nil then local _os=(_nM<=2)and{_nM+1,_nM+2,_nM-1}or((_nM>=_nS.w-3)and{_nM-1,_nM-2,_nM+1}or{_nM+1,_nM-1,_nM+2,_nM-2})local _ot=false for _ou,_ov in ipairs(_os)do if _gU(_nS,_ov,_nN)and _iQ(_ov,_nN)and _iT(_ov,_nN)then if not _lR(_ov,_nN,_nO)then pcall(_nS.goTo,_ov,_nN)end task.wait(_nT)_ot=true break end end if _ot then local _ow={}for _ox in pairs(_od)do table.insert(_ow,_ox)end table.sort(_ow)for _oy,_oz in ipairs(_ow)do if _in(_nM,_oz)~=0 and math.abs(_oz-_nN)<=3 and _hG(_in(_nM,_oz))then _hA(_nM,_oz)local _oA=os.clock()while _in(_nM,_oz)~=0 and os.clock()-_oA<3.5 do if _nO and _nO()then break end _hM(_nM,_oz,false)task.wait(0.16)end end end end end _nY()return true end function _ik.FlyTo(_oB,_oC,_oD,_oE,_oF)local _oG=_fD()if not _oG or type(_oG.goTo)~=string.char(102,117,110,99,116,105,111,110)then return false end local _oH=math.max(0.20,tonumber(_oE)or tonumber(_bn.moveStepDelay)or 0.25)for _oI=1,3 do if _oD and _oD()then return false end local _oJ,_oK=_gG()if not _oJ then return false end if _oJ==_oB and _oK==_oC then return true end _oG.ghost=true local _oL=0 local _oM=220 while(_oJ~=_oB or _oK~=_oC)and _oM>0 and _e()do _oM=_oM-1 if _oD and _oD()then return false end _oG.ghost=true local _oN,_oO=_gG()if not _oN then return false end _oJ,_oK=_oN,_oO if _oJ==_oB and _oK==_oC then return true end local _oP=(_oB>_oJ and 1)or(_oB<_oJ and-1)or 0 local _oQ=(_oC>_oK and 1)or(_oC<_oK and-1)or 0 local _oR,_oS=_oJ+_oP,_oK+_oQ if not _oF and not _iQ(_oR,_oS)then if _oP~=0 and _iQ(_oJ+_oP,_oK)then _oR,_oS=_oJ+_oP,_oK elseif _oQ~=0 and _iQ(_oJ,_oK+_oQ)then _oR,_oS=_oJ,_oK+_oQ elseif _oJ<=2 or _oJ>=_oG.w-3 then _oR,_oS=_oJ,_oK+_oQ else local _oT=(math.abs(_oJ-1)<=math.abs(_oJ-(_oG.w-2)))and 1 or(_oG.w-2)local _oU=(_oT>_oJ)and 1 or-1 if _iQ(_oJ+_oU,_oK)then _oR,_oS=_oJ+_oU,_oK end end end pcall(_oG.goTo,_oR,_oS)task.wait(_oH)local _oV,_oW=_gG()if _oV==_oJ and _oW==_oK then _oL=_oL+1 if _oL>=3 then local _oX=(_oJ>1 and _iQ(_oJ-1,_oK))and(_oJ-1)or(_oJ+1)pcall(_oG.goTo,_oX,_oK)task.wait(_oH)break end else _oL=0 end end local _oY,_oZ=_gG()if _oY==_oB and _oZ==_oC then return true end end return false end function _ik.LegitTo(_pa,_pb,_pc,_pd,_pe)local _pf=os.clock()local _pg=_fD()if not _pg then return false,string.char(119,111,114,108,100)end if _pe==nil then _pe=false end local _ph=_pd or 0.4 for _pi=1,3 do if _pc and _pc()then return false,string.char(99,97,110,99,101,108)end local _pj,_pk=_gG()if not _pj then return false,string.char(112,111,115)end if _pj==_pa and _pk==_pb then return true,os.clock()-_pf end local _pl=_gr()if _pl and _ph>=1 and _iW(_pl,_pa,_pb,_ph)then return true,os.clock()-_pf end local _pm={[_pb*_pg.w+_pa]=true}local _pn=_ik.AStar(_pj,_pk,_pm,_pa,_pb,_ph,_pe,_pc)if _pn and#_pn>0 then if _ik.FollowPath(_pn,_pc)then local _po,_pp=_gG()local _pq=_gr()if(_po==_pa and _pp==_pb)or(_pq and _iW(_pq,_pa,_pb,_ph+0.35))then return true,os.clock()-_pf end end else if _pk~=_pb then local _pr=(math.abs(_pj-1)<=math.abs(_pj-(_pg.w-2)))and 1 or(_pg.w-2)local _ps={[_pb*_pg.w+_pr]=true}local _pt=_ik.AStar(_pj,_pk,_ps,_pr,_pb,0.5,_pe,_pc)if _pt and#_pt>0 then _ik.FollowPath(_pt,_pc)end end end task.wait(0.15)end return false,string.char(110,111,112,97,116,104)end function _ik.StepGoTo(_pu,_pv,_pw,_px)local _py=_ik.FlyTo(_pu,_pv,_pw,_bn.moveStepDelay,_px==true)_ic()return _py,_py and 0 or string.char(115,116,117,99,107)end function _ik.Go(_pz,_pA,_pB,_pC,_pD)local _pE=(_bn.moveMethod==string.char(84,101,108,101,112,111,114,116,32,77,111,100,101))or(_bn.moveMode==string.char(102,108,121))or(_bn.moveMode==string.char(116,101,108,101,112,111,114,116))if not _pE then local _pF=_fD()if _pF and not _hW then _pF.ghost=false end local _pG,_pH=_ik.LegitTo(_pz,_pA,_pB,_pC,_pD)return _pG,_pH end return _ik.StepGoTo(_pz,_pA,_pB,false)end function _ik.To(_pI,_pJ,_pK,_pL,_pM)local _pN=_ik.Go(_pI,_pJ,_pK,_pL,_pM)return _pN end local _pO=nil local function _pP()if not _pO and _bt and debug and debug.info then for _pQ,_pR in ipairs(_bt(true))do if type(_pR)==string.char(102,117,110,99,116,105,111,110)then local _pS,_pT=pcall(debug.info,_pR,string.char(110))if _pS and _pT==string.char(97,99,116)and _bu then local _pU,_pV=pcall(_bu,_pR,1)local _pW,_pX=pcall(_bu,_pR,2)local _pY,_pZ=pcall(_bu,_pR,4)local _qa,_qb=pcall(_bu,_pR,5)if _pU and typeof(_pV)==string.char(73,110,115,116,97,110,99,101)and _pV.ClassName==string.char(80,108,97,121,101,114,115)and _pW and type(_pX)==string.char(110,117,109,98,101,114)and _pY and type(_pZ)==string.char(110,117,109,98,101,114)and _qa and type(_qb)==string.char(110,117,109,98,101,114)then _pO=_pR break end end end end end if _pO and _bu then local _qc,_qd=pcall(_bu,_pO,2)local _qe,_qf=pcall(_bu,_pO,4)local _qg,_qh=pcall(_bu,_pO,5)if _qc and _qe and _qg and type(_qd)==string.char(110,117,109,98,101,114)and type(_qf)==string.char(110,117,109,98,101,114)and type(_qh)==string.char(110,117,109,98,101,114)and _qf>0 then return _qd,_qh,_qf end end local _qi=_I:FindFirstChild(string.char(71,97,109,101,71,117,105))local _qj=_qi and _qi:FindFirstChild(string.char(87,111,114,108,100))local _qk=_qj and _qj:FindFirstChild(string.char(67,97,109,101,114,97))local _ql=_qk and _qk:FindFirstChild(string.char(84,105,108,101,115))if _ql and _ql:IsA(string.char(71,117,105,79,98,106,101,99,116))then local _qm=64 local _qn=-_ql.Position.X.Offset/_qm local _qo=-_ql.Position.Y.Offset/_qm return _qn,_qo,_qm end return nil end function _ik.ScreenToTile(_qp)local _qq,_qr,_qs=_pP()if not _qq then return nil end local _qt=_I:FindFirstChild(string.char(71,97,109,101,71,117,105))local _qu=(_qt and _qt:FindFirstChild(string.char(87,111,114,108,100)))or _I:FindFirstChild(string.char(87,111,114,108,100),true)if not _qu or not _qu:IsA(string.char(71,117,105,79,98,106,101,99,116))then return nil end local _qv=_qu:FindFirstChildWhichIsA(string.char(85,73,83,99,97,108,101),true)local _qw=_qv and _qv.Scale or 1 local _qx=(Vector2.new(_qp.X,_qp.Y)-_qu.AbsolutePosition)/_qw return _il(_qq+_qx.X/_qs),_il(_qr+_qx.Y/_qs)end local function _qy(_qz,_qA)if _qA or not _ik.clickOn then return end if _qz.UserInputType~=Enum.UserInputType.MouseButton1 and _qz.UserInputType~=Enum.UserInputType.Touch then return end if _bn.clickTpShift and not(_y:IsKeyDown(Enum.KeyCode.LeftShift)or _y:IsKeyDown(Enum.KeyCode.RightShift))then return end local _qB,_qC=_ik.ScreenToTile(_qz.Position)if not _qB then _bI(string.char(67,108,105,99,107,32,84,80,58,32,112,111,115,105,115,105,32,107,108,105,107,32,116,105,100,97,107,32,116,101,114,98,97,99,97,46))return end _ik.token=_ik.token+(1)local _qD=_ik.token task.spawn(function()local _qE=os.clock()local _qF,_qG=_ik.Go(_qB,_qC,function()return _ik.token~=_qD or not _ik.clickOn or not _e()end,0.4,true)if _qF then _ik.last=string.format(string.char(83,97,109,112,97,105,32,40,37,100,44,37,100,41,32,100,97,108,97,109,32,37,46,50,102,115),_qB,_qC,os.clock()-_qE)_bI(_ik.last)elseif _qG~=string.char(99,97,110,99,101,108)then _ik.last=string.char(71,97,103,97,108,32,40)..tostring(_qG)..string.char(41)_bI(string.char(67,108,105,99,107,32,84,80,32,103,97,103,97,108,58,32)..tostring(_qG))end end)end function _ik.StartClick()if _ik.clickOn then return true end if not _pP()then _bI(string.char(67,108,105,99,107,32,84,80,58,32,100,97,116,97,32,107,97,109,101,114,97,32,103,97,109,101,32,116,105,100,97,107,32,100,105,116,101,109,117,107,97,110,46))return false end _ik.clickOn=true _ik.conn=_f(_y.InputBegan:Connect(_qy))return true end function _ik.StopClick()if not _ik.clickOn then return false end _ik.clickOn=false _ik.token=_ik.token+(1)if _ik.conn then _ik.conn:Disconnect()_ik.conn=nil end _ct()return true end end)()end local _qH=0 local function _qI(_qJ)_qJ=math.floor(tonumber(_qJ)or 0)if _qJ<1 or _qJ>_bk then _bI(string.char(74,117,109,108,97,104,32,87,76,32,116,105,100,97,107,32,118,97,108,105,100,33))return false end local _qK=os.clock()if _qK-_qH<_bl then task.wait(_bl-(_qK-_qH))end _qH=os.clock()local _qL=_bn.dropId or 242 if _L then pcall(function()_L:FireServer(_qL,_qJ)end)_bI(string.format(string.char(68,114,111,112,32,37,100,32,37,115,32,100,105,107,105,114,105,109,33),_qJ,_fG(_qL)))return true elseif _T and type(_U)==string.char(116,97,98,108,101)and _U.drop then pcall(_U.drop.send,{id=_qL,n=_qJ})_bI(string.format(string.char(68,114,111,112,32,37,100,32,37,115,32,100,105,107,105,114,105,109,33),_qJ,_fG(_qL)))return true end _bI(string.char(82,101,109,111,116,101,32,68,114,111,112,73,116,101,109,32,116,105,100,97,107,32,100,105,116,101,109,117,107,97,110,33))return false end local _qM local function _qN(_qO)_qO=_bF(_qO):upper()if _qO==""then _bI(string.char(78,97,109,97,32,119,111,114,108,100,32,116,105,100,97,107,32,98,111,108,101,104,32,107,111,115,111,110,103,33))return false end _bn.lastWorld=_qO _bs()if _qM then pcall(_qM)end local _qP=_bN.Menu if _qP and type(rawget(_qP,string.char(101,110,116,101,114)))==string.char(102,117,110,99,116,105,111,110)then pcall(_qP.enter,_qO)_bI(string.char(77,101,109,97,115,117,107,105,32,119,111,114,108,100,58,32).._qO)return true end local _qQ=_fD()if _qQ and type(rawget(_qQ,string.char(101,110,116,101,114)))==string.char(102,117,110,99,116,105,111,110)then pcall(_qQ.enter,_qO)_bI(string.char(77,101,109,97,115,117,107,105,32,119,111,114,108,100,58,32).._qO)return true end _bI(string.char(70,117,110,103,115,105,32,101,110,116,101,114,32,119,111,114,108,100,32,116,105,100,97,107,32,100,105,116,101,109,117,107,97,110,46))return false end local function _qR()local _qS=_gJ()if _qS~=""then _bn.lastWorld=_qS _bs()end if _qM then pcall(_qM)end pcall(function()_C:TeleportToPlaceInstance(game.PlaceId,game.JobId,_H)end)end local function _qT(_qU)local _qV,_qW=_gG()if not _qV then _bI(string.char(80,111,115,105,115,105,32,107,97,114,97,107,116,101,114,32,98,101,108,117,109,32,116,101,114,98,97,99,97,33))return false end local _qX=string.char(112,111,115)..tostring(_qU)_bn[_qX]={x=_qV,y=_qW,world=_gJ()}_bs()_bI(string.format(string.char(80,111,115,32,37,100,32,100,105,115,105,109,112,97,110,32,100,105,32,40,37,100,44,32,37,100,41,32,91,37,115,93),_qU,_qV,_qW,_gJ()))return true end local function _qY()local _qZ,_ra=_gG()local _rb,_rc=_bn.pos1 or{},_bn.pos2 or{}local _rd=string.format(string.char(83,101,107,97,114,97,110,103,58,32,40,37,115,44,32,37,115,41,32,124,32,80,111,115,49,58,32,40,37,115,44,32,37,115,41,32,124,32,80,111,115,50,58,32,40,37,115,44,32,37,115,41),_qZ and tostring(_qZ)or string.char(45),_ra and tostring(_ra)or string.char(45),_rb.x and tostring(_rb.x)or string.char(45),_rb.y and tostring(_rb.y)or string.char(45),_rc.x and tostring(_rc.x)or string.char(45),_rc.y and tostring(_rc.y)or string.char(45))_bI(_rd,string.char(73,110,102,111,32,80,111,115,105,115,105))end local function _re(_rf,_rg)local _rh=string.char(112,111,115)..tostring(_rf)local _ri=_bn[_rh]if type(_ri)~=string.char(116,97,98,108,101)or type(_ri.x)~=string.char(110,117,109,98,101,114)or type(_ri.y)~=string.char(110,117,109,98,101,114)then _bI(string.char(80,111,115,32)..tostring(_rf)..string.char(32,98,101,108,117,109,32,100,105,115,105,109,112,97,110,33))return false end local _rj=_ik.To(_ri.x,_ri.y,nil,0.3,true)if _rj then local _rk=tonumber(_rg)or tonumber(_bn.winDrop)or 0 if _rk>=1 then task.wait(0.15)_qI(_rk)end end return _rj end local _rl local _rm=nil local _rn=string.char(102,97,114,109)local _ro=nil local _rp=nil local _rq={on=false,token=0,Override=nil,Quiet=false,stats={status=string.char(77,97,116,105),placed=0,broken=0,picked=0,fail=0,cycles=0},}local _rr={on=false,token=0,status=string.char(77,97,116,105),stats={scanned=0,broken=0,picked=0,skipped=0,left=0,pass=0,row=-1},}local _rs={on=false,token=0,status=string.char(77,97,116,105),stats={totalTrees=0,ready=0,harvested=0,planted=0,skipped=0,picked=0},}local _rt={on=false,token=0,status=string.char(77,97,116,105),stats={topDirtY=0,bedrockY=0,broken=0,placed=0,picked=0,step=string.char(45)},}local _ru={on=false,roaming=false,token=0,status=string.char(77,97,116,105),made=0,planted=0,fail={},skip={},}local _rv={on=false,token=0,phase=string.char(45),status=string.char(77,97,116,105),harvested=0,planted=0,dropped=0,traveling=false,home="",Zone=nil,skip={},}local _rw={recycled=0,converted=0,status=string.char(45),}local _rx={on=false,mode=string.char(105,100,108,101),allow={},alerted={},saved=nil,token=0,backAt=0,calmAt=nil,leftFg=nil,status=string.char(77,97,116,105),detected=0,hereText=string.char(116,105,100,97,107,32,97,100,97),staffServerText=string.char(116,105,100,97,107,32,97,100,97),}local _ry={busy=false,leaving=false,last=nil,lastAt=0,count=0,status=string.char(45),}local _rz={on=false,sent=0,last=string.char(45),nextAt=0}local function _rA(_rB)local _rC=_Q and _Q[_rB]return type(_rC)==string.char(116,97,98,108,101)and(_rC.kind==string.char(115,101,101,100)or type(_rC.tree)==string.char(116,97,98,108,101)or type(_rC.grow)==string.char(110,117,109,98,101,114))end local function _rD(_rE,_rF,_rG,_rH)_rE=_rE or _fD()if not _rE then return nil end local _rI=_Q[_rH]if not _rI then return nil end local _rJ=tonumber(_rI.grow)or tonumber(_rI.baseGrow)or 31 local _rK=_rG*_rE.w+_rF if type(_rE.treeLook)==string.char(102,117,110,99,116,105,111,110)then pcall(_rE.treeLook,_rF,_rG)end if not _bN.Trees then _bN.Scan()end local _rL=_bN.Trees and _bN.Trees[_rK]if type(_rL)==string.char(116,97,98,108,101)then if _rL.ripe==true or _rL.fruitMade==true or _rL.step==1 then return 0 end if type(_rL.tree)==string.char(116,97,98,108,101)and type(_rL.tree.p)==string.char(110,117,109,98,101,114)then return _rL.tree.p+_rJ end if type(_rL.p)==string.char(110,117,109,98,101,114)then return _rL.p+_rJ end end local _rM=_rE.placedAt and _rE.placedAt.fg if _rM and type(_rM[_rK])==string.char(110,117,109,98,101,114)then return workspace:GetServerTimeNow()-(os.clock()-_rM[_rK])+_rJ end return nil end local function _rN(_rO,_rP,_rQ,_rR)local _rS=_rD(_rO,_rP,_rQ,_rR)if not _rS then return false end return workspace:GetServerTimeNow()>=_rS end local function _rT(_rU,_rV,_rW,_rX)_rU=_rU or _fD()if not _gU(_rU,_rV,_rW)or _rW+1>=_rU.h then return false end if(_gM(_rU,string.char(102,103),_rV,_rW)or 0)~=0 then return false end local _rY=_gM(_rU,string.char(102,103),_rV,_rW+1)or 0 if _rY==0 then return false end local _rZ=_Q[_rY]if not _rZ or _rZ.kind==string.char(115,101,101,100)then return false end if not(_ik.SolidAt(_rV,_rW+1)or _rZ.platform)then return false end local _sb,_sc=pcall(function()if _rU.areas and type(_rU.areas.canEdit)==string.char(102,117,110,99,116,105,111,110)and not _rU.areas.canEdit(_rV,_rW)then return false end if type(_rU.builderOk)==string.char(102,117,110,99,116,105,111,110)and not _rU.builderOk(_rV,_rW,true)then return false end local _sa=_rX and _Q[_rX]if _sa and type(_rU.needsWay)==string.char(102,117,110,99,116,105,111,110)and _rU.needsWay(_sa)and type(_rU.wayBlocked)==string.char(102,117,110,99,116,105,111,110)and _rU.wayBlocked(_rV,_rW)then return false end return true end)return(not _sb)or _sc end do(function()local function _sd(_se,_sf,_sg)return _sf>=_se.x-0.15 and _sf<_se.x+1.15 and _sg>=_se.y-0.15 and _sg<_se.y+1.15 end local function _sh(_si,_sj)if type(_si)~=string.char(116,97,98,108,101)or _si.taking or _si.pending or _si.display or(_si.n or 0)<=0 or type(_si.x)~=string.char(110,117,109,98,101,114)then return false end if _si.armed==false and _si.id~=112 then return false end local _sk=_si.uid and _bQ[_si.uid]return not(_sk and _sj<_sk)end function _bO.applyTaken(_sl,_sm)local _sn=_bO.list if not _sn or not table.find(_sn,_sl)then return end if not _bO.update and _bO.findUpdate then _bO.findUpdate()end if _bO.update then local _so=pcall(_bO.update,_sl,_sm)if _so then if _sm>0 then _sl.flown=nil if typeof(_sl.frame)==string.char(73,110,115,116,97,110,99,101)then pcall(function()_sl.frame.Visible=not _sl.culled end)end end return end end _sl.n=_sm if _sm>0 then _sl.flown=nil if typeof(_sl.frame)==string.char(73,110,115,116,97,110,99,101)then pcall(function()_sl.frame.Visible=not _sl.culled end)end else local _sp=table.find(_sn,_sl)if _sp then table.remove(_sn,_sp)end if typeof(_sl.frame)==string.char(73,110,115,116,97,110,99,101)then pcall(function()_sl.frame:Destroy()end)end end end function _bO.waitNearDrops(_sq)local _sr=_bO.list if not _sr then return end task.wait(0.15)local _ss=os.clock()while os.clock()-_ss<(_sq or 0.45)and _e()do local _st=_gr()if not _st or not _st.x then return end local _su=false for _sv,_sw in ipairs(_sr)do if type(_sw)==string.char(116,97,98,108,101)and type(_sw.x)==string.char(110,117,109,98,101,114)and(_sw.n or 0)>0 and _sw.armed~=false and math.abs(_sw.x-_st.x)<0.6 and _sw.y+0.3>_st.y-0.95 and _sw.y-0.3<_st.y then local _sx=true if _sw.id~=112 and _bN.Inv and type(_bN.Inv.room)==string.char(102,117,110,99,116,105,111,110)then local _sy,_sz=pcall(function()return _bN.Inv:room(_sw.id)end)if _sy and type(_sz)==string.char(110,117,109,98,101,114)and _sz<=0 then _sx=false end end if _sx then _su=true;break end end end if not _su then return end task.wait()end end function _bO.waitSpawn(_sA)if not _bO.list and _bO.findRefs then _bO.findRefs()end local _sB=0.1 pcall(function()_sB=_H:GetNetworkPing()end)local _sC=math.clamp(0.15+2.5*_sB,0.25,0.85)local _sD=nil for _sE,_sF in ipairs(_sA)do local _sG=_bO.brokeAt[_sF.x..string.char(44).._sF.y]if _sG and os.clock()-_sG<_sC and(not _sD or _sG>_sD)then _sD=_sG end end if not _sD then return end local _sH=_bO.list while os.clock()-_sD<_sC and _e()do if _sH then for _sI,_sJ in ipairs(_sH)do if type(_sJ)==string.char(116,97,98,108,101)and type(_sJ.x)==string.char(110,117,109,98,101,114)and(_sJ.born or 0)>=_sD-0.2 then for _sK,_sL in ipairs(_sA)do if _sd(_sL,_sJ.x,_sJ.y)then task.wait(0.05)return end end end end end task.wait()end end local function _sM(_sN)local _sO=_fD()local _sP=_sO and rawget(_sO,string.char(116,97,107,101,68,114,111,112))if type(_sP)~=string.char(102,117,110,99,116,105,111,110)and not _N then return false end local _sQ=os.clock()if not _sh(_sN,_sQ)then return false end local _sR=_sN.n if _sN.id~=112 and _bN.Inv and type(_bN.Inv.room)==string.char(102,117,110,99,116,105,111,110)then local _sS,_sT=pcall(function()return _bN.Inv:room(_sN.id)end)if _sS and type(_sT)==string.char(110,117,109,98,101,114)then _sR=math.min(_sR,_sT)end end if _sR<=0 then if _sN.uid then _bQ[_sN.uid]=_sQ+1 end local _sU=_bW.LastFull[_sN.id]if not _sU or _sQ-_sU>120 then _bW.LastFull[_sN.id]=_sQ _bW.Send(string.char(102,117,108,108),string.char(73,110,118,101,110,116,111,114,105,32,112,101,110,117,104,58,32).._fG(_sN.id)..string.char(32,116,105,100,97,107,32,98,105,115,97,32,100,105,97,109,98,105,108,32,108,97,103,105))end return false end _sN.taking=true if typeof(_sN.frame)==string.char(73,110,115,116,97,110,99,101)then pcall(function()_sN.frame.Visible=false end)end local _sV,_sW if type(_sP)==string.char(102,117,110,99,116,105,111,110)then _sV,_sW=pcall(_sP,_sN.uid,_sR)else _sV,_sW=pcall(_N.InvokeServer,_N,_sN.uid,_sR)end _sN.taking=false if not(_sV and type(_sW)==string.char(110,117,109,98,101,114)and _sW>0)then _rq.stats.fail=_rq.stats.fail+1 _sN.refused=os.clock()_sN.failN=(_sN.failN or 0)+1 if _sN.uid then _bQ[_sN.uid]=os.clock()+math.min(8,_sN.failN)end _sN.flown=nil if typeof(_sN.frame)==string.char(73,110,115,116,97,110,99,101)then pcall(function()_sN.frame.Visible=not _sN.culled end)end return false end if _sN.uid then _bQ[_sN.uid]=nil end if _sN.id==112 then if _bN.Gems and type(_bN.Gems.addGems)==string.char(102,117,110,99,116,105,111,110)then pcall(_bN.Gems.addGems,_sW)end elseif _bN.Inv and type(_bN.Inv.add)==string.char(102,117,110,99,116,105,111,110)then pcall(function()_bN.Inv:add(_sN.id,_sW)end)end _bO.applyTaken(_sN,math.max(0,(_sN.n or 0)-_sW))_bV.Collected=_bV.Collected+_sW _bV.Items[_sN.id]=(_bV.Items[_sN.id]or 0)+_sW _rq.stats.picked=_rq.stats.picked+_sW if _rr.on then _rr.stats.picked=_rr.stats.picked+_sW end if _rs.on then _rs.stats.picked=_rs.stats.picked+_sW end if _rt.on then _rt.stats.picked=_rt.stats.picked+_sW end return true end function _bO.walkToX(_sX,_sY)local _sZ=_gr()if not _sZ or _sZ.dead then return false end local _ta=_sX-_sZ.x if math.abs(_ta)<=0.14 then _ct()return true end local _tb=(_ta>0)and 1 or-1 _ck.active=true _ck.left=(_tb<0)_ck.right=(_tb>0)_cs()local _tc=os.clock()while _e()and(_rq.on or _rq.Override~=nil)and(os.clock()-_tc)<(_sY or 1.8)do local _td=_gr()if not _td or _td.dead then break end local _te=(_sX-_td.x)*_tb if _te<=0.10 then _ct()return true end _ck.left=(_tb<0)_ck.right=(_tb>0)_cs()task.wait()end _ct()return false end function _bO.touchAll(_tf,_tg,_th)if type(_tf)~=string.char(116,97,98,108,101)or#_tf==0 then return false end local _ti=_fD()if not _ti then return false end local _tj={}for _tk,_tl in ipairs(_tf)do if not _ik.SolidAt(_tl.x,_tl.y)then table.insert(_tj,{x=_tl.x,y=_tl.y})end end if#_tj==0 then return false end table.sort(_tj,function(_tm,_tn)local _to=math.abs(_tm.x-_tg)+math.abs(_tm.y-_th)local _tp=math.abs(_tn.x-_tg)+math.abs(_tn.y-_th)return _to<_tp end)local _tq=_ck.active _ck.active=true _bO.collecting=true _ti.speedScale=1 pcall(function()for _tr,_ts in ipairs(_tj)do if not _e()or not(_rq.on or _rq.Override~=nil)then break end if not _ik.SolidAt(_ts.x,_ts.y)then _bO.walkToX(_ts.x+0.5,1.8)if _ts.y<_th then _ck.jump=true _cs()task.wait(0.18)_ck.jump=false _cs()local _tt=os.clock()while _e()and(os.clock()-_tt)<0.8 do local _tu=_gr()if not _tu or _tu.grounded then break end task.wait()end else task.wait(0.18)end end end if _e()and(_rq.on or _rq.Override~=nil)then _bO.walkToX(_tg+0.5,2.0)task.wait(0.08)end end)_ct()_bO.collecting=false if _bn.walkSpeed~=100 and _bN.World then _bN.World.speedScale=_bn.walkSpeed/100 end _ck.active=_tq return true end local _tv=0 _f(_B.Heartbeat:Connect(function()if not _e()then return end local _tw=(_rq.Override and _rq.Override.offsets)or _bn.farmGrid local _tx=(_rq.on and _bn.farmTake)or(_rq.Override~=nil)local _ty=_bn.collectAround or(_rr.on and _bn.clearTake)or(_rs.on and _bn.harvestTake)or(_rt.on and _bn.dfTake)or _ru.on or _rv.on if not _tx and not _ty then return end local _tz=os.clock()if _tz<(_bO.nextTick or 0)then return end _bO.nextTick=_tz+((_bn.collectMode==string.char(82,101,109,111,116,101))and 0.1 or 0.2)local _tA=_bO.list if not _tA then if _tz>=_tv then _tv=_tz+5 if _bO.findRefs then _bO.findRefs()else _bN.Scan()end end return end local _tB=_gr()if not _tB or type(_tB.x)~=string.char(110,117,109,98,101,114)then return end local _tC,_tD=_tB.x,_tB.y-0.475 if _bn.collectMode~=string.char(82,101,109,111,116,101)then local _tE={}for _tF,_tG in ipairs(_tA)do if type(_tG)==string.char(116,97,98,108,101)and type(_tG.x)==string.char(110,117,109,98,101,114)and math.abs(_tG.x-_tC)<=1.5 and math.abs(_tG.y-_tD)<=1.5 then _tE[_tG]=_tG.n or 0 end end for _tH,_tI in pairs(_bO.seen or{})do if _tE[_tH]==nil and not table.find(_tA,_tH)and _tH.id and _tI>0 then _bV.Collected=_bV.Collected+_tI _bV.Items[_tH.id]=(_bV.Items[_tH.id]or 0)+_tI _rq.stats.picked=_rq.stats.picked+_tI if _rr.on then _rr.stats.picked=_rr.stats.picked+_tI end if _rs.on then _rs.stats.picked=_rs.stats.picked+_tI end if _rt.on then _rt.stats.picked=_rt.stats.picked+_tI end end end _bO.seen=_tE return end if#_tA==0 then return end local _tJ,_tK=math.floor(_tC),math.floor(_tD)local _tL=(tonumber(_bn.collectRadius)or 3)+0.25 local _tM=_rv.Zone if _tM and _tM.world~=_gJ()then _tM=nil end for _tN=#_tA,1,-1 do local _tO=_tA[_tN]if _sh(_tO,_tz)and not(_tM and math.abs(_tO.x-_tM.x)<=2.5 and math.abs(_tO.y-_tM.y)<=2.5)then local _tP=_ty and math.abs(_tO.x-_tC)<=_tL and math.abs(_tO.y-_tD)<=_tL if not _tP and _tx then for _tQ,_tR in pairs(_tw)do if _tR then local _tS,_tT=tostring(_tQ):match(string.char(94,40,45,63,37,100,43,41,44,40,45,63,37,100,43,41,36))if _tS and _tT then local _tU,_tV=_tJ+tonumber(_tS),_tK+tonumber(_tT)if _sd({x=_tU,y=_tV},_tO.x,_tO.y)then _tP=true break end end end end end if _tP then task.spawn(_sM,_tO)end end end end))end)()end local _tW,_tX,_tY do(function()local _tZ={{1,0},{-1,0},{0,1},{0,-1},{1,1},{1,-1},{-1,1},{-1,-1}}local function _ua()local _ub=_fD()local _uc=_ub and rawget(_ub,string.char(114,97,121,109,97,110,79,110))if type(_uc)~=string.char(102,117,110,99,116,105,111,110)then return false end local _ud,_ue=pcall(_uc)return _ud and _ue==true end local function _uf(_ug,_uh,_ui)local _uj={}for _uk,_ul in ipairs(_ui)do _uj[_ul.x..string.char(44).._ul.y]=_ul end local _um,_un=nil,nil for _uo,_up in ipairs(_tZ)do local _uq={}for _ur=1,3 do local _us=_uj[(_ug+_up[1]*_ur)..string.char(44)..(_uh+_up[2]*_ur)]if _us then _uq[#_uq+1]=_us end end if#_uq>=2 and#_uq>(_um and#_um or 0)then _um,_un=_uq,_up end end return _um,_un end local function _ut(_uu)local _uv=_gr()if not _uv or not _uv.x then return end if _T and type(_U)==string.char(116,97,98,108,101)and _U.act then pcall(_U.act.send,{kind=4,x=_uv.x+_uu[1],y=_uv.y-0.475+_uu[2]})end end local function _uw()local _ux=(_rq.Override and _rq.Override.offsets)or _bn.farmGrid local _uy={}for _uz,_uA in pairs(_ux)do if _uA then local _uB,_uC=tostring(_uz):match(string.char(94,40,45,63,37,100,43,41,44,40,45,63,37,100,43,41,36))_uB,_uC=tonumber(_uB),tonumber(_uC)if _uB and _uC and not(_uB==0 and _uC==0)then table.insert(_uy,{dx=_uB,dy=_uC})end end end table.sort(_uy,function(_uD,_uE)if _uD.dy~=_uE.dy then return _uD.dy<_uE.dy end return _uD.dx<_uE.dx end)return _uy end local function _uF(_uG,_uH,_uI)local _uJ=_gM(_uG,string.char(102,103),_uH,_uI)if _uJ==nil then return false end if _uJ~=0 then return _hG(_uJ)end local _uK=_gM(_uG,string.char(98,103),_uH,_uI)return _bn.farmBreakBg and _uK~=nil and _uK~=0 and _hG(_uK)end local function _uL(_uM,_uN)while _rq.on and _rq.token==_uM and _e()do local _uO=_fD()if not _uO or _gJ()~=_uN.world then _rq.stats.status=string.char(87,111,114,108,100,32,98,101,114,117,98,97,104,44,32,98,101,114,104,101,110,116,105)break end local _uP=(_rq.Override and _rq.Override.mode)or _bn.farmMode local _uQ=_uP~=string.char(66,114,101,97,107,32,115,97,106,97)local _uR=_uP~=string.char(80,108,97,99,101,32,115,97,106,97)local _uS=(_rq.Override and _rq.Override.block)or _bn.farmPlaceId if not _rq.Override and _bn.farmAutoDropSeed then local _uT=_rA(_uS)and _uS or _fR(_uS)local _uU=tonumber(_bn.farmSeedDropAt)or 200 if _uT and _fJ(_uT)>=_uU then local _uV=tonumber(_bn.farmSeedKeep)or 0 local _uW=_fJ(_uT)-_uV if _uW>0 and _rv and type(_rv.ExternalDropSeed)==string.char(102,117,110,99,116,105,111,110)then _rq.stats.status=string.format(string.char(65,117,116,111,32,68,114,111,112,32,83,101,101,100,32,37,115,32,120,37,100,46,46,46),_fG(_uT),_uW)_rv.ExternalDropSeed(_uT,_uW,_bn.farmDropWorld,_bn.farmDropX,_bn.farmDropY,_uN.world,_uN.x,_uN.y,function()return _rq.on and _rq.token==_uM and _e()end)_uO=_fD()end end end local _uX=_uw()if#_uX==0 then _rq.stats.status=string.char(80,105,108,105,104,32,107,111,116,97,107,32,100,105,32,71,114,105,100,32,53,120,53,32,100,117,108,117)if not _rq.Quiet then _bI(string.char(65,117,116,111,32,70,97,114,109,58,32,112,105,108,105,104,32,109,105,110,105,109,97,108,32,49,32,107,111,116,97,107,32,100,105,32,71,114,105,100,32,53,120,53,46))end break end local _uY,_uZ=_gG()if not _uY then break end if not _rq.Override and(_uY~=_uN.x or _uZ~=_uN.y)then if _uZ==_uN.y and math.abs(_uY-_uN.x)<=4 and _bO.walkToX then local _va=_ck.active _ck.active=true _bO.collecting=true _bO.walkToX(_uN.x+0.5,2.0)_bO.collecting=false _ck.active=_va else _ik.To(_uN.x,_uN.y,function()return _rq.token~=_uM end,0.2,false)end _uY,_uZ=_uN.x,_uN.y end local _vb={}for _vc,_vd in ipairs(_uX)do local _ve,_vf=_uN.x+_vd.dx,_uN.y+_vd.dy if _gU(_uO,_ve,_vf)then table.insert(_vb,{x=_ve,y=_vf})end end local _vg,_vh=false,false if _uQ then _rq.stats.status=string.char(80,108,97,99,101,32).._fG(_uS)local _vi=_gZ(_uS)for _vj,_vk in ipairs(_vb)do if not _rq.on or _rq.token~=_uM then break end local _vl=_gM(_uO,string.char(102,103),_vk.x,_vk.y)local _vm=_gM(_uO,_vi,_vk.x,_vk.y)if _vm==0 and(_vi==string.char(98,103)or _vl==0)then if _fJ(_uS)<=0 then _vh=true break end if _hu(_uS,_vk,_uN.facing)then _rq.stats.placed=_rq.stats.placed+(1)_vg=true task.wait(math.max(0.05,_bn.farmPlaceMs/1000))end end end end if not _rq.on or _rq.token~=_uM then break end local _vn={}local _vo={}if _uR then _rq.stats.status=string.char(66,114,101,97,107,32,40)..(_ua()and string.char(82,97,121,109,97,110)or(string.char(77,117,108,116,105,32).._bn.farmMultiTarget))..string.char(41)local _vp=math.clamp(math.floor(_bn.farmMultiTarget or 1),1,5)local _vq,_vr=1,{}while _rq.on and _rq.token==_uM and _e()do while#_vr<_vp and _vq<=#_vb do local _vs=_vb[_vq]_vq=_vq+(1)if _uF(_uO,_vs.x,_vs.y)then _vr[#_vr+1]={x=_vs.x,y=_vs.y,n=0}local _vt=_vs.x..string.char(44).._vs.y if not _vo[_vt]then _vo[_vt]=true table.insert(_vn,{x=_vs.x,y=_vs.y})end end end if#_vr==0 then break end local _vu,_vv=nil,nil if _vp>1 and _ua()then _vu,_vv=_uf(_uN.x,_uN.y,_vr)end if not _vv then _vu={_vr[1]}end local _vw=os.clock()if _vv then _ut(_vv)end local _vx,_vy=false,false for _vz,_vA in ipairs(_vu)do if not _rq.on or _rq.token~=_uM then break end if _vz>1 then task.wait(0.05)end local _vB=_hM(_vA.x,_vA.y,_bn.farmBreakBg)_vA.n=_vA.n+(1)if _vB then _vx,_vg=true,true end if _vB==string.char(98,114,111,107,101)then _rq.stats.broken=_rq.stats.broken+(1)_vy=true end if _vB==nil or _vA.n>80 or not _uF(_uO,_vA.x,_vA.y)then _vA.done=true end _vA.used=true end local _vC={}for _vD,_vE in ipairs(_vr)do if not _vE.done and not _vE.used then _vC[#_vC+1]=_vE end end for _vF,_vG in ipairs(_vu)do _vG.used=nil if not _vG.done then _vC[#_vC+1]=_vG end end _vr=_vC if _vx then local _vH=math.max(0.04,_bn.farmDelay)if _vv then _vH=math.max(_vH,0.35)end local _vI=_vH-(os.clock()-_vw)if _vI>0.005 then task.wait(_vI)end end if _vy and#_vr>0 and _bn.farmAfterBreakMs>0 then task.wait(_bn.farmAfterBreakMs/1000)end end end if#_vn>0 and(_bn.farmTake or _rq.Override)and _bn.collectMode==string.char(83,101,110,116,117,104,97,110)then _rq.stats.status=string.char(66,101,114,103,101,114,97,107,32,97,109,98,105,108,32,100,114,111,112,46,46,46)task.wait(0.18)if _bO.touchAll then _bO.touchAll(_vn,_uN.x,_uN.y)end end if not _vg then if _vh then _rq.stats.status=string.char(73,116,101,109,32).._fG(_uS)..string.char(32,104,97,98,105,115)if not _rq.Quiet then _bI(string.char(65,117,116,111,32,70,97,114,109,32,98,101,114,104,101,110,116,105,58,32).._fG(_uS)..string.char(32,104,97,98,105,115,32,100,105,32,105,110,118,101,110,116,111,114,105,46))_bW.Send(string.char(115,116,111,112),string.char(65,117,116,111,32,70,97,114,109,32,98,101,114,104,101,110,116,105,58,32).._fG(_uS)..string.char(32,104,97,98,105,115))end break end task.wait(math.max(0.1,_bn.farmDelay))end _rq.stats.cycles=_rq.stats.cycles+(1)end end _tY=_uL _tX=function()if not _rq.on then return false end _rq.token=_rq.token+1 _rq.on=false _ct()_ck.active=false _rq.stats.status=string.char(77,97,116,105)if _ro then pcall(_ro)end return true end _tW=function()if _rq.on then return true end if _rr.on then _rr.Stop()end if _rs.on then _rs.Stop()end if _rt.on then _rt.Stop()end if _ru.on then _ru.Stop()end if _rv.on then _rv.Stop()end local _vJ=_bn.farmMode~=string.char(66,114,101,97,107,32,115,97,106,97)if _vJ and(type(_bn.farmPlaceId)~=string.char(110,117,109,98,101,114)or _bn.farmPlaceId<=0)then _bI(string.char(80,105,108,105,104,32,98,108,111,99,107,32,100,117,108,117,32,100,105,32,116,97,98,32,65,117,116,111,32,70,97,114,109,46))return false end local _vK,_vL,_vM=_gu()if not _vK then _bI(string.char(80,111,115,105,115,105,32,107,97,114,97,107,116,101,114,32,98,101,108,117,109,32,116,101,114,100,101,116,101,107,115,105,46))return false end local _vN={x=math.floor(_vK),y=math.floor(_vL-0.475),facing=_vM,world=_gJ(),}_rq.Override=nil _rq.Quiet=false _rq.token=_rq.token+(1)local _vO=_rq.token _rq.on=true _rq.stats.status=string.char(66,101,114,106,97,108,97,110)if _ro then pcall(_ro)end task.spawn(function()local _vP,_vQ=pcall(_uL,_vO,_vN)_ct()_ck.active=false if not _vP then warn(string.char(91,65,78,67,72,72,117,98,93,32,65,117,116,111,32,70,97,114,109,32,101,114,114,111,114,58,32)..tostring(_vQ))end if _rq.token==_vO then _rq.on=false if _rq.stats.status==string.char(66,101,114,106,97,108,97,110)then _rq.stats.status=string.char(77,97,116,105)end if _ro then pcall(_ro)end if _rl then _rl()end end end)return true end end)()end do(function()local _vR=5.0 local function _vS(_vT,_vU,_vV)if typeof(_vT.spawn)==string.char(86,101,99,116,111,114,50)and _vU==math.floor(_vT.spawn.X)and _vV==math.floor(_vT.spawn.Y)then return nil end local _vW=_gM(_vT,string.char(102,103),_vU,_vV)if _vW==nil then return nil end if _vW~=0 then if _hG(_vW)then return string.char(102,103),_vW end return nil end if _bn.clearIncludeBg then local _vX=_gM(_vT,string.char(98,103),_vU,_vV)if _vX and _vX~=0 and _hG(_vX)then return string.char(98,103),_vX end end return nil end local function _vY(_vZ,_wa)local _wb={}local _wc=1 for _wd=0,_vZ.h-1 do local _we={}for _wf=0,_vZ.w-1 do local _wg,_wh=_vS(_vZ,_wf,_wd)if _wg then local _wi=_wf..string.char(44).._wd if not _wa[_wi]then table.insert(_we,{x=_wf,y=_wd,id=_wh,layer=_wg,key=_wi})end end end if#_we>0 then if _bn.clearSweep==string.char(90,105,103,45,122,97,103)and _wc==-1 then table.sort(_we,function(_wj,_wk)return _wj.x>_wk.x end)else table.sort(_we,function(_wl,_wm)return _wl.x<_wm.x end)end for _wn,_wo in ipairs(_we)do table.insert(_wb,_wo)end if _bn.clearSweep==string.char(90,105,103,45,122,97,103)then _wc=-_wc end end end return _wb end local function _wp(_wq,_wr)_ie(string.char(97,117,116,111,99,108,101,97,114),true)_ct()_ck.active=false local _ws={}local _wt=0 while _rr.on and _rr.token==_wq and _e()do _wt=_wt+(1)local _wu=_fD()if not _wu or _gJ()~=_wr.world then _rr.status=string.char(87,111,114,108,100,32,98,101,114,117,98,97,104,44,32,98,101,114,104,101,110,116,105)break end _wu.ghost=true _rr.status=string.char(83,99,97,110,32,111,98,106,101,107,32,100,105,32,119,111,114,108,100,46,46,46)_rr.stats.pass=_wt local _wv=_vY(_wu,_ws)_rr.stats.scanned=#_wv _rr.stats.left=#_wv if#_wv==0 then break end if _wt==1 then local _ww=_wv[1]_bI(string.format(string.char(65,117,116,111,32,67,108,101,97,114,32,40,77,111,100,70,108,121,41,58,32,37,100,32,98,108,111,107,32,100,105,116,101,109,117,107,97,110,46,32,77,117,108,97,105,32,100,97,114,105,32,40,37,100,44,32,37,100,41,46),#_wv,_ww.x,_ww.y))end local _wx=false for _wy,_wz in ipairs(_wv)do if not _rr.on or _rr.token~=_wq or not _e()then return end _wu=_fD()if not _wu or _gJ()~=_wr.world then return end local _wA,_wB=_vS(_wu,_wz.x,_wz.y)if _wA then _rr.stats.row=_wz.y local _wC=_wz.x local _wD=math.max(0,_wz.y-1)_ie(string.char(97,117,116,111,99,108,101,97,114),true)_wu.ghost=true local _wE,_wF=_gG()if _wE~=_wC or _wF~=_wD then _rr.status=string.format(string.char(84,101,114,98,97,110,103,32,107,101,32,97,116,97,115,32,98,108,111,107,32,40,37,100,44,37,100,41,32,91,37,100,47,37,100,93),_wC,_wD,_wy,#_wv)_ik.FlyTo(_wC,_wD,function()return not _rr.on or _rr.token~=_wq or not _e()end,_bn.clearTpDelay)end _wu.ghost=true pcall(_wu.goTo,_wC,_wD)task.wait(0.05)local _wG=os.clock()local _wH=false _rr.status=string.format(string.char(66,114,101,97,107,32,37,115,32,100,105,32,98,97,119,97,104,32,40,37,100,44,37,100,41,32,91,37,100,47,37,100,93),_fG(_wB),_wz.x,_wz.y,_wy,#_wv)while _rr.on and _rr.token==_wq and _e()do _wu.ghost=true local _wI,_wJ=_vS(_wu,_wz.x,_wz.y)if not _wI then break end if os.clock()-_wG>=_vR then _wH=true break end _rr.status=string.format(string.char(66,114,101,97,107,32,37,115,32,40,37,100,44,37,100,41,32,91,37,100,47,37,100,93),_fG(_wJ),_wz.x,_wz.y,_wy,#_wv)local _wK=_hM(_wz.x,_wz.y,_bn.clearIncludeBg)if _wK==string.char(98,114,111,107,101)then _wx=true _rr.stats.broken=_rr.stats.broken+(1)_wG=os.clock()end task.wait(math.max(0.04,_bn.clearBreakDelay))end if not _vS(_wu,_wz.x,_wz.y)then _rr.stats.left=math.max(0,_rr.stats.left-1)elseif _wH then _ws[_wz.key]=true _rr.stats.skipped=_rr.stats.skipped+(1)_rr.stats.left=math.max(0,_rr.stats.left-1)_rr.status=string.format(string.char(83,107,105,112,32,40,37,100,44,37,100,41,32,62,32,53,32,100,116,107),_wz.x,_wz.y)end else _rr.stats.left=math.max(0,_rr.stats.left-1)end end if not _wx then break end end _ie(string.char(97,117,116,111,99,108,101,97,114),false)_ct()_ck.active=false _rr.status=string.char(83,101,108,101,115,97,105)local _wL=string.format(string.char(65,117,116,111,32,67,108,101,97,114,32,115,101,108,101,115,97,105,33,32,72,97,110,99,117,114,58,32,37,100,32,124,32,68,105,97,109,98,105,108,58,32,37,100,32,124,32,83,107,105,112,58,32,37,100),_rr.stats.broken,_rr.stats.picked,_rr.stats.skipped)_bI(_wL)_bW.Send(string.char(115,116,111,112),_wL)end function _rr.Stop()if not _rr.on then return false end _rr.token=_rr.token+(1)_rr.on=false _ie(string.char(97,117,116,111,99,108,101,97,114),false)_ct()_ck.active=false _rr.status=string.char(77,97,116,105)return true end function _rr.Start()if _rr.on then return true end if _rq.on then _tX()end if _rs.on then _rs.Stop()end if _rt.on then _rt.Stop()end if _ru.on then _ru.Stop()end if _rv.on then _rv.Stop()end local _wM,_wN=_gu()if not _wM then _bI(string.char(80,111,115,105,115,105,32,98,101,108,117,109,32,116,101,114,100,101,116,101,107,115,105,46));return false end local _wO={x=math.floor(_wM),y=math.floor(_wN-0.475),world=_gJ()}_rr.token=_rr.token+(1)local _wP=_rr.token _rr.on=true _rr.status=string.char(77,117,108,97,105)_rr.stats={scanned=0,broken=0,picked=0,skipped=0,left=0,pass=0,row=-1}task.spawn(function()local _wQ,_wR=pcall(_wp,_wP,_wO)if not _wQ then warn(string.char(91,65,78,67,72,72,117,98,93,32,65,117,116,111,32,67,108,101,97,114,32,101,114,114,111,114,58,32)..tostring(_wR))end _ie(string.char(97,117,116,111,99,108,101,97,114),false)_ct()_ck.active=false if _rr.token==_wP then _rr.on=false if _rr.status~=string.char(83,101,108,101,115,97,105)then _rr.status=string.char(77,97,116,105)end if _rl then _rl()end end end)return true end end)()end do(function()local function _wS(_wT,_wU)if _bn.harvestModFly then _ie(string.char(97,117,116,111,104,97,114,118,101,115,116),true)end local _wV={}local _wW=0 while _rs.on and _rs.token==_wT and _e()do _wW=_wW+(1)local _wX=_fD()if not _wX or _gJ()~=_wU.world then _rs.status=string.char(87,111,114,108,100,32,98,101,114,117,98,97,104,44,32,98,101,114,104,101,110,116,105)break end _rs.status=string.char(83,99,97,110,32,112,111,104,111,110,32,38,32,108,97,104,97,110,32,116,97,110,97,109,46,46,46)local _wY={}local _wZ={}local _xa=0 local _xb=0 local _xc=_bn.harvestDoPlant and _bn.harvestSeedId and _fJ(_bn.harvestSeedId)>0 local _xd=1 for _xe=0,_wX.h-1 do local _xf,_xg={},{}for _xh=0,_wX.w-1 do local _xi=_gM(_wX,string.char(102,103),_xh,_xe)or 0 if _xi~=0 and _rA(_xi)then _xa=_xa+1 if _bn.harvestDoHarvest and not _wV[_xh..string.char(44).._xe]then if _rN(_wX,_xh,_xe,_xi)then table.insert(_xf,{x=_xh,y=_xe,id=_xi})else _xb=_xb+1 end end elseif _xc and _xi==0 and _rT(_wX,_xh,_xe,_bn.harvestSeedId)then table.insert(_xg,{x=_xh,y=_xe})end end if#_xf>0 or#_xg>0 then if _xd==-1 then table.sort(_xf,function(_xj,_xk)return _xj.x>_xk.x end)table.sort(_xg,function(_xl,_xm)return _xl.x>_xm.x end)else table.sort(_xf,function(_xn,_xo)return _xn.x<_xo.x end)table.sort(_xg,function(_xp,_xq)return _xp.x<_xq.x end)end for _xr,_xs in ipairs(_xf)do table.insert(_wY,_xs)end for _xt,_xu in ipairs(_xg)do table.insert(_wZ,_xu)end _xd=-_xd end end _rs.stats.totalTrees=_xa _rs.stats.ready=#_wY if _wW==1 then _rs.stats.skipped=_xb _bI(string.format((string.char(70,97,114,109,101,114,32,83,99,97,110,58,32,37,100,32,112,111,104,111,110,32,40,37,100,32,115,105,97,112,32,112,97,110,101,110,44,32,37,100,32,98,101,108,117,109,32,115,105,97,112,41,32,124,32,37,100,32,108,97,104,97,110,32)..string.char(107,111,115,111,110,103,46)),_xa,#_wY,_xb,#_wZ))end if#_wY==0 and#_wZ==0 then break end local _xv=false local _xw=math.min(_hc(),_hg())-0.15 for _xx,_xy in ipairs(_wY)do if not _rs.on or _rs.token~=_wT or not _e()then return end _wX=_fD()if not _wX or _gJ()~=_wU.world then return end if _gM(_wX,string.char(102,103),_xy.x,_xy.y)==_xy.id then local _xz=_gr()if not(_xz and _ik.StateReaches(_xz,_xy.x,_xy.y,_xw))then _rs.status=string.format(string.char(74,97,108,97,110,32,90,105,103,45,90,97,103,32,107,101,32,112,111,104,111,110,32,40,37,100,44,37,100,41,32,91,37,100,47,37,100,93),_xy.x,_xy.y,_xx,#_wY)local _xA=_ik.To(_xy.x,_xy.y,function()return _rs.token~=_wT or not _rs.on end,_xw,_bn.harvestUseBlock)if not _xA then _wV[_xy.x..string.char(44).._xy.y]=true _rs.stats.skipped=_rs.stats.skipped+1 end task.wait(math.max(0.10,_bn.harvestTpDelay))end local _xB=_gr()if _xB and _ik.StateReaches(_xB,_xy.x,_xy.y,_xw+0.5)then _rs.status=string.format(string.char(80,97,110,101,110,32,37,115,32,40,37,100,44,37,100,41,32,91,37,100,47,37,100,93),_fG(_xy.id),_xy.x,_xy.y,_xx,#_wY)local _xC=os.clock()while _rs.on and _rs.token==_wT and _gM(_wX,string.char(102,103),_xy.x,_xy.y)==_xy.id and os.clock()-_xC<3.5 do _hM(_xy.x,_xy.y,false)task.wait(math.max(0.05,_bn.harvestDelay))end if _gM(_wX,string.char(102,103),_xy.x,_xy.y)~=_xy.id then _xv=true _rs.stats.harvested=_rs.stats.harvested+1 _bV.Harvested=_bV.Harvested+1 _rs.stats.ready=math.max(0,_rs.stats.ready-1)if _bn.harvestDoPlant and _bn.harvestSeedId and _fJ(_bn.harvestSeedId)>0 and _rT(_wX,_xy.x,_xy.y,_bn.harvestSeedId)then task.wait(0.08)if _hu(_bn.harvestSeedId,{x=_xy.x,y=_xy.y},1)then _rs.stats.planted=_rs.stats.planted+1 _bV.Planted=_bV.Planted+1 task.wait(math.max(0.05,_bn.harvestPlantDelay))end end else _wV[_xy.x..string.char(44).._xy.y]=true _rs.stats.skipped=_rs.stats.skipped+1 end end end end if _bn.harvestDoPlant and _bn.harvestSeedId and _fJ(_bn.harvestSeedId)>0 then for _xD,_xE in ipairs(_wZ)do if not _rs.on or _rs.token~=_wT or not _e()then return end if _fJ(_bn.harvestSeedId)<=0 then break end _wX=_fD()if not _wX or _gJ()~=_wU.world then return end if _rT(_wX,_xE.x,_xE.y,_bn.harvestSeedId)then local _xF=_gr()if not(_xF and _ik.StateReaches(_xF,_xE.x,_xE.y,_xw))then _rs.status=string.format(string.char(74,97,108,97,110,32,90,105,103,45,90,97,103,32,107,101,32,116,97,110,97,109,32,40,37,100,44,37,100,41,32,91,37,100,47,37,100,93),_xE.x,_xE.y,_xD,#_wZ)_ik.To(_xE.x,_xE.y,function()return _rs.token~=_wT or not _rs.on end,_xw,_bn.harvestUseBlock)task.wait(math.max(0.10,_bn.harvestTpDelay))end local _xG=_gr()if _xG and _ik.StateReaches(_xG,_xE.x,_xE.y,_xw+0.5)and _rT(_wX,_xE.x,_xE.y,_bn.harvestSeedId)then if _hu(_bn.harvestSeedId,_xE,1)then _xv=true _rs.stats.planted=_rs.stats.planted+1 _bV.Planted=_bV.Planted+1 _rs.status=string.format(string.char(84,97,110,97,109,32,37,115,32,40,37,100,44,37,100,41),_fG(_bn.harvestSeedId),_xE.x,_xE.y)task.wait(math.max(0.05,_bn.harvestPlantDelay))end end end end end if not _xv then break end end _ie(string.char(97,117,116,111,104,97,114,118,101,115,116),false)_ct()_ck.active=false _rs.status=string.char(83,101,108,101,115,97,105)local _xH=string.format(string.char(70,97,114,109,101,114,32,115,101,108,101,115,97,105,33,32,80,97,110,101,110,58,32,37,100,32,124,32,84,97,110,97,109,58,32,37,100,32,124,32,68,114,111,112,58,32,37,100),_rs.stats.harvested,_rs.stats.planted,_rs.stats.picked)_bI(_xH)_bW.Send(string.char(115,116,111,112),_xH)end function _rs.Stop()if not _rs.on then return false end _rs.token=_rs.token+(1)_rs.on=false _ie(string.char(97,117,116,111,104,97,114,118,101,115,116),false)_ct()_ck.active=false _rs.status=string.char(77,97,116,105)return true end function _rs.Start()if _rs.on then return true end if _rq.on then _tX()end if _rr.on then _rr.Stop()end if _rt.on then _rt.Stop()end if _ru.on then _ru.Stop()end if _rv.on then _rv.Stop()end local _xI,_xJ=_gu()if not _xI then _bI(string.char(80,111,115,105,115,105,32,98,101,108,117,109,32,116,101,114,100,101,116,101,107,115,105,46));return false end local _xK={x=math.floor(_xI),y=math.floor(_xJ-0.475),world=_gJ()}_rs.token=_rs.token+(1)local _xL=_rs.token _rs.on=true _rs.status=string.char(77,117,108,97,105)_rs.stats={totalTrees=0,ready=0,harvested=0,planted=0,skipped=0,picked=0}task.spawn(function()local _xM,_xN=pcall(_wS,_xL,_xK)if not _xM then warn(string.char(91,65,78,67,72,72,117,98,93,32,70,97,114,109,101,114,32,101,114,114,111,114,58,32)..tostring(_xN))end _ie(string.char(97,117,116,111,104,97,114,118,101,115,116),false)_ct()_ck.active=false if _rs.token==_xL then _rs.on=false if _rs.status~=string.char(83,101,108,101,115,97,105)then _rs.status=string.char(77,97,116,105)end if _rl then _rl()end end end)return true end end)()end do(function()local _xO=5.0 local function _xP(_xQ)local _xR=_Q and _Q[_xQ]return type(_xR)==string.char(116,97,98,108,101)and type(_xR.name)==string.char(115,116,114,105,110,103)and _xR.name:lower():find(string.char(98,101,100,114,111,99,107),1,true)~=nil end local function _xS(_xT)local _xU=_gb()local _xV,_xW=nil,nil for _xX=0,_xT.h-1 do local _xY,_xZ=0,0 for _ya=0,_xT.w-1 do local _yb=_gM(_xT,string.char(102,103),_ya,_xX)or 0 if _yb~=0 then if _xP(_yb)then _xZ=_xZ+(1)elseif _yb==_xU or _hG(_yb)then _xY=_xY+(1)end end end if not _xV and _xY>=math.floor(_xT.w*0.25)then _xV=_xX end if _xV and _xX>_xV and _xZ>=math.floor(_xT.w*0.4)then _xW=_xX break end end if not _xV then _xV=(typeof(_xT.spawn)==string.char(86,101,99,116,111,114,50))and(math.floor(_xT.spawn.Y)+1)or 37 end if not _xW then _xW=_xT.h-6 end return _xV,_xW end local function _yc(_yd,_ye,_yf)local _yg=function()return _rt.token~=_yf or not _rt.on or not _e()end local _yh,_yi=_gG()if not _yh or(_yh==_yd and _yi==_ye)then return true end if _bn.moveMethod==string.char(84,101,108,101,112,111,114,116,32,77,111,100,101)then return _ik.FlyTo(_yd,_ye,_yg,_bn.dfTpDelay,false)end if _yi==_ye and math.abs(_yh-_yd)<=2 then if _ik.ExecWalk(_yd,_ye,_yg)then return true end elseif _yi and _ye<_yi and math.abs(_yh-_yd)<=1 then if _ik.ClimbUpWithDirt(_yd,_ye,_yg,true,_bn.dfTpDelay,true)then return true end end if _ik.To(_yd,_ye,_yg,0.3,true)then return true end return _ik.FlyTo(_yd,_ye,_yg,_bn.dfTpDelay,false)end local function _yj(_yk,_yl,_ym,_yn,_yo,_yp)if not _gU(_yk,_yl,_ym)then return false end local _yq=_gM(_yk,string.char(102,103),_yl,_ym)or 0 local _yr=_gM(_yk,string.char(98,103),_yl,_ym)or 0 if(_yq==0 or not _hG(_yq))and(_yr==0 or not _hG(_yr))then return true end _yc(_yn,_yo,_yp)local _ys=os.clock()while _rt.on and _rt.token==_yp and _e()do local _yt=_gM(_yk,string.char(102,103),_yl,_ym)or 0 local _yu=_gM(_yk,string.char(98,103),_yl,_ym)or 0 local _yv=_yt~=0 and _hG(_yt)local _yw=_yu~=0 and _hG(_yu)if _bn.dfModFly then _yk.ghost=true end if not _yv and not _yw then break end if os.clock()-_ys>=_xO then break end local _yx=_hM(_yl,_ym,true)if _yx==string.char(98,114,111,107,101)then _rt.stats.broken=_rt.stats.broken+(1)_ys=os.clock()end task.wait(math.max(0.04,_bn.dfBreakDelay))end return true end local function _yy(_yz,_yA)local _yB=_bO.list if not _yB then _bN.Scan();_yB=_bO.list end if type(_yB)~=string.char(116,97,98,108,101)then return nil end local _yC,_yD=_gG()_yC,_yD=_yC or 50,_yD or 30 local _yE,_yF=nil,math.huge for _yG,_yH in ipairs(_yB)do if type(_yH)==string.char(116,97,98,108,101)and(_yH.id==_yz or _yH.id==_yA)and(_yH.n or 0)>0 and type(_yH.x)==string.char(110,117,109,98,101,114)then local _yI=math.abs(_yH.x-_yC)+math.abs(_yH.y-_yD)if _yI<_yF then _yE,_yF=_yH,_yI end end end return _yE end local function _yJ(_yK,_yL,_yM,_yN)local _yO=_gb()local _yP=_gf()local _yQ=_yL-1 if _yQ<0 then return false end local _yR={}local _yS=0 for _yT=3,_yK.w-4 do if not _rt.on or _rt.token~=_yM then break end if _fJ(_yP)<=0 or _yS>=(_yN or 20)then break end if(_gM(_yK,string.char(102,103),_yT,_yL)or 0)==_yO and(_gM(_yK,string.char(102,103),_yT,_yQ)or 0)==0 then _yc(_yT,_yQ,_yM)if _hu(_yP,{x=_yT,y=_yQ},1)then _bV.Planted=_bV.Planted+(1)table.insert(_yR,{x=_yT,y=_yQ,plantedTime=os.clock()})_yS=_yS+(1)task.wait(0.18)end end end for _yU=2,_yK.w-3 do if(_gM(_yK,string.char(102,103),_yU,_yQ)or 0)==_yP then local _yV=false for _yW,_yX in ipairs(_yR)do if _yX.x==_yU and _yX.y==_yQ then _yV=true;break end end if not _yV then table.insert(_yR,{x=_yU,y=_yQ,plantedTime=os.clock()-25})end end end if#_yR==0 then return false end local _yY=_Q[_yP]local _yZ=(_yY and(tonumber(_yY.grow)or tonumber(_yY.baseGrow)))or 31 for _za,_zb in ipairs(_yR)do if not _rt.on or _rt.token~=_yM then return false end while _rt.on and _rt.token==_yM and _e()do if(_gM(_yK,string.char(102,103),_zb.x,_zb.y)or 0)~=_yP then break end local _zc=os.clock()-_zb.plantedTime if _rN(_yK,_zb.x,_zb.y,_yP)or _zc>=(_yZ+1.5)then break end local _zd=math.max(0,math.ceil(_yZ-_zc))_rt.status=string.format(string.char(77,101,110,117,110,103,103,117,32,68,105,114,116,32,84,114,101,101,32,109,97,116,97,110,103,32,40,37,100,115,41,32,91,37,100,47,37,100,93,46,46,46),_zd,_za,#_yR)task.wait(0.5)end if(_gM(_yK,string.char(102,103),_zb.x,_zb.y)or 0)==_yP then _rt.status=string.format(string.char(72,97,114,118,101,115,116,32,68,105,114,116,32,84,114,101,101,32,40,37,100,44,37,100,41,32,91,37,100,47,37,100,93),_zb.x,_zb.y,_za,#_yR)_yc(_zb.x,_zb.y,_yM)local _ze=os.clock()while _rt.on and _rt.token==_yM and(_gM(_yK,string.char(102,103),_zb.x,_zb.y)or 0)==_yP and os.clock()-_ze<3.5 do local _zf=_hM(_zb.x,_zb.y,false)if _zf==string.char(98,114,111,107,101)then _bV.Harvested=_bV.Harvested+(1)end task.wait(math.max(0.05,_bn.dfBreakDelay))end task.wait(0.25)end end return true end local function _zg(_zh,_zi,_zj)local _zk=_gb()for _zl=_zi,_zj-1,2 do local _zm=0 for _zn=3,_zh.w-4 do if(_gM(_zh,string.char(102,103),_zn,_zl)or 0)==_zk and(_gM(_zh,string.char(102,103),_zn,_zl-1)or 0)==0 then _zm=_zm+(1)if _zm>=12 then return _zl end end end end return _zi end local function _zo(_zp,_zq,_zr,_zs,_zt,_zu,_zv)local _zw=_gb()local _zx=_gf()if _fJ(_zw)>0 then return true end _rt.stats.step=string.char(82,101,115,116,111,99,107,32,68,105,114,116)local _zy=_zg(_zp,_zt,_zu)while _rt.on and _rt.token==_zv and _e()and _fJ(_zw)<15 do if _fJ(_zx)>0 then _rt.status=string.char(83,116,111,107,32,68,105,114,116,32,104,97,98,105,115,33,32,77,101,110,97,110,97,109,32,38,32,109,101,109,97,110,101,110,32,68,105,114,116,32,83,101,101,100,46,46,46)_yJ(_zp,_zy,_zv,20)if _fJ(_zw)>=15 then break end end local _zz=_yy(_zw,_zx)if _zz then local _zA,_zB=math.floor(_zz.x),math.floor(_zz.y)_rt.status=string.format(string.char(77,101,110,103,97,109,98,105,108,32,100,114,111,112,32,68,105,114,116,47,83,101,101,100,32,100,105,32,40,37,100,44,32,37,100,41,46,46,46),_zA,_zB)_yc(_zA,_zB,_zv)task.wait(0.5)if _fJ(_zw)>=15 then break end if _fJ(_zx)>0 then _yJ(_zp,_zy,_zv,20)if _fJ(_zw)>=15 then break end end end if _fJ(_zw)==0 and _fJ(_zx)==0 then _rt.status=string.char(66,114,101,97,107,32,68,105,114,116,32,100,105,32,119,111,114,108,100,32,117,110,116,117,107,32,109,101,110,99,97,114,105,32,83,101,101,100,46,46,46)local _zC={}for _zD=4,_zp.w-5 do if not _rt.on or _rt.token~=_zv then break end if#_zC>=14 or _fJ(_zx)>=6 then break end if(_gM(_zp,string.char(102,103),_zD,_zy)or 0)==_zw and(_gM(_zp,string.char(102,103),_zD-1,_zy)or 0)==_zw then local _zE,_zF=_zD-1,_zy-1 _yc(_zE,_zF,_zv)_yj(_zp,_zD,_zy,_zE,_zF,_zv)if(_gM(_zp,string.char(102,103),_zD,_zy)or 0)==0 then table.insert(_zC,{x=_zD,y=_zy,standX=_zE,standY=_zF})end task.wait(0.2)end end if _fJ(_zx)>0 then _yJ(_zp,_zy,_zv,20)end for _zG,_zH in ipairs(_zC)do if not _rt.on or _rt.token~=_zv then break end while _rt.on and _rt.token==_zv and _fJ(_zw)==0 and _fJ(_zx)>0 do _yJ(_zp,_zy,_zv,15)end if(_gM(_zp,string.char(102,103),_zH.x,_zH.y)or 0)==0 and _fJ(_zw)>0 then _yc(_zH.standX,_zH.standY,_zv)if _hu(_zw,{x=_zH.x,y=_zH.y},1)then _rt.stats.placed=_rt.stats.placed+(1)task.wait(0.14)end end end elseif _fJ(_zw)>0 and _fJ(_zw)<15 and _fJ(_zx)==0 then local _zI=5 local _zJ,_zK=4,_zy-1 _yc(_zJ,_zK,_zv)while _rt.on and _rt.token==_zv and _fJ(_zx)<4 and _fJ(_zw)>0 do if(_gM(_zp,string.char(102,103),_zI,_zK)or 0)==0 then _hu(_zw,{x=_zI,y=_zK},1)task.wait(_bm)end _yj(_zp,_zI,_zK,_zJ,_zK,_zv)task.wait(0.2)end else break end end if _zq and _zr then _yc(_zq,_zr,_zv)end return _fJ(_zw)>0 end local function _zL(_zM,_zN,_zO,_zP,_zQ,_zR,_zS,_zT)if not _gU(_zM,_zN,_zO)then return end local _zU=_gb()local _zV=_gM(_zM,string.char(102,103),_zN,_zO)or 0 if _zV==_zU then return end if _zV~=0 and not _hG(_zV)then return end _yc(_zP,_zQ,_zT)if _zV~=0 and _zV~=_zU then local _zW=os.clock()while _rt.on and _rt.token==_zT and(_gM(_zM,string.char(102,103),_zN,_zO)or 0)~=0 and os.clock()-_zW<_xO do local _zX=_hM(_zN,_zO,false)if _zX==string.char(98,114,111,107,101)then _rt.stats.broken=_rt.stats.broken+(1)end task.wait(math.max(0.04,_bn.dfBreakDelay))end end if _rt.on and _rt.token==_zT and(_gM(_zM,string.char(102,103),_zN,_zO)or 0)==0 then if _fJ(_zU)<=0 then _zo(_zM,_zP,_zQ,_zO,_zR,_zS,_zT)end if _fJ(_zU)>0 then if _hu(_zU,{x=_zN,y=_zO},(_zN>=_zP)and 1 or-1)then _rt.stats.placed=_rt.stats.placed+(1)task.wait(0.14)end end end end local function _zY(_zZ,_Aa,_Ab,_Ac,_Ad)for _Ae=_Ac,_Ad-1 do local _Af,_Ag=_gM(_zZ,string.char(102,103),_Aa,_Ae)or 0,_gM(_zZ,string.char(98,103),_Aa,_Ae)or 0 local _Ah,_Ai=_gM(_zZ,string.char(102,103),_Ab,_Ae)or 0,_gM(_zZ,string.char(98,103),_Ab,_Ae)or 0 if _xP(_Af)and _xP(_Ah)then break end if(_Af~=0 and _hG(_Af))or(_Ag~=0 and _hG(_Ag))or(_Ah~=0 and _hG(_Ah))or(_Ai~=0 and _hG(_Ai))then return _Ae end end return nil end local function _Aj(_Ak,_Al,_Am,_An,_Ao,_Ap,_Aq)local _Ar=_zY(_Ak,_Al,_Am,_An,_Ao)if not _Ar then _rt.status=string.char(75,111,108,111,109,32,118,101,114,116,105,107,97,108,32).._Ap..string.char(32,115,117,100,97,104,32,98,101,114,115,105,104,44,32,108,97,110,106,117,116,46,46,46)return true end _rt.stats.step=string.char(67,108,101,97,114,32,86,101,114,116,105,107,97,108,32).._Ap local _As=math.max(0,_Ar-1)_rt.status=string.format(string.char(76,97,110,106,117,116,32,118,101,114,116,105,107,97,108,32,37,115,32,100,97,114,105,32,89,61,37,100,46,46,46),_Ap,_Ar)_yc(_Am,_As,_Aq)task.wait(math.max(0.20,_bn.dfTpDelay))local _At=_As for _Au=_Ar,_Ao-1 do if not _rt.on or _rt.token~=_Aq or not _e()then return false end _Ak=_fD()if not _Ak then return false end if _xP(_gM(_Ak,string.char(102,103),_Al,_Au))and _xP(_gM(_Ak,string.char(102,103),_Am,_Au))then break end local _Av=math.max(0,_Au-1)_rt.status=string.format(string.char(86,101,114,116,105,107,97,108,32,37,115,58,32,66,114,101,97,107,32,89,61,37,100),_Ap,_Au)_yj(_Ak,_Al,_Au,_Am,_Av,_Aq)if not _rt.on or _rt.token~=_Aq then return false end _yj(_Ak,_Am,_Au,_Am,_Av,_Aq)_At=_Av end if _rt.on and _rt.token==_Aq and _At>math.max(0,_An-1)then _rt.status=string.format(string.char(78,97,105,107,32,107,101,109,98,97,108,105,32,100,97,114,105,32,117,106,117,110,103,32,37,115,46,46,46),_Ap)_ik.ClimbUpWithDirt(_Am,math.max(0,_An-1),function()return _rt.token~=_Aq end,true,_bn.dfTpDelay,true)end return true end local function _Aw(_Ax,_Ay,_Az,_AA)local _AB=_gb()local _AC=_Ay-1 local _AD=_Ay+1 for _AE=2,_Ax.w-3 do local _AF=_gM(_Ax,string.char(102,103),_AE,_Ay)or 0 local _AG=_gM(_Ax,string.char(98,103),_AE,_Ay)or 0 if(_AF~=0 and _hG(_AF))or(_AG~=0 and _hG(_AG))then return false end if _bn.dfReplacePlatform then if _AC>=_Az and(_gM(_Ax,string.char(102,103),_AE,_AC)or 0)~=_AB then return false end if _AD<_AA and(_gM(_Ax,string.char(102,103),_AE,_AD)or 0)~=_AB then return false end end end return true end local function _AH(_AI,_AJ)local _AK=_gb()local _AL=_AJ-1 for _AM=2,_AI.w-3 do if(_gM(_AI,string.char(102,103),_AM,_AJ)or 0)~=_AK then return false end if(_gM(_AI,string.char(102,103),_AM,_AL)or 0)~=0 then return false end end return true end local function _AN(_AO,_AP)local _AQ=godOn if not _AQ and StartGod then pcall(StartGod)end _ie(string.char(97,117,116,111,100,102),_bn.dfModFly)local _AR=_fD()if not _AR then return end local _AS,_AT=_xS(_AR)_rt.stats.topDirtY=_AS _rt.stats.bedrockY=_AT _bI(string.format((string.char(65,117,116,111,32,68,70,32,83,99,97,110,58,32,77,101,108,97,110,106,117,116,107,97,110,32,112,114,111,103,114,101,115,32,68,105,114,116,32,70,97,114,109,32,40,68,105,114,116,32,89,61,37,100,44,32,66,101,100,114,111,99,107,32)..string.char(89,61,37,100,41,46)),_AS,_AT))local _AU=_AR.w if not _Aj(_AR,0,1,_AS,_AT,string.char(75,105,114,105,32,40,49,45,50,41),_AO)then return end if not _rt.on or _rt.token~=_AO then return end if not _Aj(_AR,_AU-2,_AU-1,_AS,_AT,string.char(75,97,110,97,110,32,40,57,57,45,49,48,48,41),_AO)then return end if not _rt.on or _rt.token~=_AO then return end local _AV=false for _AW=_AS+1,_AT-1,2 do if not _rt.on or _rt.token~=_AO or not _e()then return end _AR=_fD()if not _AR or _gJ()~=_AP.world then return end if _Aw(_AR,_AW,_AS,_AT)then _rt.status=string.format(string.char(66,97,114,105,115,32,89,61,37,100,32,115,117,100,97,104,32,115,101,108,101,115,97,105,44,32,108,97,110,106,117,116,32,107,101,32,98,97,114,105,115,32,98,101,114,105,107,117,116,110,121,97,46,46,46),_AW)else local _AX=_AW-1 local _AY=_AW+1 _rt.stats.step=string.format(string.char(66,97,119,97,104,58,32,66,97,114,105,115,32,89,61,37,100),_AW)local _AZ=_AV and 2 or(_AU-3)local _Ba=_AV and(_AU-3)or 2 local _Bb=_AV and 1 or-1 local _Bc=_AV and 1 or(_AU-2)_yc(_Bc,_AW,_AO)for _Bd=_AZ,_Ba,_Bb do if not _rt.on or _rt.token~=_AO or not _e()then return end _AR=_fD()if not _AR or _gJ()~=_AP.world then return end local _Be=_Bd-_Bb local _Bf=_AW if _bn.dfReplacePlatform and _AY<_AT then _zL(_AR,_Be,_AY,_Be,_Bf,_AS,_AT,_AO)end if _bn.dfReplacePlatform and _AX>=_AS then _zL(_AR,_Be,_AX,_Be,_Bf,_AS,_AT,_AO)end _rt.status=string.format(string.char(66,97,119,97,104,32,89,61,37,100,32,124,32,66,114,101,97,107,32,40,37,100,44,37,100,41),_AW,_Bd,_AW)_yj(_AR,_Bd,_AW,_Be,_Bf,_AO)if _bn.dfReplacePlatform then if _AX>=_AS then _zL(_AR,_Bd,_AX,_Be,_Bf,_AS,_AT,_AO)end if _AY<_AT then _zL(_AR,_Bd,_AY,_Be,_Bf,_AS,_AT,_AO)end end _yc(_Bd,_AW,_AO)end _AV=not _AV end end for _Bg=2,_AU-3 do if not _rt.on or _rt.token~=_AO then return end if(_gM(_AR,string.char(102,103),_Bg,_AS)or 0)~=_gb()then _zL(_AR,_Bg,_AS,_Bg,_AS-1,_AS,_AT,_AO)end end local _Bh=true for _Bi=_AS-2,2,-2 do if not _rt.on or _rt.token~=_AO or not _e()then return end _AR=_fD()if not _AR or _gJ()~=_AP.world then return end if _AH(_AR,_Bi)then _rt.status=string.format(string.char(80,108,97,116,102,111,114,109,32,65,116,97,115,32,89,61,37,100,32,115,117,100,97,104,32,115,101,108,101,115,97,105,44,32,115,107,105,112,46,46,46),_Bi)else local _Bj=_Bi-1 _rt.stats.step=string.format(string.char(65,116,97,115,58,32,80,108,97,116,102,111,114,109,32,89,61,37,100),_Bi)local _Bk=_Bh and 2 or(_AU-3)local _Bl=_Bh and(_AU-3)or 2 local _Bm=_Bh and 1 or-1 local _Bn=_Bi+1 _yc(_Bk,_Bn,_AO)_zL(_AR,_Bk,_Bi,_Bk,_Bn,_AS,_AT,_AO)local _Bo=_Bh and 1 or(_AU-2)_ik.ClimbUpWithDirt(_Bo,_Bj,function()return _rt.token~=_AO end,true,_bn.dfTpDelay,true)_yc(_Bk,_Bj,_AO)for _Bp=_Bk+_Bm,_Bl,_Bm do if not _rt.on or _rt.token~=_AO or not _e()then return end _AR=_fD()if not _AR or _gJ()~=_AP.world then return end local _Bq=_Bp-_Bm if(_gM(_AR,string.char(102,103),_Bp,_Bj)or 0)~=0 or(_gM(_AR,string.char(98,103),_Bp,_Bj)or 0)~=0 then _yj(_AR,_Bp,_Bj,_Bq,_Bj,_AO)end _rt.status=string.format(string.char(65,116,97,115,32,89,61,37,100,32,124,32,80,97,115,97,110,103,32,68,105,114,116,32,40,37,100,44,37,100,41),_Bi,_Bp,_Bi)_zL(_AR,_Bp,_Bi,_Bq,_Bj,_AS,_AT,_AO)_yc(_Bp,_Bj,_AO)end _Bh=not _Bh end end if not _AQ and StopGod then pcall(StopGod)end _ie(string.char(97,117,116,111,100,102),false)_ct()_ck.active=false _rt.stats.step=string.char(83,101,108,101,115,97,105)_rt.status=string.char(83,101,108,101,115,97,105)local _Br=string.format((string.char(70,117,108,108,32,87,111,114,108,100,32,68,105,114,116,32,70,97,114,109,32,115,101,108,101,115,97,105,33,32,72,97,110,99,117,114,58,32,37,100,32,124,32,68,105,114,116,32,100,105,112,97,115,97,110,103,58,32,37,100,32,124,32,68)..string.char(114,111,112,58,32,37,100)),_rt.stats.broken,_rt.stats.placed,_rt.stats.picked)_bI(_Br)_bW.Send(string.char(112,97,98,114,105,107),_Br)end function _rt.Stop()if not _rt.on then return false end _rt.token=_rt.token+(1)_rt.on=false _ie(string.char(97,117,116,111,100,102),false)_ct()_ck.active=false _rt.status=string.char(77,97,116,105)_rt.stats.step=string.char(45)return true end function _rt.Start()if _rt.on then return true end if _rq.on then _tX()end if _rr.on then _rr.Stop()end if _rs.on then _rs.Stop()end if _ru.on then _ru.Stop()end if _rv.on then _rv.Stop()end local _Bs,_Bt=_gu()if not _Bs then _bI(string.char(80,111,115,105,115,105,32,98,101,108,117,109,32,116,101,114,100,101,116,101,107,115,105,46));return false end local _Bu={x=math.floor(_Bs),y=math.floor(_Bt-0.475),world=_gJ()}_rt.token=_rt.token+(1)local _Bv=_rt.token _rt.on=true _rt.status=string.char(77,117,108,97,105)_rt.stats={topDirtY=0,bedrockY=0,broken=0,placed=0,picked=0,step=string.char(73,110,105,115,105,97,108,105,115,97,115,105)}task.spawn(function()local _Bw,_Bx=pcall(_AN,_Bv,_Bu)if not _Bw then warn(string.char(91,65,78,67,72,72,117,98,93,32,65,117,116,111,32,68,70,32,101,114,114,111,114,58,32)..tostring(_Bx))end _ie(string.char(97,117,116,111,100,102),false)_ct()_ck.active=false if _rt.token==_Bv then _rt.on=false if _rt.status~=string.char(83,101,108,101,115,97,105)then _rt.status=string.char(77,97,116,105)end if _rl then _rl()end end end)return true end end)()end do(function()function _ru.Result(_By,_Bz)if not(_Z and type(_ba)==string.char(116,97,98,108,101)and type(_ba.result)==string.char(102,117,110,99,116,105,111,110))then return nil end if not(_By and _Bz)then return nil end local _BA,_BB=pcall(_ba.result,_By,_Bz)return _BA and _BB or nil end function _ru.ResultText()local _BC,_BD=_bn.spliceA,_bn.spliceB if not(_BC and _BD)then return string.char(80,105,108,105,104,32,83,101,101,100,32,65,32,100,97,110,32,83,101,101,100,32,66)end local _BE=_ru.Result(_BC,_BD)if not _BE then return string.char(72,97,115,105,108,58,32,75,111,109,98,105,110,97,115,105,32,105,110,105,32,116,105,100,97,107,32,98,105,115,97,32,100,105,45,115,112,108,105,99,101)end return string.char(72,97,115,105,108,32,83,112,108,105,99,101,58,32).._fG(_BE)..string.char(32,91)..tostring(_BE)..string.char(93)end local function _BF(_BG,_BH,_BI)if not _bN.Trees then _bN.Scan()end local _BJ=_bN.Trees and _bN.Trees[_BI*_BG.w+_BH]return type(_BJ)==string.char(116,97,98,108,101)and _BJ.s==true end local function _BK(_BL,_BM,_BN,_BO)local _BP=_BL and rawget(_BL,string.char(115,112,108,105,99,101,83,101,101,100))if type(_BP)~=string.char(102,117,110,99,116,105,111,110)then return false,string.char(102,117,110,103,115,105,32,115,112,108,105,99,101,83,101,101,100,32,116,105,100,97,107,32,100,105,116,101,109,117,107,97,110)end local _BQ,_BR=pcall(_BP,_BM,_BN,_BO)if _BQ and _BR and _Q[_BR]then if _bN.Inv and type(_bN.Inv.remove)==string.char(102,117,110,99,116,105,111,110)then pcall(function()_bN.Inv:remove(_BO,1)end)end if _bN.SetTile then pcall(_bN.SetTile,string.char(102,103),_BM,_BN,_BR,true)end _ru.made=_ru.made+(1)_ru.status=string.format(string.char(83,112,108,105,99,101,32,106,97,100,105,32,37,115,32,40,37,100,44,37,100,41),_fG(_BR),_BM,_BN)return true end return false,string.char(100,105,116,111,108,97,107,32,115,101,114,118,101,114)end local function _BS(_BT,_BU)local _BV=math.min(_hc(),_hg())-0.15 while _ru.on and _ru.token==_BT and _e()do local _BW=_fD()if not _BW or _gJ()~=_BU.world then _ru.status=string.char(87,111,114,108,100,32,98,101,114,117,98,97,104,44,32,98,101,114,104,101,110,116,105)break end local _BX,_BY=_bn.spliceA,_bn.spliceB local _BZ,_Ca=_fJ(_BX),_fJ(_BY)if _Ca<=0 then _ru.status=string.char(83,101,101,100,32,66,32,104,97,98,105,115,33)_bI(string.char(65,117,116,111,32,83,112,108,105,99,101,32,98,101,114,104,101,110,116,105,58,32).._fG(_BY)..string.char(32,104,97,98,105,115,46))break end local _Cb=false if _bn.spliceRoam then local _Cc={}local _Cd=os.clock()for _Ce=0,_BW.h-1 do for _Cf=0,_BW.w-1 do local _Cg=_Cf..string.char(44).._Ce if not(_ru.skip[_Cg]and _ru.skip[_Cg]>_Cd)then local _Ch=_gM(_BW,string.char(102,103),_Cf,_Ce)or 0 if _Ch==0 and _BZ>0 and _rT(_BW,_Cf,_Ce,_BX)then table.insert(_Cc,{x=_Cf,y=_Ce,key=_Cg})elseif _Ch==_BX and not _BF(_BW,_Cf,_Ce)and not _rN(_BW,_Cf,_Ce,_BX)then table.insert(_Cc,{x=_Cf,y=_Ce,key=_Cg})end end end end if#_Cc==0 then _ru.status=(_BZ<=0)and string.char(83,101,101,100,32,65,32,104,97,98,105,115,32,38,32,116,105,100,97,107,32,97,100,97,32,112,111,104,111,110,32,65)or string.char(84,105,100,97,107,32,97,100,97,32,108,97,104,97,110,32,107,111,115,111,110,103,32,117,110,116,117,107,32,116,97,110,97,109,47,115,112,108,105,99,101)break end for _Ci,_Cj in ipairs(_Cc)do if not _ru.on or _ru.token~=_BT or not _e()then break end if _fJ(_BY)<=0 then break end local _Ck=_gr()local _Cl,_Cm=_gG()if not(_Ck and _ik.StateReaches(_Ck,_Cj.x,_Cj.y,_BV))then _ru.status=string.format(string.char(77,101,110,117,106,117,32,40,37,100,44,37,100,41,32,91,37,100,47,37,100,93),_Cj.x,_Cj.y,_Ci,#_Cc)if _Cm and _Cj.y<_Cm then _ik.ClimbUpWithDirt(_Cl,_Cj.y,function()return _ru.token~=_BT end,true,_bn.moveStepDelay)end _ik.To(_Cj.x,_Cj.y,function()return _ru.token~=_BT end,_BV,true)task.wait(0.2)end if(_gM(_BW,string.char(102,103),_Cj.x,_Cj.y)or 0)==0 and _fJ(_BX)>0 then if _hu(_BX,{x=_Cj.x,y=_Cj.y},1)then _ru.planted=_ru.planted+(1)_bV.Planted=_bV.Planted+(1)_Cb=true task.wait(math.max(0.14,_bn.spliceMs/1000))end end if(_gM(_BW,string.char(102,103),_Cj.x,_Cj.y)or 0)==_BX and _fJ(_BY)>0 and not _BF(_BW,_Cj.x,_Cj.y)then local _Cn,_Co=_BK(_BW,_Cj.x,_Cj.y,_BY)if not _Cn then _ru.skip[_Cj.key]=os.clock()+45 _ru.status=string.format(string.char(71,97,103,97,108,32,115,112,108,105,99,101,32,40,37,100,44,37,100,41,58,32,37,115),_Cj.x,_Cj.y,tostring(_Co))else _Cb=true end task.wait(math.max(0.14,_bn.spliceMs/1000))end end else local _Cp,_Cq=_gG()if not _Cp then break end local _Cr=os.clock()for _Cs,_Ct in pairs(_bn.farmGrid)do if _Ct then local _Cu,_Cv=tostring(_Cs):match(string.char(94,40,45,63,37,100,43,41,44,40,45,63,37,100,43,41,36))if _Cu and _Cv then local _Cw,_Cx=_Cp+tonumber(_Cu),_Cq+tonumber(_Cv)local _Cy=_Cw..string.char(44).._Cx if _gU(_BW,_Cw,_Cx)and not(_ru.fail[_Cy]and _ru.fail[_Cy]>_Cr)then local _Cz=_gM(_BW,string.char(102,103),_Cw,_Cx)or 0 if _Cz==0 and _fJ(_BX)>0 and _fJ(_BY)>0 and _rT(_BW,_Cw,_Cx,_BX)then if _hu(_BX,{x=_Cw,y=_Cx},1)then _ru.planted=_ru.planted+(1)_bV.Planted=_bV.Planted+(1)_Cb=true task.wait(math.max(0.14,_bn.spliceMs/1000))end end if(_gM(_BW,string.char(102,103),_Cw,_Cx)or 0)==_BX and _fJ(_BY)>0 and not _BF(_BW,_Cw,_Cx)then local _CA,_CB=_BK(_BW,_Cw,_Cx,_BY)if not _CA then _ru.fail[_Cy]=os.clock()+30 _ru.status=string.format(string.char(71,97,103,97,108,32,115,112,108,105,99,101,32,40,37,100,44,37,100,41,58,32,37,115),_Cw,_Cx,tostring(_CB))end _Cb=true task.wait(math.max(0.14,_bn.spliceMs/1000))end end end end end if not _Cb then if _fJ(_BX)<=0 or _fJ(_BY)<=0 then _ru.status=string.char(83,101,101,100,32,104,97,98,105,115)break end _ru.status=string.char(77,101,110,117,110,103,103,117,32,116,105,108,101,32,71,114,105,100,32,107,111,115,111,110,103,46,46,46)task.wait(1)end end if not _Cb and _bn.spliceRoam then break end task.wait(0.2)end end function _ru.Stop()if not _ru.on then return false end _ru.token=_ru.token+(1)_ru.on=false _ru.roaming=false _ct()_ck.active=false _ru.status=string.char(77,97,116,105)return true end function _ru.Start()if _ru.on then return true end if not(_bn.spliceA and _bn.spliceB)or _bn.spliceA==_bn.spliceB then _bI(string.char(65,117,116,111,32,83,112,108,105,99,101,58,32,80,105,108,105,104,32,83,101,101,100,32,65,32,100,97,110,32,83,101,101,100,32,66,32,121,97,110,103,32,98,101,114,98,101,100,97,33))return false end if _Z and type(_ba)==string.char(116,97,98,108,101)and not _ru.Result(_bn.spliceA,_bn.spliceB)then _bI(string.char(75,111,109,98,105,110,97,115,105,32,83,101,101,100,32,65,32,38,32,83,101,101,100,32,66,32,105,110,105,32,116,105,100,97,107,32,98,105,115,97,32,100,105,45,115,112,108,105,99,101,33))return false end if _rq.on then _tX()end if _rr.on then _rr.Stop()end if _rs.on then _rs.Stop()end if _rt.on then _rt.Stop()end if _rv.on then _rv.Stop()end local _CC,_CD=_gu()if not _CC then _bI(string.char(80,111,115,105,115,105,32,98,101,108,117,109,32,116,101,114,100,101,116,101,107,115,105,46));return false end local _CE={x=math.floor(_CC),y=math.floor(_CD-0.475),world=_gJ()}table.clear(_ru.fail)table.clear(_ru.skip)_ru.token=_ru.token+(1)local _CF=_ru.token _ru.on=true _ru.roaming=_bn.spliceRoam _ru.status=string.char(77,117,108,97,105,46,46,46)task.spawn(function()local _CG,_CH=pcall(_BS,_CF,_CE)if not _CG then warn(string.char(91,65,78,67,72,72,117,98,93,32,65,117,116,111,32,83,112,108,105,99,101,32,101,114,114,111,114,58,32)..tostring(_CH))end _ct()_ck.active=false if _ru.token==_CF then _ru.on=false _ru.roaming=false if _ru.status==string.char(77,117,108,97,105,46,46,46)then _ru.status=string.char(77,97,116,105)end if _rl then _rl()end end end)return true end end)()end do(function()local function _CI(_CJ)if writefile then _CJ.updatedAt=os.time()pcall(writefile,_bi,_z:JSONEncode(_CJ))end end local function _CK()if isfile and delfile and isfile(_bi)then pcall(delfile,_bi)end end function _rv.ParseDropTarget()local _CL=tostring(_bn.pabrikDropWorld or""):gsub(string.char(37,115),"")local _CM,_CN=string.match(_CL,string.char(94,40,91,94,58,93,42,41,58,40,46,43,41,36))if not _CM then _CM=_CL end _CM=string.upper(_CM):gsub(string.char(91,94,65,45,90,48,45,57,93),"")if _CN==""then _CN=nil end return _CM,_CN end local function _CO()local _CP=_bN.Menu if _CP and type(rawget(_CP,string.char(111,112,101,110,80,105,99,107,101,114)))==string.char(102,117,110,99,116,105,111,110)and pcall(_CP.openPicker)then return true end local _CQ=_fD()if _CQ and type(rawget(_CQ,string.char(99,97,108,108)))==string.char(102,117,110,99,116,105,111,110)then return pcall(_CQ.call,string.char(76,101,97,118,101,87,111,114,108,100))end return false end local function _CR(_CS,_CT)_CS=_bF(_CS):upper()if _CS==""then return false,string.char(110,97,109,97,32,119,111,114,108,100,32,107,111,115,111,110,103)end if _gJ():upper()==_CS then return true end if _qM then pcall(_qM)end local _CU=_fD()if _gJ()~=""then _CO()task.wait(1.8)end _CU=_fD()if _CT and _CU then rawset(_CU,string.char(97,114,114,105,118,101,68,111,111,114),_CT)end local _CV=_CU and rawget(_CU,string.char(102,103))local _CW=_bN.Menu if _CW and type(rawget(_CW,string.char(101,110,116,101,114)))==string.char(102,117,110,99,116,105,111,110)then pcall(_CW.enter,_CS)elseif _CU and type(rawget(_CU,string.char(101,110,116,101,114)))==string.char(102,117,110,99,116,105,111,110)then pcall(_CU.enter,_CS)else return false,string.char(102,117,110,103,115,105,32,101,110,116,101,114,32,116,105,100,97,107,32,100,105,116,101,109,117,107,97,110)end local _CX=os.clock()while _e()and os.clock()-_CX<10 do local _CY=_fD()if _CY and rawget(_CY,string.char(102,103))~=_CV and _gJ():upper()==_CS then _bN.Scan()task.wait(1.2)return true end task.wait(0.25)end return false,string.char(115,101,100,97,110,103,32,116,101,108,101,112,111,114,116,32,47,32,116,101,114,107,117,110,99,105)end local function _CZ(_Da)local _Db=_bO.list if not _Db then _bN.Scan();_Db=_bO.list end if type(_Db)~=string.char(116,97,98,108,101)then return nil end local _Dc,_Dd=_gG()_Dc,_Dd=_Dc or 50,_Dd or 30 local _De=_rv.Zone if _De and _De.world~=_gJ()then _De=nil end local _Df,_Dg=nil,math.huge for _Dh,_Di in ipairs(_Db)do if type(_Di)==string.char(116,97,98,108,101)and _Di.id==_Da and(_Di.n or 0)>0 and type(_Di.x)==string.char(110,117,109,98,101,114)then if not(_De and math.abs(_Di.x-_De.x)<=2.5 and math.abs(_Di.y-_De.y)<=2.5)then local _Dj=math.abs(_Di.x-_Dc)+math.abs(_Di.y-_Dd)if _Dj<_Dg then _Df,_Dg=_Di,_Dj end end end end return _Df end local function _Dk(_Dl,_Dm)local _Dn=false while _Dm()and _fJ(_Dl)<200 do local _Do=_CZ(_Dl)if not _Do then break end local _Dp,_Dq=math.floor(_Do.x),math.floor(_Do.y)_rv.phase=string.char(67,79,76,76,69,67,84,32,66,76,79,67,75)_rv.status=string.format(string.char(77,101,110,103,97,109,98,105,108,32,100,114,111,112,32,37,115,32,100,105,32,40,37,100,44,37,100,41,46,46,46),_fG(_Dl),_Dp,_Dq)_ik.To(_Dp,_Dq,function()return not _Dm()end,0.5,false)_Dn=true task.wait(0.45)end return _Dn end local function _Dr(_Ds,_Dt,_Du)local _Dv=_bN.Hud or _fE()local _Dw=_Dv and rawget(_Dv,string.char(111,110,68,114,111,112))local _Dx=_Dt local _Dy=false while _Dx>0 and _Du()and _fJ(_Ds)>0 do local _Dz=_fJ(_Ds)local _DA=math.min(_Dx,_Dz,200)if type(_Dw)==string.char(102,117,110,99,116,105,111,110)then pcall(_Dw,_Ds,_DA)elseif _L then pcall(function()_L:FireServer(_Ds,_DA)end)end task.wait(0.8)local _DB=_Dz-_fJ(_Ds)if _DB>0 then _Dx=_Dx-_DB _rv.dropped=_rv.dropped+_DB elseif not _Dy then _Dy=true local _DC=_gr()local _DD=_DC and(_DC.facing or 1)<0 _ck.active=true _ck.right,_ck.left=_DD,not _DD task.wait(0.08)_ct()_ck.active=false task.wait(0.35)else return _Dt-_Dx,string.char(116,105,108,101,32,100,114,111,112,32,112,101,110,117,104)end end return _Dt-_Dx,nil end local function _DE(_DF,_DG,_DH)local _DI,_DJ=_rv.ParseDropTarget()local _DK=_rv.home~=""and _rv.home or _gJ()if _DI==""then _DI=_DK end if _bn.pabrikDropX<0 and not _DJ and _DI==_DK then _rv.status=string.char(80,111,115,105,115,105,32,100,114,111,112,32,98,101,108,117,109,32,100,105,97,116,117,114,32,40,100,114,111,112,32,100,105,108,101,119,97,116,105,41)_rv.dropOffUntil=os.clock()+60 return end _rv.traveling=true local _DL=_DI:upper()~=_gJ():upper()_CI({active=true,stage=string.char(100,114,111,112,112,105,110,103),homeWorld=_DK,targetWorld=_DI,doorId=_DJ,seedId=_DF,dropAmount=_DG,})local _DM,_DN=true,nil if _DL or _DJ then _rv.status=string.char(77,101,110,117,106,117,32,119,111,114,108,100,32,112,101,110,121,105,109,112,97,110,97,110,32).._DI..(_DJ and(string.char(58).._DJ)or"")..string.char(46,46,46)local _DO,_DP=_CR(_DI,_DJ)if not _DO then _DM,_DN=false,string.char(71,97,103,97,108,32,109,97,115,117,107,32).._DI..string.char(32,40)..tostring(_DP)..string.char(41)end end if _DM and _DH()and _bn.pabrikDropX>=0 and _bn.pabrikDropY>=0 then _rv.status=string.format(string.char(74,97,108,97,110,32,65,42,32,107,101,32,112,111,115,105,115,105,32,100,114,111,112,32,40,37,100,44,37,100,41,46,46,46),_bn.pabrikDropX,_bn.pabrikDropY)local _DQ=false for _DR=1,3 do if not _DH()then break end if _ik.To(_bn.pabrikDropX,_bn.pabrikDropY,function()return not _DH()end,0.5,false)then _DQ=true break end task.wait(0.3)end if not _DQ then _DM,_DN=false,(string.char(84,105,100,97,107,32,98,105,115,97,32,106,97,108,97,110,32,107,101,32,112,111,115,105,115,105,32,100,114,111,112,32,40,112,97,115,116,105,107,97,110,32,116,105,100,97,107,32,116,101,114,104,97,108,97,110,103,32,116,101,109,98,111,107)..string.char(41))end end if _DM and _DH()then local _DS=_gr()if _DS then _rv.Zone={world=_gJ(),x=_DS.x,y=_DS.y-0.475}end local _DT,_DU=_Dr(_DF,_DG,_DH)if _DT>0 then local _DV=string.format(string.char(66,101,114,104,97,115,105,108,32,68,114,111,112,32,37,115,32,120,37,100,32,100,105,32,37,115),_fG(_DF),_DT,_gJ())_rv.status=_DV _bI(_DV,string.char(80,97,98,114,105,107,32,65,78,67,72))_bW.Send(string.char(112,97,98,114,105,107),_DV)end if _DU then _DM,_DN=false,_DU end end if not _DM then _rv.dropOffUntil=os.clock()+90 _rv.status=string.char(68,114,111,112,32,103,97,103,97,108,58,32)..tostring(_DN)end _CI({active=true,stage=string.char(102,97,114,109,105,110,103),homeWorld=_DK,targetWorld=_DI,seedId=_DF,})if _DK~=""and _gJ():upper()~=_DK:upper()and _DH()then _rv.status=string.char(75,101,109,98,97,108,105,32,107,101,32,119,111,114,108,100,32,112,97,98,114,105,107,32).._DK..string.char(46,46,46)if not _CR(_DK,nil)and _DH()then task.wait(4)_CR(_DK,nil)end end _rv.traveling=false end function _rv.ExternalDropSeed(_DW,_DX,_DY,_DZ,_Ea,_Eb,_Ec,_Ed,_Ee)local _Ef,_Eg,_Eh,_Ei=_bn.pabrikDropWorld,_bn.pabrikDropX,_bn.pabrikDropY,_rv.home _bn.pabrikDropWorld=_DY or""_bn.pabrikDropX=_DZ or-1 _bn.pabrikDropY=_Ea or-1 _rv.home=_Eb or _gJ()_DE(_DW,_DX,_Ee)_bn.pabrikDropWorld,_bn.pabrikDropX,_bn.pabrikDropY,_rv.home=_Ef,_Eg,_Eh,_Ei if _Ec and _Ed and _Ee()then _ik.To(_Ec,_Ed,function()return not _Ee()end,0.3,false)end end local function _Ej(_Ek,_El)if not _bn.pabrikDrop then return false end local _Em=_fJ(_Ek)local _En=math.max(1,tonumber(_bn.pabrikMaxSeed)or 100)if _Em>_En and os.clock()>=(_rv.dropOffUntil or 0)then local _Eo=_Em-_En if _Eo>0 then _rv.phase=string.char(68,82,79,80,32,75,69,76,69,66,73,72,65,78,32,83,69,69,68)_rv.status=string.format(string.char(83,101,101,100,32,37,100,32,62,32,77,97,120,32,40,37,100,41,33,32,68,114,111,112,32,37,100,32,115,101,101,100,46,46,46),_Em,_En,_Eo)_DE(_Ek,_Eo,_El)return true end end return false end local function _Ep(_Eq,_Er,_Es)if _bn.pabrikBreakX<0 or _bn.pabrikBreakY<0 then _rv.status=string.char(80,111,115,105,115,105,32,66,114,101,97,107,32,98,101,108,117,109,32,100,105,97,116,117,114,33,32,84,101,107,97,110,32,116,111,109,98,111,108,32,83,101,116,80,111,115,32,66,114,101,97,107,32,100,117,108,117,46)_bI((string.char(80,97,98,114,105,107,58,32,84,101,107,97,110,32,116,111,109,98,111,108,32,39,83,101,116,80,111,115,32,66,114,101,97,107,39,32,100,105,32,116,97,98,32,80,97,98,114,105,107,32,116,101,114,108,101,98,105,104,32,100,97,104,117,108)..string.char(117,33)))task.wait(2.5)return false end if next(_bn.pabrikTiles)==nil then _bn.pabrikTiles={[string.char(49,44,48)]=true}end while _Es()do _Ej(_Eq,_Es)if not _Es()then break end if _fJ(_Er)<=0 then if not _Dk(_Er,_Es)or _fJ(_Er)<=0 then break end end _rv.phase=string.char(66,82,69,65,75,32,66,76,79,67,75)local _Et,_Eu=_gG()if _Et~=_bn.pabrikBreakX or _Eu~=_bn.pabrikBreakY then _rv.status=string.format(string.char(77,101,110,117,106,117,32,80,111,115,105,115,105,32,66,114,101,97,107,32,40,37,100,44,37,100,41,46,46,46),_bn.pabrikBreakX,_bn.pabrikBreakY)if not _ik.To(_bn.pabrikBreakX,_bn.pabrikBreakY,function()return not _Es()end,0.5,false)then _rv.status=string.char(71,97,103,97,108,32,106,97,108,97,110,32,107,101,32,80,111,115,105,115,105,32,66,114,101,97,107,44,32,109,101,110,99,111,98,97,32,117,108,97,110,103,46,46,46)task.wait(2)break end end if not _Es()then break end local _Ev,_Ew,_Ex=_gu()if not _Ev then break end local _Ey={x=_bn.pabrikBreakX,y=_bn.pabrikBreakY,facing=_Ex,world=_gJ(),}_rq.Override={offsets=_bn.pabrikTiles,block=_Er,mode=string.char(80,108,97,99,101,32,43,32,66,114,101,97,107)}_rq.Quiet=true _rq.token=_rq.token+1 local _Ez=_rq.token _rq.on=true local _EA=_bV.Placed+_bV.Broken local _EB=os.clock()task.spawn(function()while _rq.on and _rq.token==_Ez do task.wait(0.4)local _EC=_bV.Placed+_bV.Broken if _EC~=_EA then _EA,_EB=_EC,os.clock()end local _ED=_fJ(_Eq)local _EE=_fJ(_Er)local _EF=math.max(1,tonumber(_bn.pabrikMaxSeed)or 100)if not _Es()or _EE<=0 or(_bn.pabrikDrop and _ED>_EF and _ED>=180)or(os.clock()-_EB>8)then _rq.on=false end end end)_rv.status=string.format(string.char(66,114,101,97,107,32,37,115,32,100,105,32,40,37,100,44,37,100,41,32,91,83,105,115,97,58,32,37,100,93,46,46,46),_fG(_Er),_Ey.x,_Ey.y,_fJ(_Er))pcall(_tY,_Ez,_Ey)_rq.on=false _rq.Override=nil _rq.Quiet=false task.wait(0.3)end return true end local function _EG(_EH,_EI)if _bn.pabrikBreakX<0 or _bn.pabrikBreakY<0 then return false end if _EH==_bn.pabrikBreakX and _EI==_bn.pabrikBreakY then return true end for _EJ,_EK in pairs(_bn.pabrikTiles)do if _EK then local _EL,_EM=tostring(_EJ):match(string.char(94,40,45,63,37,100,43,41,44,40,45,63,37,100,43,41,36))if _EL and _EM then if _EH==(_bn.pabrikBreakX+tonumber(_EL))and _EI==(_bn.pabrikBreakY+tonumber(_EM))then return true end end end end return false end local function _EN(_EO,_EP)local _EQ={}local _ER=0 local _ES=nil local _ET=workspace:GetServerTimeNow()local _EU=_Q[_EP]local _EV=(_EU and(tonumber(_EU.grow)or tonumber(_EU.baseGrow)))or 31 local _EW=1 for _EX=0,_EO.h-1 do local _EY={}for _EZ=0,_EO.w-1 do local _Fa=_gM(_EO,string.char(102,103),_EZ,_EX)or 0 if _Fa==_EP then local _Fb=_rD(_EO,_EZ,_EX,_Fa)if _Fb then if _ET>=_Fb then table.insert(_EY,{x=_EZ,y=_EX})else _ER=_ER+1 local _Fc=_Fb-_ET if not _ES or _Fc<_ES then _ES=_Fc end end else _ER=_ER+1 if not _ES or _EV<_ES then _ES=_EV end end end end if#_EY>0 then if _EW==-1 then table.sort(_EY,function(_Fd,_Fe)return _Fd.x>_Fe.x end)else table.sort(_EY,function(_Ff,_Fg)return _Ff.x<_Fg.x end)end for _Fh,_Fi in ipairs(_EY)do table.insert(_EQ,_Fi)end _EW=-_EW end end return _EQ,_ER,_ES end local function _Fj(_Fk,_Fl)local function _Fm()return _rv.on and _rv.token==_Fk and _e()end local _Fn=math.min(_hc(),_hg())-0.15 while _Fm()do local _Fo=_fD()while not _Fo and _Fm()do task.wait(1)_Fo=_fD()end if not _Fm()then break end local _Fp=_bn.pabrikSeedId local _Fq=math.max(1,tonumber(_bn.pabrikMaxSeed)or 100)if _fJ(_Fl)>0 or _CZ(_Fl)~=nil then _Ep(_Fp,_Fl,_Fm)if not _Fm()then break end _Fo=_fD()end _Ej(_Fp,_Fm)if not _Fm()then break end _Fo=_fD()local _Fr,_Fs=_EN(_Fo,_Fp)local _Ft=#_Fr+_Fs local _Fu=math.max(0,_Fq-_Ft)if _fJ(_Fp)>0 and _Fu>0 then _rv.phase=string.char(84,65,78,65,77,32,83,69,69,68)local _Fv={}local _Fw=1 for _Fx=0,_Fo.h-1 do local _Fy={}for _Fz=0,_Fo.w-1 do if(_gM(_Fo,string.char(102,103),_Fz,_Fx)or 0)==0 and _rT(_Fo,_Fz,_Fx,_Fp)and not _EG(_Fz,_Fx)then table.insert(_Fy,{x=_Fz,y=_Fx})end end if#_Fy>0 then if _Fw==-1 then table.sort(_Fy,function(_FA,_FB)return _FA.x>_FB.x end)else table.sort(_Fy,function(_FC,_FD)return _FC.x<_FD.x end)end for _FE,_FF in ipairs(_Fy)do table.insert(_Fv,_FF)end _Fw=-_Fw end end local _FG=0 for _FH,_FI in ipairs(_Fv)do if not _Fm()or _fJ(_Fp)<=0 or _FG>=_Fu then break end if _rT(_Fo,_FI.x,_FI.y,_Fp)then local _FJ=_gr()if not(_FJ and _ik.StateReaches(_FJ,_FI.x,_FI.y,_Fn))then _rv.status=string.format(string.char(74,97,108,97,110,32,90,105,103,45,90,97,103,32,116,97,110,97,109,32,40,37,100,44,37,100,41,32,91,37,100,47,37,100,93),_FI.x,_FI.y,_FG+1,_Fu)_ik.To(_FI.x,_FI.y,function()return not _Fm()end,_Fn,false)end local _FK=_gr()if _FK and _ik.StateReaches(_FK,_FI.x,_FI.y,_Fn+0.5)and _rT(_Fo,_FI.x,_FI.y,_Fp)and _hu(_Fp,_FI,1)then _FG=_FG+1 _rv.planted=_rv.planted+1 _bV.Planted=_bV.Planted+1 _rv.status=string.format(string.char(77,101,110,97,110,97,109,32,37,115,32,40,37,100,47,37,100,32,77,97,120,32,83,101,101,100,41),_fG(_Fp),_Ft+_FG,_Fq)task.wait(math.max(0.05,_bn.harvestPlantDelay))end end end end if not _Fm()then break end _Fo=_fD()local _FL,_FM,_FN=_EN(_Fo,_Fp)if#_FL==0 and _FM>0 then _rv.phase=string.char(84,85,78,71,71,85,32,84,85,77,66,85,72)while _Fm()do _Fo=_fD()if not _Fo then break end _FL,_FM,_FN=_EN(_Fo,_Fp)if#_FL>0 or _FM==0 then break end local _FO=math.max(1,math.ceil(_FN or 15))_rv.status=string.format(string.char(77,101,110,117,110,103,103,117,32,37,100,32,112,111,104,111,110,32,115,105,97,112,32,112,97,110,101,110,32,40,194,177,37,100,115,41,46,46,46),_FM,_FO)task.wait(1)end end if not _Fm()then break end if#_FL>0 then _rv.phase=string.char(80,65,78,69,78,32,90,73,71,45,90,65,71)for _FP,_FQ in ipairs(_FL)do if not _Fm()then break end if _fJ(_Fl)>=200 then _rv.status=string.char(66,108,111,107,32,109,101,110,99,97,112,97,105,32,50,48,48,33,32,77,101,110,117,106,117,32,80,111,115,105,115,105,32,66,114,101,97,107,46,46,46)_Ep(_Fp,_Fl,_Fm)if not _Fm()then break end _Ej(_Fp,_Fm)if not _Fm()then break end end _Fo=_fD()if _Fo and(_gM(_Fo,string.char(102,103),_FQ.x,_FQ.y)or 0)==_Fp then local _FR=_gr()if not(_FR and _ik.StateReaches(_FR,_FQ.x,_FQ.y,_Fn))then _rv.status=string.format(string.char(80,97,110,101,110,32,90,105,103,45,90,97,103,32,40,37,100,44,37,100,41,32,91,37,100,47,37,100,93),_FQ.x,_FQ.y,_FP,#_FL)_ik.To(_FQ.x,_FQ.y,function()return not _Fm()end,_Fn,false)end local _FS=_gr()if _FS and _ik.StateReaches(_FS,_FQ.x,_FQ.y,_Fn+0.5)then local _FT=os.clock()while _Fm()and(_gM(_Fo,string.char(102,103),_FQ.x,_FQ.y)or 0)==_Fp and os.clock()-_FT<3.5 do local _FU=_hM(_FQ.x,_FQ.y,false)if _FU==string.char(98,114,111,107,101)then _rv.harvested=_rv.harvested+1 _bV.Harvested=_bV.Harvested+1 end task.wait(math.max(0.05,_bn.harvestDelay))end task.wait(0.20)end end end _Dk(_Fl,_Fm)if _fJ(_Fl)>0 then _Ep(_Fp,_Fl,_Fm)end _Ej(_Fp,_Fm)else if _fJ(_Fp)<=0 and _fJ(_Fl)<=0 and _CZ(_Fl)==nil then _rv.status=string.char(83,101,108,101,115,97,105,58,32,83,101,101,100,44,32,98,108,111,107,44,32,100,97,110,32,112,111,104,111,110,32,115,117,100,97,104,32,104,97,98,105,115,46)_CK()break end end task.wait(0.3)end end function _rv.Stop()_CK()if not _rv.on then return false end _rv.token=_rv.token+1 _rv.on=false _rv.traveling=false if _rq.Override then _rq.on=false _rq.Override=nil _rq.Quiet=false end _ct()_ck.active=false _rv.phase=string.char(45)_rv.status=string.char(77,97,116,105)if _ro then pcall(_ro)end return true end function _rv.Start(_FV)if _rv.on then return true end local _FW=_bn.pabrikSeedId local _FX=_fW(_FW)if not _FW or not _FX then _bI(string.char(80,97,98,114,105,107,58,32,80,105,108,105,104,32,115,101,101,100,32,112,97,98,114,105,107,32,121,97,110,103,32,118,97,108,105,100,32,116,101,114,108,101,98,105,104,32,100,97,104,117,108,117,33))return false end if _rq.on then _tX()end if _rr.on then _rr.Stop()end if _rs.on then _rs.Stop()end if _rt.on then _rt.Stop()end if _ru.on then _ru.Stop()end _rv.home=_FV or _gJ()_rv.dropOffUntil=0 _rv.token=_rv.token+1 local _FY=_rv.token _rv.on=true _rv.phase=string.char(77,85,76,65,73)_rv.status=string.char(73,110,105,115,105,97,108,105,115,97,115,105,32,80,97,98,114,105,107,46,46,46)_CI({active=true,stage=string.char(102,97,114,109,105,110,103),homeWorld=_rv.home,seedId=_FW,})if _ro then pcall(_ro)end if _rl then _rl()end task.spawn(function()local _FZ,_Ga=pcall(_Fj,_FY,_FX)if not _FZ then warn(string.char(91,65,78,67,72,72,117,98,93,32,80,97,98,114,105,107,32,101,114,114,111,114,58,32)..tostring(_Ga))end _ct()_ck.active=false if _rv.token==_FY then _rv.on=false _rv.traveling=false _rv.phase=string.char(45)if _rv.status==string.char(73,110,105,115,105,97,108,105,115,97,115,105,32,80,97,98,114,105,107,46,46,46)then _rv.status=string.char(77,97,116,105)end if _ro then pcall(_ro)end if _rl then _rl()end end end)return true end function _rv.CheckStartup()pcall(function()if not(isfile and readfile and isfile(_bi))then return end local _Gb=readfile(_bi)local _Gc=_z:JSONDecode(_Gb)if type(_Gc)~=string.char(116,97,98,108,101)or not _Gc.active then return end if os.time()-(tonumber(_Gc.updatedAt)or 0)>1800 then _CK()return end local _Gd=os.clock()while _e()and os.clock()-_Gd<30 do if _gJ()~=""and _gG()then break end task.wait(1)end if not _e()or _gJ()==""then return end _bN.Scan()task.wait(1.2)local _Ge=_gJ():upper()local _Gf=tostring(_Gc.homeWorld or""):upper()local _Gg=tostring(_Gc.targetWorld or""):upper()if _Gc.stage==string.char(100,114,111,112,112,105,110,103)and _Gg~=""and _Ge==_Gg then _bI(string.char(77,101,108,97,110,106,117,116,107,97,110,32,112,114,111,115,101,115,32,68,114,111,112,32,83,101,101,100,32,80,97,98,114,105,107,32,100,105,32).._Ge..string.char(46,46,46),string.char(80,97,98,114,105,107,32,65,78,67,72))_rv.home=_Gc.homeWorld _rv.on=true _rv.token=_rv.token+1 local _Gh=_rv.token _DE(_Gc.seedId or _bn.pabrikSeedId,_Gc.dropAmount or _bn.pabrikDropAmount or 100,function()return _rv.on and _rv.token==_Gh and _e()end)_rv.on=false if _gJ():upper()==_Gf then _rv.Start(_Gc.homeWorld)end elseif _Gf~=""and _Ge==_Gf then _bI(string.char(77,101,108,97,110,106,117,116,107,97,110,32,115,105,107,108,117,115,32,80,97,98,114,105,107,32,111,116,111,109,97,116,105,115,32,100,105,32).._Ge..string.char(33),string.char(80,97,98,114,105,107,32,65,78,67,72))_rv.Start(_Gc.homeWorld)elseif _Gf~=""and _Ge~=_Gf then _bI(string.char(75,101,109,98,97,108,105,32,107,101,32,119,111,114,108,100,32,80,97,98,114,105,107,58,32).._Gf..string.char(46,46,46),string.char(80,97,98,114,105,107,32,65,78,67,72))if _CR(_Gf,nil)then _rv.Start(_Gc.homeWorld)end end end)end end)()end do(function()local _Gi={[242]=true,[1796]=true,[7188]=true}local _Gj={{from=242,to=1796,name=string.char(68,105,97,109,111,110,100,32,76,111,99,107)},{from=1796,to=7188,name=string.char(66,108,117,101,32,71,101,109,32,76,111,99,107)},}local function _Gk(...)local _Gl=_fD()local _Gm=_Gl and rawget(_Gl,string.char(99,97,108,108))if type(_Gm)~=string.char(102,117,110,99,116,105,111,110)then return false end return pcall(_Gm,...)end local function _Gn(_Go)local _Gp=_Q[_Go]return _Gp~=nil and _Gp.kind~=string.char(116,111,111,108)and not _Gp.lock and not _Gi[_Go]end function _rw.Recycle(_Gq,_Gr)if not _bN.Inv or _Gr<=0 or not _Gn(_Gq)then return false end _Gr=math.min(_Gr,_fJ(_Gq))if _Gr<=0 then return false end pcall(function()_bN.Inv:remove(_Gq,_Gr)end)local _Gs=_Gk(string.char(82,101,99,121,99,108,101),_Gq,_Gr)if _Gs then _rw.recycled=_rw.recycled+(_Gr)_rw.status=string.format(string.char(82,101,99,121,99,108,101,32,37,115,32,120,37,100),_fG(_Gq),_Gr)end return _Gs end local function _Gt(_Gu)local _Gv=_bN.Inv if not _Gv or _fJ(_Gu.from)<100 then return false end if _fJ(_Gu.to)+1>200 then return false end pcall(function()_Gv:remove(_Gu.from,100)_Gv:add(_Gu.to,1)end)local _Gw=_Gk(string.char(67,111,110,118,101,114,116,76,111,99,107),_Gu.from,_Gu.to)if _Gw then _rw.converted=_rw.converted+(1)_rw.status=string.char(67,111,110,118,101,114,116,32,107,101,32).._Gu.name end return _Gw end task.spawn(function()while _e()do pcall(function()if _bn.trashOn and type(_bn.trashList)==string.char(116,97,98,108,101)then for _Gx,_Gy in ipairs(_bn.trashList)do local _Gz=_fJ(_Gy)if _Gz>=_bn.trashAt and _Gz>_bn.trashKeep then _rw.Recycle(_Gy,_Gz-_bn.trashKeep)task.wait(0.5)end end end if _bn.convertLockOn then for _GA,_GB in ipairs(_Gj)do if _Gt(_GB)then task.wait(0.5)end end end end)task.wait(2.5)end end)end)()end local _GC={on=false,token=0,status=string.char(77,97,116,105),stocked=0,taken=0,dropped=0,picked={},carry={}}do(function()function _GC.ParsePoint()local _GD=tostring(_bn.vendPoint or""):gsub(string.char(37,115),"")local _GE,_GF=string.match(_GD,string.char(94,40,91,94,58,124,93,42,41,91,58,124,93,40,46,43,41,36))if not _GE then _GE=_GD end _GE=string.upper(_GE):gsub(string.char(91,94,65,45,90,48,45,57,93),"")if _GF==""then _GF=nil end return _GE,_GF end function _GC.Sellable(_GG)if type(_GG)~=string.char(110,117,109,98,101,114)or _GG==112 then return false end local _GH=_Q[_GG]if not _GH or _GH.kind==string.char(116,111,111,108)then return false end if _GH.lock or _GH.area or _GH.guildLock or _GH.untradeable or _GH.vend or _GH.hub then return false end return true end function _GC.Allow(_GI)if not _GC.Sellable(_GI)then return false end if type(_bn.vendItems)==string.char(116,97,98,108,101)and#_bn.vendItems>0 and not table.find(_bn.vendItems,_GI)then return false end return true end function _GC.Machines()local _GJ=_fD()local _GK={}if not _GJ then return _GK end local _GL=rawget(_GJ,string.char(118,101,110,100,115))local _GM=rawget(_GJ,string.char(118,101,110,100,79,119,110,101,114))for _GN=0,_GJ.h-1 do local _GO=_GJ.fg[_GN]if _GO then for _GP=0,_GJ.w-1 do local _GQ=_GO[_GP]or 0 local _GR=_GQ~=0 and _Q[_GQ]if _GR and _GR.vend then local _GS,_GT=true,true if type(_GM)==string.char(102,117,110,99,116,105,111,110)then _GS,_GT=pcall(_GM,_GP,_GN)end if _GS and _GT then local _GU=nil if type(_GL)==string.char(116,97,98,108,101)and type(_GL.get)==string.char(102,117,110,99,116,105,111,110)then local _GV,_GW=pcall(_GL.get,_GP,_GN)if _GV and type(_GW)==string.char(116,97,98,108,101)then _GU=_GW end end _GU=_GU or{}if not _GU.shop then table.insert(_GK,{x=_GP,y=_GN,fg=_GQ,id=_GU.id,stock=tonumber(_GU.stock)or 0,cap=(_GQ==9268)and 10398 or 5199,})end end end end end end return _GK end function _GC.Call(...)local _GX=_fD()local _GY=_GX and rawget(_GX,string.char(118,101,110,100,67,97,108,108))if type(_GY)~=string.char(102,117,110,99,116,105,111,110)then return false end local _GZ,_Ha=pcall(_GY,...)return _GZ and _Ha==true end local function _Hb(_Hc,_Hd)local function _He()return _GC.on and _GC.token==_Hc and _e()end while _He()do local _Hf=_GC.Machines()if#_Hf==0 then _GC.status=string.char(84,105,100,97,107,32,97,100,97,32,86,101,110,100,105,110,103,32,109,105,108,105,107,109,117,32,100,105,32,119,111,114,108,100,32,105,110,105,33)break end if _bn.vendMode==string.char(75,111,115,111,110,103,107,97,110,32,115,97,109,112,97,105,32,104,97,98,105,115)then local _Hg=false for _Hh,_Hi in ipairs(_Hf)do if not _He()then break end if _Hi.id and _Hi.stock>0 and _GC.Allow(_Hi.id)then _GC.status=string.format(string.char(77,101,110,103,97,109,98,105,108,32,37,115,32,100,97,114,105,32,86,101,110,100,105,110,103,32,40,37,100,44,37,100,41,46,46,46),_fG(_Hi.id),_Hi.x,_Hi.y)_ik.To(_Hi.x,_Hi.y,function()return not _He()end,0.4,false)local _Hj=_fJ(_Hi.id)_GC.Call(string.char(101,109,112,116,121),_Hi.x,_Hi.y)task.wait(0.45)local _Hk=_fJ(_Hi.id)-_Hj if _Hk>0 then _GC.taken=_GC.taken+_Hk _Hg=true end if _fJ(_Hi.id)>=190 and _rv and _rv.ExternalDropSeed then _rv.ExternalDropSeed(_Hi.id,_fJ(_Hi.id),_bn.vendPoint,_bn.vendDropX,_bn.vendDropY,_Hd,_Hi.x,_Hi.y,_He)end end end if not _Hg then _GC.status=string.char(83,101,109,117,97,32,86,101,110,100,105,110,103,32,115,117,100,97,104,32,107,111,115,111,110,103,33)break end else local _Hl=false for _Hm,_Hn in ipairs(_Hf)do if not _He()then break end local _Ho=(_Hn.id and _Hn.stock>0)and _Hn.id or nil if _Ho and _GC.Allow(_Ho)then local _Hp=math.min(_fJ(_Ho),_Hn.cap-_Hn.stock)if _Hp>0 then _GC.status=string.format(string.char(77,101,110,103,105,115,105,32,37,115,32,43,37,100,32,107,101,32,86,101,110,100,105,110,103,32,40,37,100,44,37,100,41,46,46,46),_fG(_Ho),_Hp,_Hn.x,_Hn.y)_ik.To(_Hn.x,_Hn.y,function()return not _He()end,0.4,false)if _GC.Call(string.char(115,116,111,99,107),_Hn.x,_Hn.y,_Ho,_Hp)then _GC.stocked=_GC.stocked+_Hp _Hl=true task.wait(0.35)end end end end if not _Hl then _GC.status=string.char(77,101,110,117,110,103,103,117,32,105,116,101,109,32,100,105,32,116,97,115,32,47,32,100,114,111,112,32,117,110,116,117,107,32,100,105,109,97,115,117,107,107,97,110,32,107,101,32,86,101,110,100,105,110,103,46,46,46)task.wait(2)end end task.wait(0.5)end end function _GC.Stop()if not _GC.on then return false end _GC.token=_GC.token+1 _GC.on=false _GC.status=string.char(77,97,116,105)return true end function _GC.Start()if _GC.on then return true end _GC.token=_GC.token+1 local _Hq=_GC.token _GC.on=true _GC.status=string.char(77,117,108,97,105,46,46,46)local _Hr=_gJ()task.spawn(function()pcall(_Hb,_Hq,_Hr)if _GC.token==_Hq then _GC.on=false if _rl then _rl()end end end)return true end end)()end do(function()local function _Hs(_Ht)return(tostring(_Ht or""):gsub(string.char(96,46),""))end local function _Hu(_Hv)if not(_V and type(_W)==string.char(116,97,98,108,101))then return nil end local _Hw,_Hx=pcall(_W.isDeveloper,_Hv)if _Hw and _Hx then return string.char(68,101,118,101,108,111,112,101,114)end local _Hy,_Hz=pcall(_W.isModerator,_Hv)if _Hy and _Hz then return string.char(77,111,100,101,114,97,116,111,114)end return nil end local function _HA()local _HB={}local _HC=_bN.Others if not _HC or type(rawget(_HC,string.char(108,105,115,116)))~=string.char(102,117,110,99,116,105,111,110)then return _HB end local _HD,_HE=pcall(_HC.list)if not _HD or type(_HE)~=string.char(116,97,98,108,101)then return _HB end for _HF,_HG in ipairs(_HE)do local _HH=type(_HG)==string.char(116,97,98,108,101)and tonumber(_HG[1]or _HG.userId)if _HH and _HH~=_H.UserId then _HB[#_HB+1]={id=_HH,name=_Hs(_HG[2]or _HG.name or _HH),role=_Hu(_HH)}end end return _HB end local function _HI(_HJ)local _HK={}for _HL,_HM in ipairs(_HJ)do if _HM.role or(_bn.guardWho==string.char(83,101,109,117,97,32,112,101,109,97,105,110)and not _rx.allow[_HM.id])then _HK[#_HK+1]=_HM end end return _HK end local function _HN(_HO)local _HP=false if _HO.role and _V and type(_W.isUndercover)==string.char(102,117,110,99,116,105,111,110)then local _HQ,_HR=pcall(_W.isUndercover,_HO.id)_HP=_HQ and _HR==true end return _HO.name..string.char(32,40)..(_HO.role or string.char(80,101,109,97,105,110))..(_HP and string.char(44,32,117,110,100,101,114,99,111,118,101,114)or"")..string.char(41)end local function _HS(_HT)local _HU={}for _HV,_HW in ipairs(_HT)do if _HV>5 then _HU[#_HU+1]=string.char(43)..(#_HT-_HV+1)..string.char(32,108,97,103,105)break end _HU[#_HU+1]=_HN(_HW)end return#_HU>0 and table.concat(_HU,string.char(44,32))or string.char(116,105,100,97,107,32,97,100,97)end local function _HX()return(_rq.on and not _rq.Override)or _rr.on or _rs.on or _rt.on or _ru.on or _rv.on or _rz.on end local function _HY()local _HZ,_Ia=_gG()return{farm=_rq.on and not _rq.Override,clear=_rr.on,farmer=_rs.on,df=_rt.on,splice=_ru.on,pabrik=_rv.on,spam=_rz.on,world=_gJ(),tx=_HZ,ty=_Ia,}end local function _Ib()if _rv.on then _rv.Stop()end if _ru.on then _ru.Stop()end if _rq.on then _tX()end if _rr.on then _rr.Stop();_rr.status=string.char(68,105,106,101,100,97,32,80,101,110,106,97,103,97)end if _rs.on then _rs.Stop();_rs.status=string.char(68,105,106,101,100,97,32,80,101,110,106,97,103,97)end if _rt.on then _rt.Stop();_rt.status=string.char(68,105,106,101,100,97,32,80,101,110,106,97,103,97)end if _rz.on then _rz.on=false end _ct()if _rl then _rl()end end local function _Ic()local _Id=_bN.Menu if _Id and type(rawget(_Id,string.char(111,112,101,110,80,105,99,107,101,114)))==string.char(102,117,110,99,116,105,111,110)and pcall(_Id.openPicker)then return true end local _Ie=_fD()if _Ie and type(rawget(_Ie,string.char(99,97,108,108)))==string.char(102,117,110,99,116,105,111,110)then return pcall(_Ie.call,string.char(76,101,97,118,101,87,111,114,108,100))end return false end local function _If(_Ig)local _Ih=_fD()if not _Ih or _Ig==""then return false end local _Ii=rawget(_Ih,string.char(102,103))local _Ij=_bN.Menu if _Ij and type(rawget(_Ij,string.char(101,110,116,101,114)))==string.char(102,117,110,99,116,105,111,110)then pcall(_Ij.enter,_Ig)elseif type(rawget(_Ih,string.char(101,110,116,101,114)))==string.char(102,117,110,99,116,105,111,110)then pcall(_Ih.enter,_Ig)else return false end local _Ik=os.clock()while _e()and os.clock()-_Ik<8 do local _Il=_fD()if _Il and rawget(_Il,string.char(102,103))~=_Ii then return true end task.wait(0.25)end return false end local function _Im(_In,_Io)if not _In then return end if _In.world~=""and _gJ()~=_In.world then return end if _In.spam then _rz.on=true end if _In.tx and _In.ty then local _Ip,_Iq=_gG()if _Ip and(_Ip~=_In.tx or _Iq~=_In.ty)then _rx.status=string.format(string.char(74,97,108,97,110,32,98,97,108,105,107,32,107,101,32,40,37,100,44,37,100,41,46,46,46),_In.tx,_In.ty)_ik.To(_In.tx,_In.ty,function()return(_Io and _rx.token~=_Io)or not _e()end,0.3,true)end end if _Io and _rx.token~=_Io then return end if _In.farm then _tW()elseif _In.clear then _rr.Start()elseif _In.farmer then _rs.Start()elseif _In.df then _rt.Start()elseif _In.splice then _ru.Start()elseif _In.pabrik then _rv.Start()end if _rl then _rl()end end _rx.Snapshot=_HY _rx.StopAllBots=_Ib _rx.LeaveWorld=_Ic _rx.EnterWorld=_If _rx.ResumeSaved=_Im _rx.AnyRunning=_HX function _rx.AllowCurrentPlayers()local _Ir=0 for _Is,_It in ipairs(_HA())do if not _It.role then _rx.allow[_It.id]=true _Ir=_Ir+(1)end end return _Ir end function _rx.Set(_Iu)_rx.on=_Iu _rx.token=_rx.token+(1)_rx.mode,_rx.saved,_rx.calmAt=string.char(105,100,108,101),nil,nil table.clear(_rx.alerted)table.clear(_rx.allow)if _Iu then _rx.AllowCurrentPlayers()_rx.status=string.char(65,109,97,110,32,40,77,101,109,97,110,116,97,117,41)else _rx.status=string.char(77,97,116,105)end end task.spawn(function()while _e()do pcall(function()local _Iv={}for _Iw,_Ix in ipairs(_u:GetPlayers())do if _Ix~=_H then local _Iy=_Hu(_Ix.UserId)if _Iy then table.insert(_Iv,(_Ix.DisplayName or _Ix.Name)..string.char(32,40).._Iy..string.char(41))end end end _rx.staffServerText=#_Iv>0 and table.concat(_Iv,string.char(44,32))or string.char(116,105,100,97,107,32,97,100,97)local _Iz=(_rx.mode~=string.char(97,119,97,121)and _rx.mode~=string.char(111,117,116))and _HA()or{}_rx.hereText=_HS(_Iz)if not _rx.on then _rx.status=string.char(77,97,116,105)return end local _IA=os.clock()if _rx.mode==string.char(97,119,97,121)or _rx.mode==string.char(111,117,116)then local _IB=_rx.saved and _rx.saved.world or""if _rx.mode==string.char(111,117,116)or _IB==""then _rx.status=string.char(83,117,100,97,104,32,107,101,108,117,97,114,32,119,111,114,108,100)return end local _IC=_rx.backAt-_IA if _IC>0 then _rx.status=string.format(string.char(68,105,32,108,117,97,114,32,119,111,114,108,100,46,32,77,97,115,117,107,32,37,115,32,100,108,109,32,37,100,115),_IB,math.ceil(_IC))return end _rx.status=string.char(77,97,115,117,107,32,107,101,109,98,97,108,105,32,107,101,32).._IB..string.char(46,46,46)if _If(_IB)then _bN.Scan()task.wait(1.5)local _ID=_HI(_HA())if#_ID>0 then _bI(string.char(77,97,115,105,104,32,97,100,97,32).._HS(_ID)..string.char(33,32,75,101,108,117,97,114,32,108,97,103,105,46),string.char(80,101,110,106,97,103,97,32,65,78,67,72))_Ic()_rx.backAt=os.clock()+_bn.guardBackSec else _bI(string.char(87,111,114,108,100,32,115,117,100,97,104,32,97,109,97,110,44,32,109,101,108,97,110,106,117,116,107,97,110,32,97,107,116,105,118,105,116,97,115,33),string.char(80,101,110,106,97,103,97,32,65,78,67,72))_bW.Send(string.char(112,101,110,106,97,103,97),string.char(87,111,114,108,100,32).._IB..string.char(32,97,109,97,110,44,32,108,97,110,106,117,116,32,97,107,116,105,118,105,116,97,115))local _IE=_rx.saved _rx.mode,_rx.saved=string.char(105,100,108,101),nil _rx.token=_rx.token+(1)local _IF=_rx.token task.spawn(_Im,_IE,_IF)end else _rx.backAt=os.clock()+math.max(15,_bn.guardBackSec)end return end local _IG={}for _IH,_II in ipairs(_Iz)do _IG[_II.id]=true end for _IJ in pairs(_rx.alerted)do if not _IG[_IJ]then _rx.alerted[_IJ]=nil end end local _IK=_HI(_Iz)local _IL={}for _IM,_IN in ipairs(_IK)do if not _rx.alerted[_IN.id]then _rx.alerted[_IN.id]=true _IL[#_IL+1]=_IN end end if#_IL>0 then _rx.detected=_rx.detected+(#_IL)local _IO=string.char(84,101,114,100,101,116,101,107,115,105,32,109,97,115,117,107,32,119,111,114,108,100,32).._gJ()..string.char(58,32).._HS(_IL)_bI(_IO,string.char(80,69,82,73,78,71,65,84,65,78,32,80,69,78,74,65,71,65),6)_bW.Send(string.char(112,101,110,106,97,103,97),_IO)if _bn.guardStopAll or _bn.guardLeave then if not _rx.saved then _rx.saved=_HY()end _rx.token=_rx.token+(1)_Ib()_rx.calmAt=nil if _bn.guardLeave then if _Ic()then _rx.backAt=os.clock()+_bn.guardBackSec _rx.mode=_bn.guardAutoBack and string.char(97,119,97,121)or string.char(111,117,116)_rx.status=string.char(75,101,108,117,97,114,32,119,111,114,108,100)return end end _rx.mode=string.char(112,97,117,115,101)end end if#_IK>0 then _rx.calmAt=nil _rx.status=(_rx.mode==string.char(112,97,117,115,101)and string.char(68,105,106,101,100,97,33,32,65,100,97,58,32)or string.char(87,97,115,112,97,100,97,33,32,65,100,97,58,32)).._HS(_IK)elseif _rx.mode==string.char(112,97,117,115,101)then _rx.calmAt=_rx.calmAt or _IA local _IP=_bn.guardCalmSec-(_IA-_rx.calmAt)if _IP>0 then _rx.status=string.format(string.char(83,117,100,97,104,32,115,101,112,105,46,32,76,97,110,106,117,116,32,100,108,109,32,37,100,115,46,46,46),math.ceil(_IP))else _rx.calmAt=nil local _IQ=_rx.saved _rx.mode,_rx.saved=string.char(105,100,108,101),nil if _bn.guardAutoBack and _IQ then _bI(string.char(87,111,114,108,100,32,97,109,97,110,44,32,109,101,108,97,110,106,117,116,107,97,110,32,97,107,116,105,118,105,116,97,115,33),string.char(80,101,110,106,97,103,97,32,65,78,67,72))_rx.token=_rx.token+(1)local _IR=_rx.token task.spawn(_Im,_IQ,_IR)end end else _rx.status=string.char(65,109,97,110,32,40,77,101,109,97,110,116,97,117,41)end end)task.wait(0.5)end end)function _ry.TargetWorld()local _IS=tostring(_bn.targetWorld or""):upper():gsub(string.char(91,94,65,45,90,48,45,57,93),"")if _IS~=""then return _IS end return _bn.lastWorld or""end task.spawn(function()while _e()do local _IT=_gJ()if _IT~=""and not _rv.traveling then _bn.lastWorld=_IT end if _HX()and _rx.mode==string.char(105,100,108,101)then _ry.last=_HY()_ry.lastAt=os.clock()end task.wait(1)end end)local function _IU(_IV)if not(_bn.reconnectOn and _bn.reconnectWorld)or _ry.busy or _rv.traveling then return end if _rx.mode==string.char(97,119,97,121)or _rx.mode==string.char(111,117,116)then return end local _IW=_ry.last if not _IW or _IW.world==""or os.clock()-_ry.lastAt>15 then return end _ry.busy=true task.spawn(function()_Ib()_ry.status=string.char(84,101,114,108,101,109,112,97,114,32,100,97,114,105,32).._IW.world..string.char(46,32,77,97,115,117,107,32,108,97,103,105,46,46,46)_bW.Send(string.char(114,101,106,111,105,110),string.char(84,101,114,108,101,109,112,97,114,32,100,97,114,105,32,119,111,114,108,100,32).._IW.world..string.char(32,40).._Hs(_IV)..string.char(41))task.wait(_bn.reconnectDelay+1.5)for _IX=1,3 do if not _e()or not _bn.reconnectOn then break end if _If(_IW.world)then _bN.Scan()task.wait(1.5)_ry.count=_ry.count+(1)_ry.status=string.char(66,101,114,104,97,115,105,108,32,109,97,115,117,107,32,108,97,103,105,32,107,101,32).._IW.world _bW.Send(string.char(114,101,106,111,105,110),string.char(66,101,114,104,97,115,105,108,32,109,97,115,117,107,32,107,101,109,98,97,108,105,32,107,101,32).._IW.world)_Im(_IW,nil)_ry.busy=false return end _ry.status=string.format(string.char(71,97,103,97,108,32,109,97,115,117,107,32,40,37,100,47,51,41,44,32,99,111,98,97,32,108,97,103,105,46,46,46),_IX)task.wait(8)end _ry.busy=false end)end if _P and _P:IsA(string.char(82,101,109,111,116,101,69,118,101,110,116))then _f(_P.OnClientEvent:Connect(function(_IY)if _e()then _IU(_IY)end end))end task.spawn(function()local _IZ=nil while _e()do task.wait(2)local _Ja=_gJ()==""local _Jb=_bn.reconnectOn and _bn.reconnectKeep and not _ry.busy and not _ry.leaving and not _rv.traveling and _rx.mode==string.char(105,100,108,101)if not(_Ja and _Jb)then _IZ=nil else _IZ=_IZ or os.clock()local _Jc=_ry.TargetWorld()if _Jc~=""and os.clock()-_IZ>=_bn.reconnectDelay then _IZ=nil _ry.busy=true _ry.status=string.char(68,105,32,108,117,97,114,32,119,111,114,108,100,44,32,109,97,115,117,107,32,107,101,32).._Jc..string.char(46,46,46)if _If(_Jc)then _bN.Scan()task.wait(1.5)_ry.count=_ry.count+(1)_ry.status=string.char(75,101,109,98,97,108,105,32,111,116,111,109,97,116,105,115,32,107,101,32).._Jc if _ry.last and _ry.last.world==_Jc then _Im(_ry.last,nil)end end _ry.busy=false end end end end)pcall(function()_f(_x.ErrorMessageChanged:Connect(function(_Jd)if not _e()or type(_Jd)~=string.char(115,116,114,105,110,103)or _Jd==""then return end if not(_bn.reconnectOn and _bn.reconnectServer)or _ry.leaving then return end _ry.leaving=true local _Je=_ry.last or(_HX()and _HY())or nil local _Jf=(_Je and _Je.world)or _gJ()if writefile and _Je then _Je.at=os.time()pcall(writefile,_bh,_z:JSONEncode(_Je))end if _qM then pcall(_qM)end _bW.Send(string.char(114,101,106,111,105,110),string.char(68,105,115,99,111,110,110,101,99,116,32,100,97,114,105,32,115,101,114,118,101,114,32,40).._Jd..string.char(41,46,32,82,101,106,111,105,110,32,111,116,111,109,97,116,105,115,46,46,46))task.spawn(function()task.wait(_bn.reconnectDelay)while _e()do pcall(function()_C:Teleport(game.PlaceId,_H,(_Jf~="")and{world=_Jf}or nil)end)task.wait(12)end end)end))end)function _ry.CheckStartup()pcall(function()if not(isfile and readfile and isfile(_bh))then return end local _Jg=readfile(_bh)if delfile then pcall(delfile,_bh)end local _Jh=_z:JSONDecode(_Jg)if type(_Jh)~=string.char(116,97,98,108,101)or type(_Jh.world)~=string.char(115,116,114,105,110,103)or _Jh.world==""then return end if os.time()-(tonumber(_Jh.at)or 0)>900 then return end _ry.busy=true _ry.status=string.char(80,117,108,105,104,107,97,110,32,115,101,115,105,32,115,101,116,101,108,97,104,32,82,101,106,111,105,110,32,83,101,114,118,101,114,58,32).._Jh.world local _Ji=os.clock()local _Jj=false while _e()and os.clock()-_Ji<50 do if _gJ()==_Jh.world and _gG()then break end if _gJ()==""and not _Jj and os.clock()-_Ji>8 then _Jj=true _If(_Jh.world)end task.wait(2)end if _e()and _gJ()==_Jh.world then _bN.Scan()task.wait(1.5)_ry.count=_ry.count+(1)_bW.Send(string.char(114,101,106,111,105,110),string.char(66,101,114,104,97,115,105,108,32,114,101,106,111,105,110,32,115,101,114,118,101,114,32,107,101,32,119,111,114,108,100,32).._Jh.world..string.char(44,32,109,101,108,97,110,106,117,116,107,97,110,32,98,111,116,33))_Im(_Jh,nil)end _ry.busy=false end)end end)()end local _Jk={claimed=0,redeemed=0,tried={},questFail={},questText=string.char(45),codeText=string.char(45),nextQuest=0,nextCode=0,}local _Jl={saved={}}do(function()local function _Jm(_Jn)local _Jo=tostring(math.floor(tonumber(_Jn)or 0))local _Jp=_Jo:sub(1,1)==string.char(45)if _Jp then _Jo=_Jo:sub(2)end local _Jq=_Jo:reverse():gsub(string.char(40,37,100,37,100,37,100,41),string.char(37,49,46)):reverse():gsub(string.char(94,37,46),"")return(_Jp and string.char(45)or"").._Jq end local function _Jr(_Js)_Js=math.max(0,math.floor(_Js or 0))return string.format(string.char(37,100,106,32,37,100,109,32,37,100,100),math.floor(_Js/3600),math.floor((_Js%3600)/60),_Js%60)end function _bV.GemsNow()local _Jt=_bN.Gems local _Ju=_Jt and rawget(_Jt,string.char(97,100,100,71,101,109,115))if type(_Ju)~=string.char(102,117,110,99,116,105,111,110)then return nil end for _Jv,_Jw in pairs(_bx(_Ju))do if type(_Jw)==string.char(110,117,109,98,101,114)then return _Jw end end return nil end function _bV.Reset()_bV.T0=os.clock()_bV.Gems0=_bV.GemsNow()_bV.Placed=0 _bV.Broken=0 _bV.Collected=0 _bV.Harvested=0 _bV.Planted=0 table.clear(_bV.Items)end function _bV.Text()local _Jx=math.max((os.clock()-_bV.T0)/3600,1/3600)local function _Jy(_Jz,_JA)return string.format(string.char(37,115,58,32,37,115,32,40,37,115,47,106,97,109,41),_Jz,_Jm(_JA),_Jm(_JA/_Jx))end local _JB=_bV.GemsNow()if _JB and not _bV.Gems0 then _bV.Gems0=_JB end local _JC=string.char(71,101,109,115,58,32,45)if _JB and _bV.Gems0 then local _JD=_JB-_bV.Gems0 _JC=string.format(string.char(71,101,109,115,58,32,37,115,32,40,37,115,37,115,44,32,37,115,47,106,97,109,41),_Jm(_JB),_JD>=0 and string.char(43)or"",_Jm(_JD),_Jm(_JD/_Jx))end local _JE={}for _JF,_JG in pairs(_bV.Items)do table.insert(_JE,{id=_JF,n=_JG})end table.sort(_JE,function(_JH,_JI)return _JH.n>_JI.n end)local _JJ={}for _JK=1,math.min(5,#_JE)do _JJ[_JK]=_fG(_JE[_JK].id)..string.char(32,120).._Jm(_JE[_JK].n)end return table.concat({string.char(76,97,109,97,32,83,101,115,105,58,32).._Jr(os.clock()-_bV.T0),_JC,_Jy(string.char(66,108,111,99,107,32,80,101,99,97,104),_bV.Broken),_Jy(string.char(66,108,111,99,107,32,68,105,112,97,115,97,110,103),_bV.Placed),_Jy(string.char(68,114,111,112,32,68,105,97,109,98,105,108),_bV.Collected),_Jy(string.char(80,111,104,111,110,32,68,105,112,97,110,101,110),_bV.Harvested),_Jy(string.char(83,101,101,100,32,68,105,116,97,110,97,109),_bV.Planted),string.char(73,116,101,109,32,84,101,114,98,97,110,121,97,107,58,32)..(#_JJ>0 and table.concat(_JJ,string.char(44,32))or string.char(45)),},string.char(10))end task.spawn(function()local _JL=os.clock()while _e()do if _bn.webhookReportMin>0 and(os.clock()-_JL)>=_bn.webhookReportMin*60 then _JL=os.clock()local _JM,_JN=pcall(_bV.Text)if _JM then _bW.Send(string.char(114,101,112,111,114,116),string.char(76,97,112,111,114,97,110,32,83,116,97,116,105,115,116,105,107,32,83,101,115,105,10,96,96,96,10).._JN..string.char(10,96,96,96))end elseif _bn.webhookReportMin<=0 then _JL=os.clock()end task.wait(2)end end)local function _JO()local _JP=_E:FindFirstChild(string.char(87,111,114,108,100,67,104,97,110,110,101,108,115))if not _JP then return nil end local _JQ=_gJ()if _JQ~=""and _JP:FindFirstChild(_JQ)then return _JP:FindFirstChild(_JQ)end for _JR,_JS in ipairs(_JP:GetChildren())do if _JS:IsA(string.char(84,101,120,116,67,104,97,110,110,101,108))then for _JT,_JU in ipairs(_JS:GetChildren())do if _JU:IsA(string.char(84,101,120,116,83,111,117,114,99,101))and _JU.UserId==_H.UserId then return _JS end end end end return nil end function _rz.SendNext()local _JV=_bF(_bn.chatText)if _JV==""then _rz.last=string.char(80,101,115,97,110,32,99,104,97,116,32,98,101,108,117,109,32,100,105,105,115,105)return false end local _JW=_JO()if not _JW then _rz.last=string.char(67,104,97,110,110,101,108,32,99,104,97,116,32,98,101,108,117,109,32,97,100,97)return false end local _JX,_JY=pcall(_JW.SendAsync,_JW,_JV)if _JX then _rz.sent=_rz.sent+(1)_rz.last=_JV else _rz.last=string.char(71,97,103,97,108,58,32)..tostring(_JY)end return _JX end task.spawn(function()while _e()do if _rz.on and os.clock()>=_rz.nextAt then _rz.SendNext()_rz.nextAt=os.clock()+math.max(3,_bn.chatInterval)end task.wait(0.3)end end)local function _JZ(_Ka)return(tostring(_Ka or""):gsub(string.char(96,46),""))end local function _Kb(...)if _T and type(_U)==string.char(116,97,98,108,101)and type(_U.call)==string.char(102,117,110,99,116,105,111,110)then return pcall(_U.call,...)end return false,string.char(78,101,116,46,99,97,108,108,32,116,105,100,97,107,32,116,101,114,115,101,100,105,97)end function _Jk.CheckQuests()local _Kc,_Kd,_Ke=_Kb(string.char(81,117,101,115,116,115),string.char(108,105,115,116))if not _Kc or not _Kd or type(_Ke)~=string.char(116,97,98,108,101)or type(_Ke.quests)~=string.char(116,97,98,108,101)then _Jk.questText=string.char(81,117,101,115,116,32,98,101,108,117,109,32,116,101,114,98,97,99,97,32,100,97,114,105,32,115,101,114,118,101,114)return end local _Kf,_Kg=0,0 local _Kh=os.clock()for _Ki,_Kj in ipairs(_Ke.quests)do _Kf=_Kf+(1)local _Kk,_Kl=tonumber(_Kj.have)or 0,tonumber(_Kj.need)or math.huge if _Kj.claimed then _Kg=_Kg+(1)elseif _Kk>=_Kl and not((_Jk.questFail[_Kj.id]or 0)>_Kh)then local _Km,_Kn,_Ko,_Kp,_Kq=_Kb(string.char(81,117,101,115,116,115),string.char(99,108,97,105,109),_Kj.id)if _Km and _Kn then _Kg=_Kg+(1)_Jk.claimed=_Jk.claimed+(1)local _Kr=_JZ(_Kj.text or _Kj.id)_bI(string.char(81,117,101,115,116,32,100,105,107,108,97,105,109,58,32).._Kr,string.char(66,111,110,117,115,32,65,78,67,72))_bW.Send(string.char(98,111,110,117,115),string.char(81,117,101,115,116,32,100,105,107,108,97,105,109,58,32).._Kr)if type(_Kq)==string.char(110,117,109,98,101,114)and _bN.Gems and type(_bN.Gems.setGems)==string.char(102,117,110,99,116,105,111,110)then pcall(_bN.Gems.setGems,_Kq)end else _Jk.questFail[_Kj.id]=_Kh+120 end task.wait(0.5)end end _Jk.questText=string.format(string.char(83,101,108,101,115,97,105,58,32,37,100,47,37,100,32,124,32,68,105,107,108,97,105,109,32,115,99,114,105,112,116,58,32,37,100),_Kg,_Kf,_Jk.claimed)end function _Jk.RedeemSingle(_Ks)local _Kt,_Ku=_Kb(string.char(77,111,100,67,111,109,109,97,110,100),string.char(114,101,100,101,101,109,99,111,100,101),_Ks)if not _Kt then return nil,string.char(71,97,103,97,108,32,109,101,110,103,104,117,98,117,110,103,105,32,115,101,114,118,101,114)end local _Kv=type(_Ku)==string.char(116,97,98,108,101)and type(_Ku.lines)==string.char(116,97,98,108,101)and _Ku.lines or nil if not _Kv then return false,string.char(66,97,108,97,115,97,110,32,107,111,115,111,110,103)end local _Kw=tostring(_Kv[1]or"")local _Kx={}for _Ky,_Kz in ipairs(_Kv)do table.insert(_Kx,_JZ(_Kz))end return string.sub(_Kw,1,2)==string.char(96,50),table.concat(_Kx,string.char(32))end function _Jk.CheckCodes()local _KA,_KB=_Kb(string.char(65,99,116,105,118,101,67,111,100,101,115))if not _KA or type(_KB)~=string.char(116,97,98,108,101)then _Jk.codeText=string.char(71,97,103,97,108,32,109,101,110,103,97,109,98,105,108,32,65,99,116,105,118,101,67,111,100,101,115)return end if _KB.note~=nil then _Jk.codeText=string.char(82,101,100,101,101,109,32,100,105,116,117,116,117,112,58,32).._JZ(_KB.note)return end local _KC,_KD=0,0 for _KE,_KF in ipairs(_KB)do _KC=_KC+(1)local _KG=_KF.code and tostring(_KF.code)if _KF.done then _KD=_KD+(1)elseif _KG and not _Jk.tried[_KG]and not(type(_KF.uses)==string.char(110,117,109,98,101,114)and _KF.uses==0)then local _KH,_KI=_Jk.RedeemSingle(_KG)if _KH~=nil then _Jk.tried[_KG]=true end if _KH then _KD=_KD+(1)_Jk.redeemed=_Jk.redeemed+(1)_bI(_KG..string.char(32,45,62,32)..tostring(_KI),string.char(82,101,100,101,101,109,32,66,101,114,104,97,115,105,108,33))_bW.Send(string.char(98,111,110,117,115),string.char(82,101,100,101,101,109,32,98,101,114,104,97,115,105,108,32).._KG..string.char(58,32)..tostring(_KI))end task.wait(0.8)end end _Jk.codeText=string.format(string.char(67,111,100,101,32,97,107,116,105,102,58,32,37,100,32,124,32,83,117,100,97,104,32,100,105,116,117,107,97,114,58,32,37,100,32,124,32,66,97,114,117,58,32,37,100),_KC,_KD,_Jk.redeemed)end task.spawn(function()while _e()do local _KJ=os.clock()if _bn.bonusAutoQuest and _KJ>=_Jk.nextQuest then _Jk.nextQuest=_KJ+30 pcall(_Jk.CheckQuests)end if _bn.bonusAutoRedeem and _KJ>=_Jk.nextCode then _Jk.nextCode=_KJ+300 pcall(_Jk.CheckCodes)end task.wait(1)end end)local _KK=setmetatable({},{__index=function()return 0 end,__newindex=function()end})local _KL=setmetatable({l=_KK,k={}},{__index=function()return 0 end,__newindex=function()end})local _KM _KM=setmetatable({},{__index=function()return _KM end,__newindex=function()end,__call=function()return _KM end,})local function _KN(_KO,_KP,_KQ)if type(_KO)==string.char(116,97,98,108,101)and type(rawget(_KO,_KP))==string.char(102,117,110,99,116,105,111,110)then table.insert(_Jl.saved,{_KO,_KP,rawget(_KO,_KP)})_KO[_KP]=_KQ end end function _Jl.Set(_KR)_bn.liteMode=_KR if _KR then if#_Jl.saved==0 then if _bc and _bd then _KN(_bd,string.char(115,112,97,119,110),function()return _KL end)end if _X and _Y then _KN(_Y,string.char(112,108,97,121),function()return _KM end)_KN(_Y,string.char(112,108,97,121,65,116),function()return _KM end)end end for _KS,_KT in ipairs(_bN.Particles)do pcall(function()for _KU,_KV in ipairs(_KT.live)do if typeof(_KV.l)==string.char(73,110,115,116,97,110,99,101)then _KV.l.Visible=false end end end)end else for _KW,_KX in ipairs(_Jl.saved)do pcall(function()_KX[1][_KX[2]]=_KX[3]end)end table.clear(_Jl.saved)end end local _KY={t0=os.clock(),tag=nil,panel=nil}local _KZ=ColorSequence.new({ColorSequenceKeypoint.new(0.00,Color3.fromRGB(48,255,106)),ColorSequenceKeypoint.new(0.25,Color3.fromRGB(60,205,255)),ColorSequenceKeypoint.new(0.50,Color3.fromRGB(231,255,47)),ColorSequenceKeypoint.new(0.75,Color3.fromRGB(60,205,255)),ColorSequenceKeypoint.new(1.00,Color3.fromRGB(48,255,106)),})local _La=Enum.Font.FredokaOne local function _Lb()local _Lc=_I:FindFirstChild(string.char(71,97,109,101,71,117,105))local _Ld=_Lc and _Lc:FindFirstChild(string.char(87,111,114,108,100))local _Le=_Ld and _Ld:FindFirstChild(string.char(67,97,109,101,114,97))local _Lf=_I:FindFirstChild(string.char(67,104,97,116,71,117,105))local _Lg=_Lf and _Lf:FindFirstChild(string.char(72,85,68))local _Lh=_Lg and _Lg:FindFirstChild(string.char(80,108,97,121,101,114,80,97,110,101,108))return _Le and _Le:FindFirstChild(string.char(78,97,109,101,84,97,103)),_Lh and _Lh:FindFirstChild(string.char(78,97,109,101))end local function _Li(_Lj,_Lk)local _Ll,_Lm=pcall(_F.GetTextSize,_F,_Lj,_Lk,_La,Vector2.new(2000,200))return(_Ll and _Lm.X or#_Lj*_Lk*0.55)+6 end local function _Ln(_Lo,_Lp,_Lq)local _Lr=Instance.new(string.char(84,101,120,116,76,97,98,101,108))_Lr.Name=string.char(65,78,67,72,87,97,116,101,114,109,97,114,107)_Lr.BackgroundTransparency=1 _Lr.Font=_La _Lr.TextSize=_Lp _Lr.TextColor3=Color3.new(1,1,1)_Lr.Text=_bn.watermarkText _Lr.ZIndex=_Lq and 1017 or 10 if _Lq then _Lr.AnchorPoint=Vector2.new(0.5,0.5)_Lr.Position=UDim2.fromScale(0.5,0.5)else _Lr.AnchorPoint=Vector2.new(0,0.5)_Lr.Position=UDim2.new(0,3,0.5,0)_Lr.TextXAlignment=Enum.TextXAlignment.Left end local _Ls=Instance.new(string.char(85,73,83,116,114,111,107,101),_Lr)_Ls.Thickness=2 _Ls.Color=Color3.fromRGB(18,28,20)local _Lt=Instance.new(string.char(85,73,71,114,97,100,105,101,110,116),_Lr)_Lt.Color=_KZ _Lt.Rotation=12 local _Lu=Instance.new(string.char(85,73,83,99,97,108,101),_Lr)_Lr.Parent=_Lo return{holder=_Lo,bitmap=_Lo:FindFirstChild(string.char(66,105,116,109,97,112,84,101,120,116)),label=_Lr,gr=_Lt,sc=_Lu,size=_Lp,isTag=_Lq,text=nil,w=0}end local function _Lv(_Lw)if not _Lw then return end pcall(function()_Lw.label:Destroy()end)if _Lw.bitmap then pcall(function()_Lw.bitmap.Visible=true end)end end function _d.RestoreWatermark()_Lv(_KY.tag)_Lv(_KY.panel)_KY.tag,_KY.panel=nil,nil end local function _Lx(_Ly,_Lz,_LA,_LB)if not _Lz then _Lv(_Ly);return nil end if not _Ly or _Ly.holder~=_Lz or not _Ly.label.Parent then _Lv(_Ly)_Ly=_Ln(_Lz,_LA,_LB)end if _Ly.text~=_bn.watermarkText then _Ly.text=_bn.watermarkText _Ly.label.Text=_bn.watermarkText _Ly.w=_Li(_bn.watermarkText,_LA)end if _Ly.bitmap and _Ly.bitmap.Visible then _Ly.bitmap.Visible=false end if _LB then local _LC=math.max(_Lz.Size.Y.Offset,_LA+6)_Ly.label.Size=UDim2.fromOffset(_Ly.w,_LC)_Lz.Size=UDim2.fromOffset(_Ly.w,_Lz.Size.Y.Offset)else _Ly.label.Size=UDim2.new(1,-6,1,0)end return _Ly end _f(_B.RenderStepped:Connect(function()if not _e()then return end if not _bn.customWatermark then if _KY.tag or _KY.panel then _d.RestoreWatermark()end return end local _LD,_LE=_Lb()_KY.tag=_Lx(_KY.tag,_LD,22,true)_KY.panel=_Lx(_KY.panel,_LE,21,false)local _LF=os.clock()-_KY.t0 local _LG=Vector2.new(((_LF*0.45)%2)-1,0)local _LH=1+0.045*math.sin(_LF*3.2)if _KY.tag then _KY.tag.gr.Offset=_LG;_KY.tag.sc.Scale=_LH end if _KY.panel then _KY.panel.gr.Offset=_LG;_KY.panel.sc.Scale=_LH end end))end)()end local _LI,_LJ,_LK,_LL,_LM,_LN,_LO=false,false,false,false,false,false,false local _LP,_LQ,_LR,_LS,_LT,_LU local _LV,_LW,_LX,_LY,_LZ,_Ma local _Mb,_Mc,_Md,_Me,_Mf,_Mg local _Mh,_Mi,_Mj,_Mk,_Ml,_Mm do(function()local _Mn={}local function _Mo()local _Mp={}local _Mq=_fF()if not _Mq then return _Mp end for _Mr,_Ms in ipairs({1,-1,0})do local _Mt=rawget(_Mq,_Ms)if type(_Mt)==string.char(116,97,98,108,101)then for _Mu,_Mv in ipairs({string.char(98,111,100,121),string.char(104,101,97,100),string.char(101,121,101,108,105,100,115),string.char(98,108,105,110,107),string.char(102,111,114,101,97,114,109),string.char(102,105,115,116)})do local _Mw=_Mt[_Mv]if typeof(_Mw)==string.char(73,110,115,116,97,110,99,101)then table.insert(_Mp,{part=_Mw,face=false})end end for _Mx,_My in ipairs({string.char(97,114,109,66,97,99,107),string.char(97,114,109,70,114,111,110,116)})do local _Mz=_Mt[_My]local _MA=(typeof(_Mz)==string.char(73,110,115,116,97,110,99,101)and _Mz:FindFirstChild(string.char(83,112,114,105,116,101)))or(type(_Mz)==string.char(116,97,98,108,101)and _Mz.Sprite)if typeof(_MA)==string.char(73,110,115,116,97,110,99,101)then table.insert(_Mp,{part=_MA,face=false})end end if typeof(_Mt.face)==string.char(73,110,115,116,97,110,99,101)then table.insert(_Mp,{part=_Mt.face,face=true})end end end return _Mp end function _LQ()if not _LI then return false end _LI=false for _MB,_MC in pairs(_Mn)do pcall(function()_MB.ImageColor3=_MC end)end table.clear(_Mn)return true end function _LP()if _LI then return true end if not _fF()then _bI(string.char(82,105,103,32,107,97,114,97,107,116,101,114,32,116,105,100,97,107,32,100,105,116,101,109,117,107,97,110,33));return false end _LI=true table.clear(_Mn)for _MD,_ME in ipairs(_Mo())do _Mn[_ME.part]=_ME.part.ImageColor3 end task.spawn(function()while _LI and _e()do local _MF=Color3.fromHSV(math.random(),0.55+math.random()*0.4,1)local _MG=Color3.new(_MF.R*0.38,_MF.G*0.35,_MF.B*0.3)for _MH,_MI in ipairs(_Mo())do if _Mn[_MI.part]==nil then _Mn[_MI.part]=_MI.part.ImageColor3 end pcall(function()_MI.part.ImageColor3=_MI.face and _MG or _MF end)end local _MJ=math.min(_bn.blinkMin,_bn.blinkMax)local _MK=math.max(_bn.blinkMin,_bn.blinkMax)task.wait(_MJ+math.random()*(_MK-_MJ))end end)return true end local _ML=nil function _LR()local _MM=_fE()if not _MM then _bI(string.char(73,110,118,101,110,116,111,114,121,32,98,101,108,117,109,32,100,105,116,101,109,117,107,97,110,33));return false end if not _ML then _ML={build=_MM.buildRange,punch=_MM.punchRange}end local _MN=2.5+_bn.longhandRange _MM.buildRange=function()return math.max(_ML.build(),_MN)end _MM.punchRange=function()return math.max(_ML.punch(),_MN)end _LJ=true return true end function _LS()if not _LJ then return false end local _MO=_fE()if _MO and _ML then _MO.buildRange=_ML.build _MO.punchRange=_ML.punch end _LJ=false return true end local _MP=nil local function _MQ(_MR,...)if _LK and _MR==4992 and not _ck.active then return true end if _MP then return _MP(_MR,...)end return false end function _LT()if _LK then return true end _LK=true local _MS=_fD()if _MS and type(rawget(_MS,string.char(106,97,109,109,101,114,79,110)))==string.char(102,117,110,99,116,105,111,110)and rawget(_MS,string.char(106,97,109,109,101,114,79,110))~=_MQ then _MP=rawget(_MS,string.char(106,97,109,109,101,114,79,110))_MS.jammerOn=_MQ end return true end function _LU()if not _LK then return false end _LK=false local _MT=_fD()if _MT and _MP and rawget(_MT,string.char(106,97,109,109,101,114,79,110))==_MQ then _MT.jammerOn=_MP end return true end local _MU=nil local _MV=_t and _t(game:GetService(string.char(86,105,114,116,117,97,108,73,110,112,117,116,77,97,110,97,103,101,114)))or game:GetService(string.char(86,105,114,116,117,97,108,73,110,112,117,116,77,97,110,97,103,101,114))local function _MW()if getconnections then pcall(function()for _MX,_MY in ipairs(getconnections(_H.Idled))do if _MY.Function==nil then if _MY.Disable then _MY:Disable()elseif _MY.Disconnect then _MY:Disconnect()end end end end)end end local function _MZ()pcall(function()_D:CaptureController()local _Na=workspace.CurrentCamera local _Nb=_Na and _Na.CFrame or CFrame.new()_D:Button2Down(Vector2.new(0,0),_Nb)task.wait(0.08)_D:Button2Up(Vector2.new(0,0),_Nb)_D:ClickButton2(Vector2.new(0,0))end)pcall(function()if _MV and _MV.SendKeyEvent then _MV:SendKeyEvent(true,Enum.KeyCode.RightControl,false,game)task.wait(0.05)_MV:SendKeyEvent(false,Enum.KeyCode.RightControl,false,game)end end)end function _LV()if _LL then return true end _LL=true _MW()_MU=_f(_H.Idled:Connect(function()if _LL and _e()then _MW()_MZ()end end))task.spawn(function()while _LL and _e()do _MW()_MZ()task.wait(60)end end)return true end function _LW()if not _LL then return false end _LL=false if _MU then _MU:Disconnect();_MU=nil end return true end local _Nc,_Nd=nil,nil _f(_y.InputBegan:Connect(function(_Ne)if not _e()then return end if _Ne.UserInputType==Enum.UserInputType.MouseButton1 or _Ne.UserInputType==Enum.UserInputType.Touch then local _Nf,_Ng=_ik.ScreenToTile(_Ne.Position)if _Nf and _Ng then _Nc,_Nd=_Nf,_Ng end end end))local function _Nh()if _bn.fastPull then return string.char(112,117,108,108),string.char(70,97,115,116,32,80,117,108,108)end if _bn.fastKick then return string.char(107,105,99,107),string.char(70,97,115,116,32,75,105,99,107)end if _bn.fastBan then return string.char(98,97,110),string.char(70,97,115,116,32,66,97,110)end return nil,nil end local function _Ni(_Nj)if _Nj~=nil then local _Nk=tonumber(_Nj)or(type(_Nj)==string.char(115,116,114,105,110,103)and tonumber(_Nj:match(string.char(40,37,100,43,41))))if type(_Nj)==string.char(116,97,98,108,101)then _Nk=tonumber(_Nj.userId or _Nj.uid or _Nj.id or _Nj[1])end for _Nl,_Nm in ipairs(_u:GetPlayers())do if _Nm~=_H then if(_Nk and _Nm.UserId==_Nk)or(type(_Nj)==string.char(115,116,114,105,110,103)and(_Nm.Name:lower()==_Nj:lower()or _Nm.DisplayName:lower()==_Nj:lower()))then return _Nm.UserId,_Nm.DisplayName or _Nm.Name end end end if _Nk and _Nk>1000 and _Nk~=_H.UserId then return _Nk,tostring(_Nk)end end local _Nn=_bN.Others if not _Nn then _bN.Scan();_Nn=_bN.Others end local _No={}if _Nn and type(rawget(_Nn,string.char(108,105,115,116)))==string.char(102,117,110,99,116,105,111,110)then local _Np,_Nq=pcall(_Nn.list)if _Np and type(_Nq)==string.char(116,97,98,108,101)then for _Nr,_Ns in pairs(_Nq)do if type(_Ns)==string.char(116,97,98,108,101)then local _Nt=tonumber(_Ns[1]or _Ns.userId)local _Nu=tostring(_Ns[2]or _Ns.name or _Nt or""):gsub(string.char(96,46),"")if _Nt and _Nt~=_H.UserId then if _Nj~=nil and(_Nr==_Nj or _Ns.id==_Nj or _Ns.pid==_Nj or _Ns.netId==_Nj or _Ns[3]==_Nj)then return _Nt,_Nu end table.insert(_No,{uid=_Nt,name=_Nu,idx=_Nr})end end end end end if _Nn and _Nc and _Nd then if type(rawget(_Nn,string.char(112,108,97,121,101,114,65,116)))==string.char(102,117,110,99,116,105,111,110)then local _Nv,_Nw=pcall(_Nn.playerAt,_Nc,_Nd)if _Nv and _Nw then local _Nx=(type(_Nw)==string.char(116,97,98,108,101)and tonumber(_Nw[1]or _Nw.userId))or tonumber(_Nw)if _Nx and _Nx~=_H.UserId then return _Nx,tostring(_Nx)end end end if type(rawget(_Nn,string.char(119,104,101,114,101)))==string.char(102,117,110,99,116,105,111,110)and#_No>0 then local _Ny,_Nz,_NA=nil,nil,math.huge for _NB,_NC in ipairs(_No)do local _ND,_NE,_NF=pcall(_Nn.where,_NC.uid)if _ND and type(_NE)==string.char(116,97,98,108,101)then _NE,_NF=_NE.x or _NE[1],_NE.y or _NE[2]end if _ND and type(_NE)==string.char(110,117,109,98,101,114)and type(_NF)==string.char(110,117,109,98,101,114)then local _NG=math.abs(_NE-_Nc)+math.abs(_NF-_Nd)if _NG<_NA then _Ny,_Nz,_NA=_NC.uid,_NC.name,_NG end end end if _Ny and _NA<=6 then return _Ny,_Nz end end end if tonumber(_Nj)and _No[tonumber(_Nj)-1]then local _NH=_No[tonumber(_Nj)-1]return _NH.uid,_NH.name end if#_No>=1 then return _No[1].uid,_No[1].name end for _NI,_NJ in ipairs(_u:GetPlayers())do if _NJ~=_H then return _NJ.UserId,_NJ.DisplayName or _NJ.Name end end return nil,nil end if not _a.__ANCH_TrueOrigNetCall and _T and type(_U)==string.char(116,97,98,108,101)and type(_U.call)==string.char(102,117,110,99,116,105,111,110)then local _NK=_U.call if isexecutorclosure and pcall(isexecutorclosure,_NK)and isexecutorclosure(_NK)then for _NL,_NM in pairs(_bx(_NK))do if type(_NM)==string.char(102,117,110,99,116,105,111,110)and not(pcall(isexecutorclosure,_NM)and isexecutorclosure(_NM))then _a.__ANCH_TrueOrigNetCall=_NM break end end else _a.__ANCH_TrueOrigNetCall=_NK end end local _NN=_a.__ANCH_TrueOrigNetCall or(_T and type(_U)==string.char(116,97,98,108,101)and _U.call)or nil local _NO={}local _NP=0 local _NQ local function _NR()if not(debug and debug.info and _bu and _bv)then return end for _NS=2,7 do local _NT,_NU=pcall(debug.info,_NS,string.char(102))if not _NT or type(_NU)~=string.char(102,117,110,99,116,105,111,110)then break end if _NU~=_NQ and not(isexecutorclosure and pcall(isexecutorclosure,_NU)and isexecutorclosure(_NU))then for _NV=1,20 do local _NW,_NX=pcall(_bu,_NU,_NV)if not _NW then break end if _NX==true then pcall(_bv,_NU,_NV,false)end end end end end local function _NY(_NZ,_Oa,_Ob,_Oc,_Od)_NP=os.clock()task.spawn(function()pcall(_NZ,string.char(87,111,114,108,100,67,111,109,109,97,110,100),_Oa,string.char(35)..tostring(_Oc))pcall(_NZ,string.char(83,101,116,66,117,115,121),0)_bI(string.format(string.char(37,115,32,45,62,32,37,115,32,40,35,37,115,41),_Ob,tostring(_Od or string.char(80,108,97,121,101,114)),tostring(_Oc)),_Ob,2)end)end local function _Oe(_Of,_Og,_Oh,...)local _Oi,_Oj=_Nh()if _Oi then if _Og==string.char(71,101,116,80,108,97,121,101,114,76,101,118,101,108)or _Og==string.char(87,114,101,110,99,104,80,108,97,121,101,114)or _Og==string.char(80,108,97,121,101,114,73,110,102,111)then local _Ok,_Ol=_Ni(_Oh)if _Ok then if os.clock()-_NP>0.15 then _NY(_Of,_Oi,_Oj,_Ok,_Ol)end _NR()return coroutine.yield()end elseif _Og==string.char(83,101,116,66,117,115,121)and _Oh==2 then if os.clock()-_NP<1.0 then _NR()return false end end end return _Of(_Og,_Oh,...)end if _NN then _NQ=function(_Om,_On,...)if not _e()then return _NN(_Om,_On,...)end return _Oe(_NN,_Om,_On,...)end _U.call=_NQ if _bN.World and type(rawget(_bN.World,string.char(99,97,108,108)))==string.char(102,117,110,99,116,105,111,110)then rawset(_bN.World,string.char(99,97,108,108),_NQ)end if _bt and _bu and _bv then task.spawn(function()for _Oo,_Op in ipairs(_bt(false))do if type(_Op)==string.char(102,117,110,99,116,105,111,110)and _Op~=_NQ and _Op~=_Oe then if not(isexecutorclosure and pcall(isexecutorclosure,_Op)and isexecutorclosure(_Op))then for _Oq=1,30 do local _Or,_Os=pcall(_bu,_Op,_Oq)if not _Or then break end if type(_Os)==string.char(102,117,110,99,116,105,111,110)then local _Ot=false if isexecutorclosure and pcall(isexecutorclosure,_Os)and isexecutorclosure(_Os)then for _Ou,_Ov in pairs(_bx(_Os))do if _Ov==_NN then _Ot=true break end end end if _Os==_NN or _Ot then pcall(_bv,_Op,_Oq,_NQ)table.insert(_NO,{fn=_Op,idx=_Oq,orig=_NN})end end end end end end end)end end function _d.RestoreFastWrench()if _NN and _T and type(_U)==string.char(116,97,98,108,101)then _U.call=_NN end if _NN and _bN.World and rawget(_bN.World,string.char(99,97,108,108))==_NQ then pcall(rawset,_bN.World,string.char(99,97,108,108),_NN)end if _bv then for _Ow,_Ox in ipairs(_NO)do pcall(_bv,_Ox.fn,_Ox.idx,_Ox.orig)end end table.clear(_NO)end function _LX()_LM=true _bn.reconnectOn=true _bs()return true end function _LY()_LM=false _bn.reconnectOn=false _bs()return true end local _Oy,_Oz={},{}function _LZ()if _LN then return true end _Oy={}for _OA,_OB in pairs(_Q)do if type(_OB)==string.char(116,97,98,108,101)then for _OC,_OD in ipairs({string.char(104,117,114,116,115),string.char(100,101,97,100,108,121)})do if _OB[_OD]then table.insert(_Oy,{item=_OB,key=_OD,value=rawget(_OB,_OD)})pcall(function()if setreadonly then setreadonly(_OB,false)end rawset(_OB,_OD,false)end)end end end end local _OE=_K and _K:FindFirstChild(string.char(66,117,114,110,101,100))if _OE and getconnections then local _OF,_OG=pcall(getconnections,_OE.OnClientEvent)if _OF and type(_OG)==string.char(116,97,98,108,101)then for _OH,_OI in ipairs(_OG)do if pcall(function()_OI:Disable()end)then table.insert(_Oz,_OI)end end end end _LN=true return true end function _Ma()if not _LN then return false end for _OJ,_OK in ipairs(_Oy)do pcall(function()rawset(_OK.item,_OK.key,_OK.value)end)end _Oy={}for _OL,_OM in ipairs(_Oz)do pcall(function()_OM:Enable()end)end _Oz={}_LN=false return true end local _ON={}local _OO=nil local function _OP()local _OQ=_fE()if not _OQ then return nil end local _OR=_bx(_OQ.isWorn)[1]return type(_OR)==string.char(116,97,98,108,101)and _OR or nil end function _Mh(_OS)local _OT=_OP()return _OT and _Q[_OS]and _OT[_Q[_OS].slot]==_OS or false end function _Mi(_OU)local _OV,_OW=_fE(),_OP()if not _OV or not _OW or not _Q[_OU]then return false end local _OX=_Q[_OU].slot if type(_OX)~=string.char(115,116,114,105,110,103)then return false end if _OW[_OX]==_OU then _OW[_OX]=_ON[_OX]or nil else if _ON[_OX]==nil then _ON[_OX]=_OW[_OX]or false end _OW[_OX]=_OU end pcall(_OV.refresh)return true end function _Mj()local _OY,_OZ=_fE(),_OP()if not _OY or not _OZ then return end for _Pa,_Pb in pairs(_ON)do _OZ[_Pa]=_Pb or nil end table.clear(_ON)pcall(_OY.refresh)_bI(string.char(73,116,101,109,32,118,105,115,117,97,108,32,100,105,107,101,109,98,97,108,105,107,97,110,46))end function _Mk()if _OO then return _OO end local _Pc={}for _Pd,_Pe in pairs(_Q)do if type(_Pd)==string.char(110,117,109,98,101,114)and type(_Pe)==string.char(116,97,98,108,101)and type(_Pe.slot)==string.char(115,116,114,105,110,103)and type(_Pe.name)==string.char(115,116,114,105,110,103)then local _Pf={}local _Pg=_Pe.name:lower()if _Pe.kuyang then table.insert(_Pf,string.char(75,117,121,97,110,103))end if _Pe.bot then table.insert(_Pf,string.char(76,101,103,101,110,100,66,111,116))end if _Pd==5480 or _Pg:find(string.char(114,97,121,109,97,110),1,true)then table.insert(_Pf,string.char(82,97,121,109,97,110))end table.insert(_Pc,{id=_Pd,name=_Pe.name,lower=_Pg,slot=_Pe.slot,tags=_Pf})end end table.sort(_Pc,function(_Ph,_Pi)return _Ph.name<_Pi.name end)_OO=_Pc return _Pc end local _Pj=nil local function _Pk()if _Pj then return _Pj end local _Pl={}for _Pm,_Pn in pairs(_Q)do if type(_Pm)==string.char(110,117,109,98,101,114)and type(_Pn)==string.char(116,97,98,108,101)and type(_Pn.name)==string.char(115,116,114,105,110,103)and type(_Pn.slot)~=string.char(115,116,114,105,110,103)then table.insert(_Pl,{id=_Pm,name=_Pn.name,lower=_Pn.name:lower(),kind=_Pn.kind or string.char(98,108,111,99,107)})end end table.sort(_Pl,function(_Po,_Pp)return _Po.name<_Pp.name end)_Pj=_Pl return _Pl end function _Mg(_Pq,_Pr)local _Ps=_Pk()_Pq=_bF(_Pq):lower()if _Pq==""then return{}end local _Pt=tonumber(_Pq)local _Pu={}for _Pv,_Pw in ipairs(_Ps)do local _Px=nil if _Pt and _Pw.id==_Pt then _Px=0 elseif _Pw.lower==_Pq then _Px=1 elseif _Pw.lower:sub(1,#_Pq)==_Pq then _Px=2 elseif _Pw.lower:find(_Pq,1,true)then _Px=3 end if _Px then table.insert(_Pu,{entry=_Pw,rank=_Px})end end table.sort(_Pu,function(_Py,_Pz)if _Py.rank~=_Pz.rank then return _Py.rank<_Pz.rank end return _Py.entry.name<_Pz.entry.name end)local _PA={}for _PB=1,math.min(_Pr or 25,#_Pu)do _PA[_PB]=_Pu[_PB].entry end return _PA end function _Me()local _PC=_fD()local _PD=_PC and rawget(_PC,string.char(103,114,111,119,83,99,97,110))if type(_PD)~=string.char(116,97,98,108,101)or type(_PD.open)~=string.char(102,117,110,99,116,105,111,110)then return false end local _PE=0 for _PF,_PG in pairs(_Q)do if type(_PF)==string.char(110,117,109,98,101,114)and type(_PG)==string.char(116,97,98,108,101)and _PG.growscan then _PE=_PF;break end end local _PH=pcall(_PD.open,{item=_PE,owner=true,blocksPublic=false,floatingPublic=false},function()end)return _PH end function _Mf()local _PI=_fD()if not _PI or type(rawget(_PI,string.char(119)))~=string.char(110,117,109,98,101,114)then return nil end local _PJ={fg={},bg={},drops={},trees={},w=_PI.w,h=_PI.h,totalFg=0,totalBg=0,totalDrops=0,piles=0,readyTrees=0,growingTrees=0,}local _PK=workspace:GetServerTimeNow()for _PL=0,_PI.h-1 do local _PM,_PN=_PI.fg[_PL],_PI.bg and _PI.bg[_PL]for _PO=0,_PI.w-1 do local _PP=_PM and _PM[_PO]or 0 if _PP~=0 then _PJ.fg[_PP]=(_PJ.fg[_PP]or 0)+1 _PJ.totalFg=_PJ.totalFg+(1)if _rA(_PP)then local _PQ=_rD(_PI,_PO,_PL,_PP)local _PR=_PJ.trees[_PP]if not _PR then _PR={ready=0,growing=0,nextIn=nil}_PJ.trees[_PP]=_PR end if _PQ and _PK>=_PQ then _PR.ready=_PR.ready+(1)_PJ.readyTrees=_PJ.readyTrees+(1)else _PR.growing=_PR.growing+(1)_PJ.growingTrees=_PJ.growingTrees+(1)if _PQ then local _PS=_PQ-_PK if not _PR.nextIn or _PS<_PR.nextIn then _PR.nextIn=_PS end end end end end local _PT=_PN and _PN[_PO]or 0 if _PT~=0 then _PJ.bg[_PT]=(_PJ.bg[_PT]or 0)+1;_PJ.totalBg=_PJ.totalBg+(1)end end end local _PU=_bO.list if not _PU and type(_PI.dropList)==string.char(102,117,110,99,116,105,111,110)then local _PV,_PW=pcall(_PI.dropList)if _PV then _PU=_PW end end if type(_PU)==string.char(116,97,98,108,101)then for _PX,_PY in pairs(_PU)do if type(_PY)==string.char(116,97,98,108,101)and type(_PY.id)==string.char(110,117,109,98,101,114)and(_PY.n or 0)>0 then _PJ.drops[_PY.id]=(_PJ.drops[_PY.id]or 0)+(_PY.n or 1)_PJ.totalDrops=_PJ.totalDrops+((_PY.n or 1))_PJ.piles=_PJ.piles+(1)end end end return _PJ end function _Ml()local _PZ,_Qa={string.char(110,111,110,101)},{none=true}if _V and type(_W)==string.char(116,97,98,108,101)and type(_W.titlesOf)==string.char(102,117,110,99,116,105,111,110)then local _Qb,_Qc=pcall(_W.titlesOf,_H.UserId)if _Qb and type(_Qc)==string.char(116,97,98,108,101)then for _Qd,_Qe in ipairs(_Qc)do if type(_Qe)==string.char(115,116,114,105,110,103)and not _Qa[_Qe]then _Qa[_Qe]=true local _Qf=_Qe if type(_W.titleName)==string.char(102,117,110,99,116,105,111,110)then local _Qg,_Qh=pcall(_W.titleName,_Qe)if _Qg and type(_Qh)==string.char(115,116,114,105,110,103)and _Qh~=""and _Qh~=_Qe then _Qf=_Qh..string.char(32,91).._Qe..string.char(93)end end table.insert(_PZ,_Qf)end end end end return _PZ end function _Mm(_Qi)local _Qj=string.match(_Qi or"",string.char(37,91,40,46,45,41,37,93,36))or _Qi or string.char(110,111,110,101)if _Qj==""then _Qj=string.char(110,111,110,101)end if _T and type(_U)==string.char(116,97,98,108,101)and type(_U.call)==string.char(102,117,110,99,116,105,111,110)then task.spawn(function()local _Qk,_Ql=pcall(_U.call,string.char(80,105,99,107,84,105,116,108,101),_Qj)_bI(_Qk and(string.char(82,111,108,101,32,100,105,112,97,115,97,110,103,58,32).._Qj)or(string.char(71,97,103,97,108,32,112,97,115,97,110,103,32,114,111,108,101,58,32)..tostring(_Ql)))end)elseif _O then pcall(function()_O:FireServer(_Qj)end)_bI(string.char(82,111,108,101,32,100,105,107,105,114,105,109,58,32).._Qj)else _bI(string.char(70,117,110,103,115,105,32,80,105,99,107,84,105,116,108,101,32,116,105,100,97,107,32,100,105,116,101,109,117,107,97,110,46))end end function _Md()_Jk.CheckQuests()_bI(_Jk.questText,string.char(73,110,102,111,32,81,117,101,115,116))end function _Mb()if _LO then return true end _LO=true _bn.bonusAutoQuest=true _Jk.nextQuest=0 return true end function _Mc()if not _LO then return false end _LO=false _bn.bonusAutoQuest=false return true end end)()end local _QE={blink={label=string.char(66,108,105,110,107),get=function()return _LI end,set=function(_Qm)return _Qm and _LP()or _LQ()end},longhand={label=string.char(76,111,110,103,104,97,110,100),get=function()return _LJ end,set=function(_Qn)return _Qn and _LR()or _LS()end},noclip={label=string.char(78,111,99,108,105,112),get=function()return _hW end,set=function(_Qo)return _Qo and _ih()or _ii()end},ujump={label=string.char(85,110,108,105,109,105,116,101,100,32,74,117,109,112),get=function()return _LK end,set=function(_Qp)return _Qp and _LT()or _LU()end},antiafk={label=string.char(65,110,116,105,45,65,70,75),get=function()return _LL end,set=function(_Qq)return _Qq and _LV()or _LW()end},autorejoin={label=string.char(65,117,116,111,32,82,101,99,111,110,110,101,99,116),get=function()return _bn.reconnectOn end,set=function(_Qr)return _Qr and _LX()or _LY()end},god={label=string.char(71,111,100,32,77,111,100,101),get=function()return _LN end,set=function(_Qs)return _Qs and _LZ()or _Ma()end},clicktp={label=string.char(67,108,105,99,107,32,84,80),get=function()return _ik.clickOn end,set=function(_Qt)return _Qt and _ik.StartClick()or _ik.StopClick()end},lite={label=string.char(77,111,100,101,32,76,105,116,101),get=function()return _bn.liteMode end,set=function(_Qu)_Jl.Set(_Qu);return true end},guard={label=string.char(80,101,110,106,97,103,97,32,65,110,116,105,45,77,111,100),get=function()return _rx.on end,set=function(_Qv)_rx.Set(_Qv);return true end},autochat={label=string.char(65,117,116,111,32,67,104,97,116),noSession=true,get=function()return _rz.on end,set=function(_Qw)_rz.on=_Qw;if _Qw then _rz.nextAt=0 end;return true end},autoclear={label=string.char(65,117,116,111,32,67,108,101,97,114,32,87,111,114,108,100),noSession=true,get=function()return _rr.on end,set=function(_Qx)return _Qx and _rr.Start()or _rr.Stop()end},autoharvest={label=string.char(70,97,114,109,101,114,32,40,72,97,114,118,101,115,116,47,80,108,97,110,116,41),noSession=true,get=function()return _rs.on end,set=function(_Qy)return _Qy and _rs.Start()or _rs.Stop()end},autodf={label=string.char(65,117,116,111,32,68,105,114,116,32,70,97,114,109),noSession=true,get=function()return _rt.on end,set=function(_Qz)return _Qz and _rt.Start()or _rt.Stop()end},autosplice={label=string.char(65,117,116,111,32,83,112,108,105,99,101),noSession=true,get=function()return _ru.on end,set=function(_QA)return _QA and _ru.Start()or _ru.Stop()end},pabrik={label=string.char(80,97,98,114,105,107,32,83,101,101,100),noSession=true,get=function()return _rv.on end,set=function(_QB)return _QB and _rv.Start()or _rv.Stop()end},autofarm={label=string.char(65,117,116,111,32,70,97,114,109),noSession=true,get=function()return _rq.on and not _rq.Override end,set=function(_QC)return _QC and _tW()or _tX()end},autoquest={label=string.char(65,117,116,111,32,81,117,101,115,116),get=function()return _LO end,set=function(_QD)return _QD and _Mb()or _Mc()end},}local function _QF(_QG,_QH)local _QI=_QE[_QG]if not _QI then return end _QI.set(_QH)if _QI.get()==_QH then _bI(_QI.label..(_QH and string.char(32,97,107,116,105,102,46)or string.char(32,100,105,109,97,116,105,107,97,110,46)))if not _QI.noSession then _bn.session[_QG]=_QH or nil end _bs()end if _rl then _rl()end end local _QJ=false local function _QK()if type(_a.ANCHHub_ReloadCode)==string.char(115,116,114,105,110,103)and _a.ANCHHub_ReloadCode~=""then return _a.ANCHHub_ReloadCode end local _QL=_bn.scriptUrl if type(_QL)~=string.char(115,116,114,105,110,103)or _QL==""then _QL=_a.ANCHHubURL end if type(_QL)==string.char(115,116,114,105,110,103)and _QL~=""then return string.format(string.char(108,111,97,100,115,116,114,105,110,103,40,103,97,109,101,58,72,116,116,112,71,101,116,40,37,113,41,41,40,41),_QL)end local _QM,_QN=pcall(function()return isfile and readfile and isfile(_bj)end)if _QM and _QN then return string.format(string.char(108,111,97,100,115,116,114,105,110,103,40,114,101,97,100,102,105,108,101,40,37,113,41,41,40,41),_bj)end return nil end local function _QO()return queue_on_teleport or(syn and syn.queue_on_teleport)or(fluxus and fluxus.queue_on_teleport)or(getgenv and getgenv().queue_on_teleport)end _qM=function()if not _bn.autoReload or _QJ then return false end local _QP,_QQ=_QO(),_QK()if not _QP or not _QQ then return false end local _QR=pcall(_QP,_QQ)if _QR then _QJ=true end return _QR end local function _QS()if not writefile then _bI(string.char(69,120,101,99,117,116,111,114,32,116,105,100,97,107,32,112,117,110,121,97,32,119,114,105,116,101,102,105,108,101,46));return end local _QT=_QK()if not _QT then _bI(string.char(83,105,109,112,97,110,32,115,107,114,105,112,32,115,101,98,97,103,97,105,32).._bj..string.char(32,100,105,32,119,111,114,107,115,112,97,99,101,32,97,116,97,117,32,105,115,105,32,85,82,76,32,100,117,108,117,46));return end local _QU=string.char(45,45,32,65,78,67,72,32,72,85,66,32,124,32,71,114,111,119,66,108,111,120,32,97,117,116,111,45,108,111,97,100,101,114,10).._QT..string.char(10)pcall(writefile,string.char(65,78,67,72,72,117,98,95,76,111,97,100,101,114,46,108,117,97),_QU)for _QV,_QW in ipairs({string.char(46,46,47,97,117,116,111,101,120,101,99,47,65,78,67,72,72,117,98,95,76,111,97,100,101,114,46,108,117,97),string.char(46,46,47,65,117,116,111,101,120,101,99,47,65,78,67,72,72,117,98,95,76,111,97,100,101,114,46,108,117,97)})do local _QX=pcall(writefile,_QW,_QU)local _QY,_QZ=pcall(function()return isfile and isfile(_QW)end)if _QX and _QY and _QZ then _bI(string.char(65,117,116,111,45,101,120,101,99,117,116,101,32,98,101,114,104,97,115,105,108,32,100,105,112,97,115,97,110,103,33))return end end _bI((string.char(83,97,108,105,110,32,65,78,67,72,72,117,98,95,76,111,97,100,101,114,46,108,117,97,32,100,97,114,105,32,119,111,114,107,115,112,97,99,101,32,107,101,32,102,111,108,100,101,114,32,97,117,116,111,101,120,101,99,32,101,120,101,99,117)..string.char(116,111,114,46)))end do(function()local _Ra=(gethui and gethui())or game:GetService(string.char(67,111,114,101,71,117,105))local function _Rb(_Rc)local _Rd=Instance.new(string.char(83,99,114,101,101,110,71,117,105))_Rd.Name=_Rc _Rd.ResetOnSpawn=false _Rd.IgnoreGuiInset=true _Rd.ZIndexBehavior=Enum.ZIndexBehavior.Sibling _Rd.DisplayOrder=999 _Rd.Enabled=false _Rd.Parent=_Ra return _Rd end _rm=_Rb(string.char(65,78,67,72,71,114,105,100,71,117,105))local _Re,_Rf,_Rg=38,4,2 local _Rh=_Rg*2+1 local _Ri=_Rh*_Re+(_Rh-1)*_Rf local _Rj=Instance.new(string.char(70,114,97,109,101),_rm)_Rj.Size=UDim2.fromOffset(_Ri+20,_Ri+96)_Rj.Position=UDim2.fromOffset(24,90)_Rj.BackgroundColor3=Color3.fromRGB(22,22,28)_Rj.BorderSizePixel=0 Instance.new(string.char(85,73,67,111,114,110,101,114),_Rj).CornerRadius=UDim.new(0,10)local _Rk=Instance.new(string.char(85,73,83,116,114,111,107,101),_Rj)_Rk.Color=Color3.fromRGB(48,255,106)local _Rl=Instance.new(string.char(84,101,120,116,76,97,98,101,108),_Rj)_Rl.Size=UDim2.new(1,-106,0,28)_Rl.Position=UDim2.fromOffset(10,4)_Rl.BackgroundTransparency=1 _Rl.Font=Enum.Font.GothamBold _Rl.TextSize=12 _Rl.TextXAlignment=Enum.TextXAlignment.Left _Rl.TextColor3=Color3.fromRGB(235,235,245)_Rl.Text=string.char(65,78,67,72,32,71,114,105,100,32,40,70,97,114,109,41)_Rl.Active=true local _Rm=Instance.new(string.char(84,101,120,116,66,117,116,116,111,110),_Rj)_Rm.Size=UDim2.fromOffset(62,22)_Rm.Position=UDim2.new(1,-98,0,7)_Rm.BackgroundColor3=Color3.fromRGB(60,60,75)_Rm.Text=string.char(70,97,114,109)_Rm.Font=Enum.Font.GothamBold _Rm.TextSize=11 _Rm.TextColor3=Color3.new(1,1,1)Instance.new(string.char(85,73,67,111,114,110,101,114),_Rm).CornerRadius=UDim.new(0,6)local _Rn=Instance.new(string.char(84,101,120,116,66,117,116,116,111,110),_Rj)_Rn.Size=UDim2.fromOffset(24,24)_Rn.Position=UDim2.new(1,-30,0,6)_Rn.BackgroundColor3=Color3.fromRGB(60,60,75)_Rn.Text=string.char(88)_Rn.Font=Enum.Font.GothamBold _Rn.TextSize=12 _Rn.TextColor3=Color3.new(1,1,1)Instance.new(string.char(85,73,67,111,114,110,101,114),_Rn).CornerRadius=UDim.new(0,6)_Rn.MouseButton1Click:Connect(function()_rm.Enabled=false end)local _Ro=Instance.new(string.char(70,114,97,109,101),_Rj)_Ro.Size=UDim2.fromOffset(_Ri,_Ri)_Ro.Position=UDim2.fromOffset(10,36)_Ro.BackgroundTransparency=1 local _Rp=Color3.fromRGB(48,48,60)local _Rq=Color3.fromRGB(46,160,90)local _Rr=Color3.fromRGB(60,110,220)local _Rs={}local function _Rt()return(_rn==string.char(112,97,98,114,105,107))and _bn.pabrikTiles or _bn.farmGrid end local _Ru=Instance.new(string.char(84,101,120,116,66,117,116,116,111,110),_Rj)_Ru.Size=UDim2.new(1,-20,0,30)_Ru.Position=UDim2.new(0,10,1,-54)_Ru.BackgroundColor3=_Rq _Ru.Font=Enum.Font.GothamBold _Ru.TextSize=13 _Ru.TextColor3=Color3.new(1,1,1)_Ru.Text=string.char(83,84,65,82,84,32,70,65,82,77)Instance.new(string.char(85,73,67,111,114,110,101,114),_Ru).CornerRadius=UDim.new(0,8)_Ru.MouseButton1Click:Connect(function()if _rn==string.char(112,97,98,114,105,107)then _QF(string.char(112,97,98,114,105,107),not _rv.on)else _QF(string.char(97,117,116,111,102,97,114,109),not(_rq.on and not _rq.Override))end end)_ro=function()local _Rv=_Rt()local _Rw=_rn==string.char(112,97,98,114,105,107)_Rm.Text=_Rw and string.char(80,97,98,114,105,107)or string.char(70,97,114,109)_Rm.BackgroundColor3=_Rw and Color3.fromRGB(200,120,40)or Color3.fromRGB(60,60,75)_Rl.Text=_Rw and string.char(84,105,108,101,32,66,114,101,97,107,32,80,97,98,114,105,107)or string.char(65,78,67,72,32,71,114,105,100,32,40,70,97,114,109,41)for _Rx,_Ry in pairs(_Rs)do _Ry.BackgroundColor3=_Rv[_Rx]and _Rq or _Rp end if _Rw then _Ru.Text=_rv.on and string.char(83,84,79,80,32,80,65,66,82,73,75)or string.char(83,84,65,82,84,32,80,65,66,82,73,75)_Ru.BackgroundColor3=_rv.on and Color3.fromRGB(200,60,60)or _Rq else local _Rz=_rq.on and not _rq.Override _Ru.Text=_Rz and string.char(83,84,79,80,32,70,65,82,77)or string.char(83,84,65,82,84,32,70,65,82,77)_Ru.BackgroundColor3=_Rz and Color3.fromRGB(200,60,60)or _Rq end end _rp=function(_RA)_rn=_RA _ro()end _Rm.MouseButton1Click:Connect(function()_rp(_rn==string.char(112,97,98,114,105,107)and string.char(102,97,114,109)or string.char(112,97,98,114,105,107))end)for _RB=0,_Rh-1 do for _RC=0,_Rh-1 do local _RD,_RE=_RC-_Rg,_RB-_Rg local _RF=_RD..string.char(44).._RE local _RG=Instance.new(string.char(84,101,120,116,66,117,116,116,111,110),_Ro)_RG.Size=UDim2.fromOffset(_Re,_Re)_RG.Position=UDim2.fromOffset(_RC*(_Re+_Rf),_RB*(_Re+_Rf))_RG.Font=Enum.Font.GothamBold _RG.TextSize=11 _RG.TextColor3=Color3.new(1,1,1)Instance.new(string.char(85,73,67,111,114,110,101,114),_RG).CornerRadius=UDim.new(0,6)if _RD==0 and _RE==0 then _RG.Text=string.char(77,69)_RG.BackgroundColor3=_Rr _RG.AutoButtonColor=false else _RG.Text=""_RG.BackgroundColor3=_Rt()[_RF]and _Rq or _Rp _Rs[_RF]=_RG _RG.MouseButton1Click:Connect(function()local _RH=_Rt()_RH[_RF]=(not _RH[_RF])or nil _bs()_ro()end)end end end local _RI=Instance.new(string.char(84,101,120,116,66,117,116,116,111,110),_Rj)_RI.Size=UDim2.new(1,-20,0,18)_RI.Position=UDim2.new(0,10,1,-22)_RI.BackgroundTransparency=1 _RI.Font=Enum.Font.Gotham _RI.TextSize=12 _RI.TextColor3=Color3.fromRGB(180,180,195)_RI.Text=string.char(66,101,114,115,105,104,107,97,110,32,112,105,108,105,104,97,110)_RI.MouseButton1Click:Connect(function()if _rn==string.char(112,97,98,114,105,107)then _bn.pabrikTiles={}else _bn.farmGrid={}end _bs()_ro()end)local _RJ,_RK,_RL _Rl.InputBegan:Connect(function(_RM)if _RM.UserInputType==Enum.UserInputType.MouseButton1 or _RM.UserInputType==Enum.UserInputType.Touch then _RJ,_RK,_RL=true,_RM.Position,_Rj.Position _RM.Changed:Connect(function()if _RM.UserInputState==Enum.UserInputState.End then _RJ=false end end)end end)_f(_y.InputChanged:Connect(function(_RN)if _RJ and(_RN.UserInputType==Enum.UserInputType.MouseMovement or _RN.UserInputType==Enum.UserInputType.Touch)then local _RO=_RN.Position-_RK _Rj.Position=UDim2.new(_RL.X.Scale,_RL.X.Offset+_RO.X,_RL.Y.Scale,_RL.Y.Offset+_RO.Y)end end))_hY=_Rb(string.char(65,78,67,72,70,108,121,80,97,100))local function _RP(_RQ,_RR,_RS)local _RT=Instance.new(string.char(84,101,120,116,66,117,116,116,111,110),_hY)_RT.Size=UDim2.fromOffset(60,60)_RT.AnchorPoint=Vector2.new(1,0.5)_RT.Position=UDim2.new(1,-24,0.5,_RR)_RT.BackgroundColor3=Color3.fromRGB(30,30,40)_RT.BackgroundTransparency=0.2 _RT.Text=_RQ _RT.Font=Enum.Font.GothamBold _RT.TextSize=26 _RT.TextColor3=Color3.new(1,1,1)Instance.new(string.char(85,73,67,111,114,110,101,114),_RT).CornerRadius=UDim.new(1,0)local _RU=Instance.new(string.char(85,73,83,116,114,111,107,101),_RT)_RU.Color=Color3.fromRGB(48,255,106)_RU.Thickness=2 local _RV=nil _RT.InputBegan:Connect(function(_RW)if _RW.UserInputType==Enum.UserInputType.Touch or _RW.UserInputType==Enum.UserInputType.MouseButton1 then _RV=_RW _RS(true)end end)_f(_y.InputEnded:Connect(function(_RX)if _RV and(_RX==_RV or _RX.UserInputType==Enum.UserInputType.MouseButton1)then _RV=nil _RS(false)end end))end _RP(string.char(226,150,178),-38,function(_RY)_cl.up=_RY end)_RP(string.char(226,150,188),38,function(_RZ)_cl.down=_RZ end)end)()end local _Sa do local _Sb,_Sc=pcall(function()return require(string.char(46,47,115,114,99,47,73,110,105,116))end)if _Sb then _Sa=_Sc else _Sa=loadstring(game:HttpGet((string.char(104,116,116,112,115,58,47,47,114,97,119,46,103,105,116,104,117,98,117,115,101,114,99,111,110,116,101,110,116,46,99,111,109,47,70,111,111,116,97,103,101,115,117,115,47,87,105,110,100,85,73,47,109,97,105,110,47,100,105,115,116,47,109,97)..string.char(105,110,46,108,117,97))))()end end _bH=function(_Sd,_Se,_Sf)_Sa:Notify({Title=_Se or string.char(65,78,67,72,32,72,85,66,32,124,32,71,114,111,119,66,108,111,120),Content=tostring(_Sd),Icon=string.char(115,111,108,97,114,58,98,101,108,108,45,98,111,108,100),Duration=_Sf or 4,})end local _Sg=Color3.fromHex(string.char(35,55,55,55,53,70,50))local _Sh=Color3.fromHex(string.char(35,69,67,65,50,48,49))local _Si=Color3.fromHex(string.char(35,49,48,67,53,53,48))local _Sj=Color3.fromHex(string.char(35,50,53,55,65,70,55))local _Sk=Color3.fromHex(string.char(35,69,70,52,70,49,68))local _Sl=_Sa:CreateWindow({Title=string.char(65,78,67,72,32,72,117,98,32,32,124,32,32,71,114,111,119,66,108,111,120,32,85,108,116,105,109,97,116,101),Folder=string.char(65,78,67,72,72,117,98,95,71,114,111,119,66,108,111,120),Icon=string.char(115,111,108,97,114,58,102,111,108,100,101,114,45,50,45,98,111,108,100,45,100,117,111,116,111,110,101),NewElements=true,HideSearchBar=false,Theme=string.char(73,110,100,105,103,111),OpenButton={Title=string.char(65,78,67,72,32,72,117,98),CornerRadius=UDim.new(1,0),StrokeThickness=3,Enabled=_bn.launcher,Draggable=true,OnlyMobile=false,Scale=0.5,Color=ColorSequence.new(Color3.fromHex(string.char(35,51,48,70,70,54,65)),Color3.fromHex(string.char(35,101,55,102,102,50,102))),},})_Sl:DisableTopbarButtons({string.char(70,117,108,108,115,99,114,101,101,110),})pcall(function()_Sl:Tag({Title=string.char(118,49,46,50,32,66,101,116,97),Icon=string.char(103,105,116,104,117,98),Color=Color3.fromHex(string.char(35,49,99,49,99,49,99)),Border=true,})end)local _Sm={tabs={},refreshers={},syncing=false,active=string.char(102,101,97,116,117,114,101,115),}_rl=function()_Sm.syncing=true for _Sn,_So in ipairs(_Sm.refreshers)do pcall(_So)end _Sm.syncing=false end local function _Sp(_Sq,_Sr)local _Ss,_St=pcall(_Sr)if not _Ss then warn(string.char(91,65,78,67,72,72,117,98,32,85,73,93,32,69,114,114,111,114,32,112,97,100,97,32)..tostring(_Sq)..string.char(58,32)..tostring(_St))end end local function _Su(_Sv,_Sw,_Sx)if not _Sv then return end pcall(function()if _Sw and _Sv.SetTitle then _Sv:SetTitle(_Sw)end if _Sx and _Sv.SetDesc then _Sv:SetDesc(_Sx)elseif _Sx and _Sv.SetContent then _Sv:SetContent(_Sx)end end)end local function _Sy(_Sz,_SA,_SB,_SC)local _SD=_QE[_SC]if not _SD then return nil end local _SE _Sp(string.char(84,111,103,103,108,101,58)..tostring(_SC),function()_SE=_Sz:Toggle({Title=_SA,Desc=_SB,Value=_SD.get(),Callback=function(_SF)if _Sm.syncing then return end if _SD.get()~=_SF then _QF(_SC,_SF)end end,})table.insert(_Sm.refreshers,function()if _SE and _SE.Set then _SE:Set(_SD.get())end end)end)return _SE end local _SG=_Sl:Section({Title=string.char(85,116,97,109,97),Opened=true})local _SH=_Sl:Section({Title=string.char(70,97,114,109,105,110,103,32,38,32,66,111,116),Opened=true})local _SI=_Sl:Section({Title=string.char(84,97,115,32,38,32,87,111,114,108,100),Opened=true})local _SJ=_Sl:Section({Title=string.char(75,101,97,109,97,110,97,110,32,38,32,83,111,115,105,97,108),Opened=true})local _SK=_Sl:Section({Title=string.char(86,105,115,117,97,108,32,38,32,83,105,115,116,101,109),Opened=true})_Sp(string.char(84,97,98,58,68,97,115,104,98,111,97,114,100),function()local _SL=_SG:Tab({Title=string.char(68,97,115,104,98,111,97,114,100,32,38,32,83,116,97,116,105,115,116,105,107),Icon=string.char(115,111,108,97,114,58,104,111,109,101,45,50,45,98,111,108,100),IconColor=_Si,IconShape=string.char(83,113,117,97,114,101),Border=true,})_Sm.tabs.features=_SL local _SM=_SL:Paragraph({Title=string.char(83,116,97,116,117,115,32,75,97,114,97,107,116,101,114,32,38,32,75,111,110,101,107,115,105,32,71,97,109,101),Desc=string.char(77,101,110,100,101,116,101,107,115,105,32,112,111,115,105,115,105,46,46,46),})local _SN=_SL:Paragraph({Title=string.char(83,116,97,116,105,115,116,105,107,32,83,101,115,105,32,82,101,97,108,45,84,105,109,101),Desc=string.char(77,101,109,117,97,116,32,115,116,97,116,105,115,116,105,107,46,46,46),})task.spawn(function()while _e()and task.wait(0.5)do pcall(function()local _SO,_SP=_gG()local _SQ=_gJ()local _SR=string.format((string.char(87,111,114,108,100,58,32,37,115,32,124,32,73,110,118,58,32,37,115,32,124,32,83,116,97,116,101,58,32,37,115,32,124,32,80,117,110,99,104,58,32,37,115,32,124,32,68,114,111,112,58,32,37,115,32,124,32,84,114,101,101,115,58,32)..string.char(37,115)),_bN.World and string.char(79,75)or string.char(45),_bN.Inv and string.char(79,75)or string.char(45),_bN.State and string.char(79,75)or string.char(45),_bN.Punch and string.char(79,75)or string.char(45),_bO.list and string.char(79,75)or string.char(45),_bN.Trees and string.char(79,75)or string.char(45))if _SO then _Su(_SM,string.format(string.char(87,111,114,108,100,58,32,37,115,32,32,124,32,32,80,111,115,105,115,105,32,84,105,108,101,58,32,40,37,100,44,32,37,100,41),_SQ~=""and _SQ or string.char(45),_SO,_SP),_SR)else _Su(_SM,string.char(83,116,97,116,117,115,32,75,97,114,97,107,116,101,114,58,32,68,105,32,108,117,97,114,32,119,111,114,108,100),_SR)end _Su(_SN,string.char(83,116,97,116,105,115,116,105,107,32,83,101,115,105,32,82,101,97,108,45,84,105,109,101),_bV.Text())end)end end)_SL:Button({Title=string.char(72,117,98,117,110,103,107,97,110,32,85,108,97,110,103,32,107,101,32,71,97,109,101,32,40,82,101,99,111,110,110,101,99,116,32,82,101,102,115,41),Color=Color3.fromHex(string.char(35,51,48,53,100,102,102)),Justify=string.char(67,101,110,116,101,114),Callback=function()_bN.Scan()_bI(string.char(82,101,102,101,114,101,110,115,105,32,103,97,109,101,32,98,101,114,104,97,115,105,108,32,100,105,112,101,114,98,97,114,117,105,33))end,})local _SS=_SL:Group({})_SS:Button({Title=string.char(82,101,115,101,116,32,83,116,97,116,105,115,116,105,107),Justify=string.char(67,101,110,116,101,114),Callback=function()_bV.Reset();_bI(string.char(83,116,97,116,105,115,116,105,107,32,115,101,115,105,32,100,105,114,101,115,101,116,32,107,101,32,110,111,108,46))end,})_SS:Button({Title=string.char(75,105,114,105,109,32,83,116,97,116,105,115,116,105,107,32,107,101,32,68,105,115,99,111,114,100),Justify=string.char(67,101,110,116,101,114),Callback=function()if not(_bn.webhookOn and _bW.Valid(_bn.webhookUrl))then _bI(string.char(65,107,116,105,102,107,97,110,32,38,32,105,115,105,32,85,82,76,32,87,101,98,104,111,111,107,32,100,105,32,116,97,98,32,68,105,115,99,111,114,100,32,38,32,80,101,110,103,97,116,117,114,97,110,32,100,117,108,117,33))else _bW.Send(string.char(114,101,112,111,114,116),string.char(76,97,112,111,114,97,110,32,83,116,97,116,105,115,116,105,107,32,83,101,115,105,10,96,96,96,10).._bV.Text()..string.char(10,96,96,96))_bI(string.char(76,97,112,111,114,97,110,32,115,116,97,116,105,115,116,105,107,32,109,97,115,117,107,32,97,110,116,114,105,97,110,32,107,105,114,105,109,32,68,105,115,99,111,114,100,33))end end,})_SL:Space()_SL:Section({Title=string.char(83,97,107,101,108,97,114,32,67,101,112,97,116,32,66,111,116,32,85,116,97,109,97)})_Sy(_SL,string.char(65,117,116,111,32,70,97,114,109,32,40,71,114,105,100,32,53,120,53,32,43,32,82,97,121,109,97,110,41),string.char(80,108,97,99,101,32,38,32,98,114,101,97,107,32,111,116,111,109,97,116,105,115,32,100,105,32,115,101,107,105,116,97,114,32,107,97,114,97,107,116,101,114,46),string.char(97,117,116,111,102,97,114,109))_Sy(_SL,string.char(65,117,116,111,32,67,108,101,97,114,32,87,111,114,108,100,32,40,77,111,100,70,108,121,32,43,32,83,116,97,110,100,32,65,98,111,118,101,41),(string.char(77,111,100,70,108,121,32,97,107,116,105,102,32,112,101,110,117,104,44,32,98,101,114,100,105,114,105,32,100,105,32,97,116,97,115,32,98,108,111,107,32,116,97,114,103,101,116,32,115,97,109,112,97,105,32,104,97,110,99,117,114,32,108,97)..string.char(108,117,32,112,105,110,100,97,104,46)),string.char(97,117,116,111,99,108,101,97,114))_Sy(_SL,string.char(70,97,114,109,101,114,32,40,65,117,116,111,32,72,97,114,118,101,115,116,32,43,32,65,117,116,111,32,80,108,97,110,116,41),string.char(80,97,110,101,110,32,112,111,104,111,110,32,115,105,97,112,32,38,32,116,97,110,97,109,32,115,101,101,100,32,111,116,111,109,97,116,105,115,46),string.char(97,117,116,111,104,97,114,118,101,115,116))_Sy(_SL,string.char(65,117,116,111,32,68,105,114,116,32,70,97,114,109,32,40,70,117,108,108,32,87,111,114,108,100,32,43,32,83,109,97,114,116,32,83,117,112,112,108,121,41),string.char(66,97,110,103,117,110,32,68,105,114,116,32,70,97,114,109,32,98,97,103,105,97,110,32,98,97,119,97,104,32,38,32,97,116,97,115,32,111,116,111,109,97,116,105,115,46),string.char(97,117,116,111,100,102))_Sy(_SL,string.char(65,117,116,111,32,83,112,108,105,99,101,32,40,83,101,101,100,32,65,32,43,32,83,101,101,100,32,66,41),string.char(84,97,110,97,109,32,83,101,101,100,32,65,32,108,97,108,117,32,103,97,98,117,110,103,107,97,110,32,100,101,110,103,97,110,32,83,101,101,100,32,66,46),string.char(97,117,116,111,115,112,108,105,99,101))_Sy(_SL,string.char(80,97,98,114,105,107,32,83,101,101,100,32,40,83,105,107,108,117,115,32,80,97,110,101,110,45,84,97,110,97,109,45,66,114,101,97,107,45,68,114,111,112,41),string.char(80,114,111,100,117,107,115,105,32,115,101,101,100,32,111,116,111,109,97,116,105,115,32,38,32,100,114,111,112,32,108,105,110,116,97,115,32,119,111,114,108,100,46),string.char(112,97,98,114,105,107))_Sy(_SL,string.char(80,101,110,106,97,103,97,32,40,65,110,116,105,45,77,111,100,32,47,32,83,116,97,102,102,32,68,101,116,101,99,116,111,114,41),string.char(74,101,100,97,32,47,32,107,101,108,117,97,114,32,119,111,114,108,100,32,111,116,111,109,97,116,105,115,32,115,97,97,116,32,77,111,100,32,97,116,97,117,32,112,101,109,97,105,110,32,109,97,115,117,107,46),string.char(103,117,97,114,100))end)_Sp(string.char(84,97,98,58,67,104,97,114,97,99,116,101,114),function()local _ST=_SG:Tab({Title=string.char(75,97,114,97,107,116,101,114,32,38,32,78,97,118,105,103,97,115,105),Icon=string.char(115,111,108,97,114,58,115,113,117,97,114,101,45,116,114,97,110,115,102,101,114,45,104,111,114,105,122,111,110,116,97,108,45,98,111,108,100),IconColor=_Sj,IconShape=string.char(83,113,117,97,114,101),Border=true,})_Sm.tabs.nav=_ST local _SU=_ST:Paragraph({Title=string.char(83,116,97,116,117,115,32,78,97,118,105,103,97,115,105,32,85,110,105,118,101,114,115,97,108),Desc=string.char(84,101,114,97,107,104,105,114,58,32,45)})_ST:Dropdown({Title=string.char(77,101,116,111,100,101,32,66,101,114,103,101,114,97,107,32,83,101,108,117,114,117,104,32,70,105,116,117,114,32,40,68,70,32,47,32,70,97,114,109,101,114,32,47,32,80,97,98,114,105,107,32,47,32,67,108,101,97,114,41),Desc=(string.char(76,101,103,105,116,32,87,97,108,107,105,110,103,32,61,32,74,97,108,97,110,32,102,105,115,105,107,32,65,42,32,124,32,84,101,108,101,112,111,114,116,32,77,111,100,101,32,61,32,80,105,110,100,97,104,32,112,101,114,45,116,105,108,101)..string.char(32,100,101,110,103,97,110,32,99,101,107,32,112,111,115,105,115,105,32,114,101,97,108,45,116,105,109,101,46)),Values={string.char(76,101,103,105,116,32,87,97,108,107,105,110,103),string.char(84,101,108,101,112,111,114,116,32,77,111,100,101)},Value=_bn.moveMethod or string.char(76,101,103,105,116,32,87,97,108,107,105,110,103),Callback=function(_SV)_bn.moveMethod=_SV or string.char(76,101,103,105,116,32,87,97,108,107,105,110,103)_bn.moveMode=(_bn.moveMethod==string.char(84,101,108,101,112,111,114,116,32,77,111,100,101))and string.char(102,108,121)or string.char(108,101,103,105,116)_bs()_bI(string.char(77,101,116,111,100,101,32,98,101,114,103,101,114,97,107,32,100,105,117,98,97,104,32,107,101,58,32).._bn.moveMethod)end,})_ST:Dropdown({Title=string.char(77,111,100,101,32,65,117,116,111,32,67,111,108,108,101,99,116,32,40,83,101,110,116,117,104,97,110,32,66,97,100,97,110,32,47,32,82,101,109,111,116,101,41),Desc=(string.char(83,101,110,116,117,104,97,110,32,61,32,83,97,112,117,32,102,105,115,105,107,32,38,32,108,111,109,112,97,116,32,107,101,99,105,108,32,40,116,105,100,97,107,32,100,105,116,111,108,97,107,32,115,101,114,118,101,114,41,46,32,82,101,109)..string.char(111,116,101,32,61,32,65,109,98,105,108,32,106,97,114,97,107,32,106,97,117,104,46)),Values={string.char(83,101,110,116,117,104,97,110),string.char(82,101,109,111,116,101)},Value=_bn.collectMode or string.char(83,101,110,116,117,104,97,110),Callback=function(_SW)_bn.collectMode=_SW or string.char(83,101,110,116,117,104,97,110)_bs()_bI(string.char(77,111,100,101,32,65,117,116,111,32,67,111,108,108,101,99,116,58,32).._bn.collectMode)end,})_ST:Toggle({Title=string.char(65,110,105,109,97,115,105,32,65,121,117,110,97,110,32,84,97,110,103,97,110,32,38,32,69,102,101,107,32,80,108,97,99,101),Desc=string.char(84,97,109,112,105,108,107,97,110,32,103,101,114,97,107,97,110,32,116,97,110,103,97,110,32,115,97,97,116,32,98,114,101,97,107,47,112,108,97,99,101,32,100,105,32,108,97,121,97,114,32,115,101,110,100,105,114,105,46),Value=_bn.visualAnim,Callback=function(_SX)_bn.visualAnim=_SX;_bs()end,})_ST:Space()_ST:Section({Title=string.char(70,97,115,116,32,87,114,101,110,99,104,32,65,99,116,105,111,110,32,40,66,121,112,97,115,115,32,68,105,97,108,111,103,32,87,114,101,110,99,104,41)})local _SY,_SZ,_Ta _SY=_ST:Toggle({Title=string.char(70,97,115,116,32,80,117,108,108,32,40,87,114,101,110,99,104,32,61,32,76,97,110,103,115,117,110,103,32,80,117,108,108,41),Desc=(string.char(65,98,97,105,107,97,110,32,100,105,97,108,111,103,32,119,114,101,110,99,104,32,38,32,108,97,110,103,115,117,110,103,32,107,105,114,105,109,32,112,97,107,101,116,32,80,117,108,108,32,115,97,97,116,32,119,114,101,110,99,104,32,112,108)..string.char(97,121,101,114,46)),Value=_bn.fastPull,Callback=function(_Tb)_bn.fastPull=_Tb if _Tb then _bn.fastKick,_bn.fastBan=false,false if _SZ and _SZ.Set then pcall(function()_SZ:Set(false)end)end if _Ta and _Ta.Set then pcall(function()_Ta:Set(false)end)end _bI(string.char(70,97,115,116,32,80,117,108,108,32,65,75,84,73,70,33,32,87,114,101,110,99,104,32,112,108,97,121,101,114,32,117,110,116,117,107,32,108,97,110,103,115,117,110,103,32,80,117,108,108,46))end _bs()end,})_SZ=_ST:Toggle({Title=string.char(70,97,115,116,32,75,105,99,107,32,40,87,114,101,110,99,104,32,61,32,76,97,110,103,115,117,110,103,32,75,105,99,107,41),Desc=(string.char(65,98,97,105,107,97,110,32,100,105,97,108,111,103,32,119,114,101,110,99,104,32,38,32,108,97,110,103,115,117,110,103,32,107,105,114,105,109,32,112,97,107,101,116,32,75,105,99,107,32,115,97,97,116,32,119,114,101,110,99,104,32,112,108)..string.char(97,121,101,114,46)),Value=_bn.fastKick,Callback=function(_Tc)_bn.fastKick=_Tc if _Tc then _bn.fastPull,_bn.fastBan=false,false if _SY and _SY.Set then pcall(function()_SY:Set(false)end)end if _Ta and _Ta.Set then pcall(function()_Ta:Set(false)end)end _bI(string.char(70,97,115,116,32,75,105,99,107,32,65,75,84,73,70,33,32,87,114,101,110,99,104,32,112,108,97,121,101,114,32,117,110,116,117,107,32,108,97,110,103,115,117,110,103,32,75,105,99,107,46))end _bs()end,})_Ta=_ST:Toggle({Title=string.char(70,97,115,116,32,66,97,110,32,40,87,114,101,110,99,104,32,61,32,76,97,110,103,115,117,110,103,32,66,97,110,41),Desc=(string.char(65,98,97,105,107,97,110,32,100,105,97,108,111,103,32,119,114,101,110,99,104,32,38,32,108,97,110,103,115,117,110,103,32,107,105,114,105,109,32,112,97,107,101,116,32,66,97,110,32,115,97,97,116,32,119,114,101,110,99,104,32,112,108,97)..string.char(121,101,114,46)),Value=_bn.fastBan,Callback=function(_Td)_bn.fastBan=_Td if _Td then _bn.fastPull,_bn.fastKick=false,false if _SY and _SY.Set then pcall(function()_SY:Set(false)end)end if _SZ and _SZ.Set then pcall(function()_SZ:Set(false)end)end _bI(string.char(70,97,115,116,32,66,97,110,32,65,75,84,73,70,33,32,87,114,101,110,99,104,32,112,108,97,121,101,114,32,117,110,116,117,107,32,108,97,110,103,115,117,110,103,32,66,97,110,46))end _bs()end,})task.spawn(function()while _e()and task.wait(0.5)do pcall(function()_Su(_SU,string.char(77,111,100,101,32,71,101,114,97,107,58,32).._bn.moveMode:upper(),string.char(83,116,97,116,117,115,32,67,108,105,99,107,32,84,80,58,32)..tostring(_ik.last)..string.char(32,124,32,80,105,106,97,107,97,110,32,68,105,112,97,115,97,110,103,58,32).._ik.PlacedScaffolds)end)end end)_Sy(_ST,string.char(67,108,105,99,107,32,84,80,32,40,76,101,103,105,116,32,65,42,32,80,97,116,104,102,105,110,100,105,110,103,41),string.char(75,108,105,107,32,100,105,32,108,97,121,97,114,32,117,110,116,117,107,32,98,101,114,106,97,108,97,110,32,38,32,109,101,109,97,110,106,97,116,32,111,116,111,109,97,116,105,115,32,107,101,32,116,117,106,117,97,110,46),string.char(99,108,105,99,107,116,112))_Sy(_ST,string.char(78,111,99,108,105,112,32,43,32,70,108,121,80,97,100,32,40,226,150,178,47,226,150,188,41),string.char(84,101,114,98,97,110,103,32,109,101,110,101,109,98,117,115,32,98,108,111,107,32,100,97,110,32,109,117,110,99,117,108,107,97,110,32,116,111,109,98,111,108,32,110,97,105,107,47,116,117,114,117,110,32,100,105,32,108,97,121,97,114,46),string.char(110,111,99,108,105,112))_Sy(_ST,string.char(85,110,108,105,109,105,116,101,100,32,74,117,109,112,32,40,74,97,109,109,101,114,41),string.char(76,111,109,112,97,116,32,100,105,32,117,100,97,114,97,32,116,97,110,112,97,32,98,97,116,97,115,46),string.char(117,106,117,109,112))_Sy(_ST,string.char(71,111,100,32,77,111,100,101,32,40,75,101,98,97,108,32,72,97,122,97,114,100,41),string.char(75,101,98,97,108,32,108,97,118,97,44,32,115,112,105,107,101,44,32,97,112,105,44,32,100,97,110,32,114,105,110,116,97,110,103,97,110,32,116,97,106,97,109,46),string.char(103,111,100))_Sy(_ST,string.char(76,111,110,103,104,97,110,100,32,40,74,97,110,103,107,97,117,97,110,32,74,97,117,104,41),string.char(80,101,114,108,117,97,115,32,106,97,110,103,107,97,117,97,110,32,112,117,107,117,108,97,110,32,38,32,112,97,115,97,110,103,32,98,108,111,107,46),string.char(108,111,110,103,104,97,110,100))_Sy(_ST,string.char(77,111,100,101,32,76,105,116,101,32,40,70,80,83,32,66,111,111,115,116,41),(string.char(77,97,116,105,107,97,110,32,112,97,114,116,105,107,101,108,32,38,32,101,102,101,107,32,115,117,97,114,97,32,112,117,107,117,108,97,110,32,97,103,97,114,32,104,101,109,97,116,32,98,97,116,101,114,97,105,32,38,32,70,80,83,32,116)..string.char(105,110,103,103,105,46)),string.char(108,105,116,101))_Sy(_ST,string.char(66,108,105,110,107,32,83,107,105,110),string.char(87,97,114,110,97,32,107,97,114,97,107,116,101,114,32,98,101,114,103,97,110,116,105,32,111,116,111,109,97,116,105,115,46),string.char(98,108,105,110,107))_Sy(_ST,string.char(65,110,116,105,45,65,70,75),string.char(77,101,110,99,101,103,97,104,32,100,105,115,99,111,110,110,101,99,116,32,107,97,114,101,110,97,32,100,105,97,109,32,116,101,114,108,97,108,117,32,108,97,109,97,46),string.char(97,110,116,105,97,102,107))_ST:Space()_ST:Section({Title=string.char(75,101,99,101,112,97,116,97,110,32,38,32,82,97,100,105,117,115,32,67,111,108,108,101,99,116)})_ST:Slider({Title=string.char(87,97,108,107,115,112,101,101,100,32,75,97,114,97,107,116,101,114,32,40,37,41),Desc=string.char(49,48,48,37,32,61,32,107,101,99,101,112,97,116,97,110,32,110,111,114,109,97,108,46),IsTooltip=true,Step=10,Value={Min=50,Max=400,Default=math.clamp(_bn.walkSpeed,50,400)},Callback=function(_Te)_bn.walkSpeed=tonumber(_Te)or 100 if _bn.walkSpeed==100 and _bN.World then _bN.World.speedScale=1 end _bs()end,})_ST:Toggle({Title=string.char(67,111,108,108,101,99,116,32,68,114,111,112,32,100,105,32,83,101,107,105,116,97,114,32,75,97,114,97,107,116,101,114,32,40,75,97,112,97,110,32,83,97,106,97,41),Value=_bn.collectAround,Callback=function(_Tf)_bn.collectAround=_Tf;_bs()end,})_ST:Slider({Title=string.char(82,97,100,105,117,115,32,65,117,116,111,32,67,111,108,108,101,99,116,32,40,84,105,108,101,41),IsTooltip=true,Step=1,Value={Min=1,Max=8,Default=math.clamp(_bn.collectRadius,1,8)},Callback=function(_Tg)_bn.collectRadius=math.floor(tonumber(_Tg)or 3);_bs()end,})_ST:Dropdown({Title=string.char(77,111,100,101,32,80,101,114,103,101,114,97,107,97,110,32,85,110,105,118,101,114,115,97,108),Values={string.char(108,101,103,105,116),string.char(119,97,108,107),string.char(102,108,121),string.char(109,105,120)},Value=_bn.moveMode,Callback=function(_Th)if type(_Th)==string.char(115,116,114,105,110,103)then _bn.moveMode=_Th _bs()_bI(string.char(77,111,100,101,32,103,101,114,97,107,32,100,105,117,98,97,104,32,107,101,58,32).._Th)end end,})_ST:Toggle({Title=string.char(87,97,106,105,98,32,84,97,104,97,110,32,83,104,105,102,116,32,117,110,116,117,107,32,67,108,105,99,107,32,84,80,32,40,80,67,41),Value=_bn.clickTpShift,Callback=function(_Ti)_bn.clickTpShift=_Ti;_bs()end,})end)_Sp(string.char(84,97,98,58,65,117,116,111,70,97,114,109),function()local _Tj=_SH:Tab({Title=string.char(65,117,116,111,32,70,97,114,109),Icon=string.char(115,111,108,97,114,58,99,104,101,99,107,45,115,113,117,97,114,101,45,98,111,108,100),IconColor=_Sh,IconShape=string.char(83,113,117,97,114,101),Border=true,})_Sm.tabs.farm=_Tj local _Tk=_Tj:Paragraph({Title=string.char(83,116,97,116,117,115,32,65,117,116,111,32,70,97,114,109),Desc=string.char(77,101,109,117,97,116,46,46,46)})task.spawn(function()while _e()and task.wait(0.4)do pcall(function()local _Tl=_bn.farmPlaceId _Su(_Tk,string.char(83,116,97,116,117,115,58,32).._rq.stats.status..string.char(32,40).._bn.farmMode..string.char(41),string.format((string.char(66,108,111,99,107,58,32,37,115,32,91,73,68,32,37,100,93,32,40,83,116,111,107,58,32,37,100,41,10,80,108,97,99,101,58,32,37,100,32,124,32,66,114,101,97,107,58,32,37,100,32,124,32,67,111,108,108,101,99,116,58,32,37,100)..string.char(32,124,32,83,105,107,108,117,115,58,32,37,100)),_fG(_Tl),_Tl,_fJ(_Tl),_rq.stats.placed,_rq.stats.broken,_rq.stats.picked,_rq.stats.cycles))end)end end)_Sy(_Tj,string.char(74,97,108,97,110,107,97,110,32,65,117,116,111,32,70,97,114,109),string.char(80,108,97,99,101,32,38,32,98,114,101,97,107,32,111,116,111,109,97,116,105,115,32,115,101,115,117,97,105,32,71,114,105,100,32,53,120,53,46),string.char(97,117,116,111,102,97,114,109))_Tj:Button({Title=string.char(66,117,107,97,32,70,108,111,97,116,105,110,103,32,71,114,105,100,32,53,120,53,32,40,77,111,100,101,32,70,97,114,109,41),Color=Color3.fromHex(string.char(35,51,48,53,100,102,102)),Justify=string.char(67,101,110,116,101,114),Callback=function()if _rp then _rp(string.char(102,97,114,109))end if _rm then _rm.Enabled=not _rm.Enabled end end,})_Tj:Space()_Tj:Section({Title=string.char(77,111,100,101,32,38,32,75,101,99,101,112,97,116,97,110,32,70,97,114,109)})_Tj:Dropdown({Title=string.char(77,111,100,101,32,65,117,116,111,32,70,97,114,109),Values={string.char(80,108,97,99,101,32,43,32,66,114,101,97,107),string.char(66,114,101,97,107,32,115,97,106,97),string.char(80,108,97,99,101,32,115,97,106,97)},Value=_bn.farmMode,Callback=function(_Tm)_bn.farmMode=_Tm or string.char(80,108,97,99,101,32,43,32,66,114,101,97,107);_bs()end,})_Tj:Slider({Title=string.char(77,117,108,116,105,45,84,97,114,103,101,116,32,66,114,101,97,107,32,40,49,32,45,32,53,32,84,105,108,101,41),Desc=(string.char(77,101,109,117,107,117,108,32,98,101,98,101,114,97,112,97,32,116,105,108,101,32,98,101,114,103,97,110,116,105,97,110,46,32,79,116,111,109,97,116,105,115,32,112,97,107,97,105,32,101,102,101,107,32,82,97,121,109,97,110,32,106,105,107)..string.char(97,32,109,101,109,97,107,97,105,32,82,97,121,109,97,110,39,115,32,70,105,115,116,33)),IsTooltip=true,Step=1,Value={Min=1,Max=5,Default=math.clamp(_bn.farmMultiTarget,1,5)},Callback=function(_Tn)_bn.farmMultiTarget=math.clamp(math.floor(tonumber(_Tn)or 1),1,5);_bs()end,})_Tj:Input({Title=string.char(73,68,32,66,108,111,99,107,32,70,97,114,109),Value=tostring(_bn.farmPlaceId),Placeholder=string.char(67,111,110,116,111,104,58,32,50,32,40,68,105,114,116,41),Callback=function(_To)local _Tp=tonumber(_To)if _Tp and _Tp>0 then _bn.farmPlaceId=math.floor(_Tp)_bs()_bI(string.char(66,108,111,99,107,32,70,97,114,109,58,32).._fG(_bn.farmPlaceId)..string.char(32,91).._bn.farmPlaceId..string.char(93))end end,})local _Tq={}local _Tr _Tj:Input({Title=string.char(67,97,114,105,32,66,108,111,99,107,32,100,105,32,68,97,116,97,98,97,115,101),Placeholder=string.char(75,101,116,105,107,32,110,97,109,97,32,98,108,111,99,107,46,46,46),Callback=function(_Ts)_Tq={}local _Tt={}if _bF(_Ts)~=""then for _Tu,_Tv in ipairs(_Mg(_Ts,25))do local _Tw=string.format(string.char(37,115,32,91,37,100,93),_Tv.name,_Tv.id)_Tq[_Tw]=_Tv.id table.insert(_Tt,_Tw)end end if#_Tt==0 then _Tt={string.char(84,105,100,97,107,32,97,100,97,32,104,97,115,105,108)}end if _Tr and _Tr.Refresh then pcall(function()_Tr:Refresh(_Tt)end)end end,})_Tr=_Tj:Dropdown({Title=string.char(80,105,108,105,104,32,72,97,115,105,108,32,80,101,110,99,97,114,105,97,110,32,66,108,111,99,107),Values={string.char(75,101,116,105,107,32,110,97,109,97,32,100,105,32,97,116,97,115,46,46,46)},Callback=function(_Tx)local _Ty=_Tq[_Tx]if _Ty then _bn.farmPlaceId=_Ty _bs()_bI(string.char(66,108,111,99,107,32,100,105,115,101,116,32,107,101,58,32).._fG(_Ty)..string.char(32,91).._Ty..string.char(93))end end,})_Tj:Slider({Title=string.char(83,112,101,101,100,32,80,108,97,99,101,32,40,109,115,41),IsTooltip=true,Step=10,Value={Min=50,Max=1000,Default=math.clamp(_bn.farmPlaceMs,50,1000)},Callback=function(_Tz)_bn.farmPlaceMs=tonumber(_Tz)or 250;_bs()end,})_Tj:Input({Title=string.char(83,112,101,101,100,32,66,114,101,97,107,32,40,100,101,116,105,107,41),Value=tostring(_bn.farmDelay),Placeholder=string.char(48,46,50,50),Callback=function(_TA)local _TB=tonumber(_TA)if _TB and _TB>=0.03 and _TB<=5 then _bn.farmDelay=_TB;_bs()end end,})_Tj:Toggle({Title=string.char(65,117,116,111,32,67,111,108,108,101,99,116,32,68,114,111,112),Value=_bn.farmTake,Callback=function(_TC)_bn.farmTake=_TC;_bs()end,})_Tj:Space()_Tj:Section({Title=string.char(65,117,116,111,32,83,97,118,101,32,47,32,68,114,111,112,32,83,101,101,100,32,40,83,97,97,116,32,83,101,101,100,32,62,61,32,50,48,48,41)})_Tj:Toggle({Title=string.char(65,107,116,105,102,107,97,110,32,65,117,116,111,32,68,114,111,112,32,83,101,101,100,32,83,97,97,116,32,80,101,110,117,104),Desc=(string.char(79,116,111,109,97,116,105,115,32,98,101,114,104,101,110,116,105,32,98,114,101,97,107,44,32,100,114,111,112,32,115,101,101,100,32,100,105,32,119,111,114,108,100,47,112,111,115,105,115,105,32,116,117,106,117,97,110,44,32,108,97,108,117,32)..string.char(107,101,109,98,97,108,105,32,108,97,110,106,117,116,32,65,117,116,111,32,70,97,114,109,46)),Value=_bn.farmAutoDropSeed,Callback=function(_TD)_bn.farmAutoDropSeed=_TD;_bs()end,})_Tj:Slider({Title=string.char(68,114,111,112,32,83,97,97,116,32,74,117,109,108,97,104,32,83,101,101,100,32,77,101,110,99,97,112,97,105,32,62,61),IsTooltip=true,Step=5,Value={Min=20,Max=200,Default=math.clamp(_bn.farmSeedDropAt or 200,20,200)},Callback=function(_TE)_bn.farmSeedDropAt=math.floor(tonumber(_TE)or 200);_bs()end,})_Tj:Slider({Title=string.char(83,105,115,97,107,97,110,32,83,101,101,100,32,100,105,32,84,97,115),IsTooltip=true,Step=5,Value={Min=0,Max=190,Default=math.clamp(_bn.farmSeedKeep or 0,0,190)},Callback=function(_TF)_bn.farmSeedKeep=math.floor(tonumber(_TF)or 0);_bs()end,})_Tj:Input({Title=string.char(87,111,114,108,100,32,68,114,111,112,32,83,101,101,100,32,40,75,111,115,111,110,103,32,61,32,87,111,114,108,100,32,73,110,105,32,124,32,87,79,82,76,68,32,124,32,87,79,82,76,68,58,80,73,78,84,85,41),Value=_bn.farmDropWorld,Placeholder=string.char(67,111,110,116,111,104,58,32,83,84,79,82,65,71,69,32,97,116,97,117,32,83,84,79,82,65,71,69,58,49),Callback=function(_TG)_bn.farmDropWorld=_bF(_TG or"");_bs()end,})_Tj:Button({Title=string.char(83,101,116,80,111,115,32,68,114,111,112,32,83,101,101,100,32,40,83,105,109,112,97,110,32,80,111,115,105,115,105,32,83,101,107,97,114,97,110,103,41),Color=Color3.fromHex(string.char(35,49,48,67,53,53,48)),Justify=string.char(67,101,110,116,101,114),Callback=function()local _TH,_TI=_gG()if not _TH then _bI(string.char(80,111,115,105,115,105,32,98,101,108,117,109,32,116,101,114,98,97,99,97,33));return end _bn.farmDropX,_bn.farmDropY=_TH,_TI _bs()_bI(string.format(string.char(80,111,115,105,115,105,32,68,114,111,112,32,83,101,101,100,32,65,117,116,111,32,70,97,114,109,32,100,105,115,105,109,112,97,110,32,100,105,32,40,37,100,44,32,37,100,41,33),_TH,_TI))end,})end)_Sp(string.char(84,97,98,58,65,117,116,111,67,108,101,97,114),function()local _TJ=_SH:Tab({Title=string.char(65,117,116,111,32,67,108,101,97,114),Icon=string.char(115,111,108,97,114,58,99,117,114,115,111,114,45,115,113,117,97,114,101,45,98,111,108,100),IconColor=_Sk,IconShape=string.char(83,113,117,97,114,101),Border=true,})_Sm.tabs.clear=_TJ local _TK=_TJ:Paragraph({Title=string.char(83,116,97,116,117,115,32,65,117,116,111,32,67,108,101,97,114,32,40,77,111,100,70,108,121,41),Desc=string.char(77,101,109,117,97,116,46,46,46)})task.spawn(function()while _e()and task.wait(0.4)do pcall(function()local _TL=_rr.stats _Su(_TK,string.format(string.char(83,116,97,116,117,115,58,32,37,115,32,40,80,97,115,115,32,37,100,32,124,32,66,97,114,105,115,32,89,61,37,115,41),_rr.status,_TL.pass,_TL.row>=0 and tostring(_TL.row)or string.char(45)),string.format((string.char(84,97,114,103,101,116,58,32,37,100,32,124,32,83,105,115,97,58,32,37,100,32,124,32,68,105,45,115,107,105,112,58,32,37,100,10,72,97,110,99,117,114,58,32,37,100,32,124,32,68,114,111,112,32,68,105,97,109,98,105,108,58,32,37)..string.char(100)),_TL.scanned,_TL.left,_TL.skipped,_TL.broken,_TL.picked))end)end end)_Sy(_TJ,string.char(65,117,116,111,32,67,108,101,97,114,32,87,111,114,108,100,32,40,77,111,100,70,108,121,32,43,32,66,101,114,100,105,114,105,32,100,105,32,65,116,97,115,32,66,108,111,99,107,41),(string.char(77,111,100,70,108,121,32,111,116,111,109,97,116,105,115,32,115,101,108,97,108,117,32,109,101,110,121,97,108,97,44,32,107,97,114,97,107,116,101,114,32,98,101,114,100,105,114,105,32,116,101,112,97,116,32,100,105,32,97,116,97,115,32,98)..string.char(108,111,99,107,32,121,97,110,103,32,97,107,97,110,32,100,105,45,98,114,101,97,107,32,104,105,110,103,103,97,32,104,97,110,99,117,114,32,108,97,108,117,32,112,105,110,100,97,104,46)),string.char(97,117,116,111,99,108,101,97,114))_TJ:Dropdown({Title=string.char(65,114,97,104,32,83,97,112,117,97,110,32,40,83,119,101,101,112,41),Values={string.char(90,105,103,45,122,97,103),string.char(75,105,114,105,32,226,134,146,32,75,97,110,97,110)},Value=_bn.clearSweep,Callback=function(_TM)_bn.clearSweep=_TM or string.char(90,105,103,45,122,97,103);_bs()end,})_TJ:Toggle({Title=string.char(73,107,117,116,32,72,97,110,99,117,114,107,97,110,32,66,97,99,107,103,114,111,117,110,100),Value=_bn.clearIncludeBg,Callback=function(_TN)_bn.clearIncludeBg=_TN;_bs()end,})_TJ:Input({Title=string.char(68,101,108,97,121,32,80,117,107,117,108,97,110,32,66,114,101,97,107,32,40,100,101,116,105,107,41),Value=tostring(_bn.clearBreakDelay),Callback=function(_TO)local _TP=tonumber(_TO)if _TP and _TP>=0.03 and _TP<=5 then _bn.clearBreakDelay=_TP;_bs()end end,})_TJ:Input({Title=string.char(68,101,108,97,121,32,80,105,110,100,97,104,32,65,110,116,97,114,32,66,108,111,107,32,40,100,101,116,105,107,41),Value=tostring(_bn.clearTpDelay),Callback=function(_TQ)local _TR=tonumber(_TQ)if _TR and _TR>=0.05 and _TR<=5 then _bn.clearTpDelay=_TR;_bs()end end,})_TJ:Toggle({Title=string.char(65,117,116,111,32,67,111,108,108,101,99,116,32,68,114,111,112),Value=_bn.clearTake,Callback=function(_TS)_bn.clearTake=_TS;_bs()end,})end)_Sp(string.char(84,97,98,58,70,97,114,109,101,114),function()local _TT=_SH:Tab({Title=string.char(70,97,114,109,101,114,32,40,72,97,114,118,101,115,116,47,80,108,97,110,116,41),Icon=string.char(115,111,108,97,114,58,99,104,101,99,107,45,115,113,117,97,114,101,45,98,111,108,100),IconColor=_Si,IconShape=string.char(83,113,117,97,114,101),Border=true,})_Sm.tabs.harvest=_TT local _TU=_TT:Paragraph({Title=string.char(83,116,97,116,117,115,32,70,97,114,109,101,114),Desc=string.char(77,101,109,117,97,116,46,46,46)})task.spawn(function()while _e()and task.wait(0.4)do pcall(function()local _TV=_rs.stats _Su(_TU,string.char(83,116,97,116,117,115,58,32).._rs.status,string.format((string.char(84,111,116,97,108,32,80,111,104,111,110,58,32,37,100,32,124,32,83,105,97,112,32,80,97,110,101,110,58,32,37,100,32,124,32,66,101,108,117,109,32,83,105,97,112,58,32,37,100,10,68,105,112,97,110,101,110,58,32,37,100,32,124,32)..string.char(68,105,116,97,110,97,109,58,32,37,100,32,124,32,68,114,111,112,32,68,105,97,109,98,105,108,58,32,37,100,10,83,101,101,100,32,84,97,110,97,109,58,32,37,115,32,91,73,68,32,37,100,93,32,40,83,116,111,107,58,32,37,100,41)),_TV.totalTrees,_TV.ready,_TV.skipped,_TV.harvested,_TV.planted,_TV.picked,_fG(_bn.harvestSeedId),_bn.harvestSeedId,_fJ(_bn.harvestSeedId)))end)end end)_Sy(_TT,string.char(74,97,108,97,110,107,97,110,32,70,97,114,109,101,114),(string.char(79,116,111,109,97,116,105,115,32,112,97,110,101,110,32,112,111,104,111,110,32,115,105,97,112,32,38,32,116,97,110,97,109,32,115,101,101,100,32,100,101,110,103,97,110,32,76,101,103,105,116,32,87,97,108,107,105,110,103,32,43,32,66,101)..string.char(114,115,105,104,32,80,105,106,97,107,97,110,46)),string.char(97,117,116,111,104,97,114,118,101,115,116))_TT:Toggle({Title=string.char(65,117,116,111,32,72,97,114,118,101,115,116,32,40,80,97,110,101,110,32,80,111,104,111,110,32,83,105,97,112,41),Value=_bn.harvestDoHarvest,Callback=function(_TW)_bn.harvestDoHarvest=_TW;_bs()end,})_TT:Toggle({Title=string.char(65,117,116,111,32,80,108,97,110,116,32,40,84,97,110,97,109,32,83,101,101,100,32,79,116,111,109,97,116,105,115,41),Value=_bn.harvestDoPlant,Callback=function(_TX)_bn.harvestDoPlant=_TX;_bs()end,})_TT:Input({Title=string.char(73,68,32,83,101,101,100,32,117,110,116,117,107,32,65,117,116,111,32,80,108,97,110,116),Desc=string.char(67,111,110,116,111,104,58,32,51,32,61,32,68,105,114,116,32,83,101,101,100,44,32,53,32,61,32,76,97,118,97,32,83,101,101,100),Value=tostring(_bn.harvestSeedId),Placeholder=string.char(51),Callback=function(_TY)local _TZ=tonumber(_TY)if _TZ and _TZ>0 then _bn.harvestSeedId=math.floor(_TZ)_bs()_bI(string.char(83,101,101,100,32,100,105,115,101,116,32,107,101,58,32).._fG(_bn.harvestSeedId))end end,})_TT:Toggle({Title=string.char(80,97,107,97,105,32,66,108,111,99,107,32,80,105,106,97,107,97,110,32,83,97,97,116,32,77,101,109,97,110,106,97,116),Value=_bn.harvestUseBlock,Callback=function(_Ua)_bn.harvestUseBlock=_Ua;_bs()end,})_TT:Toggle({Title=string.char(65,117,116,111,32,67,111,108,108,101,99,116,32,72,97,115,105,108,32,80,97,110,101,110),Value=_bn.harvestTake,Callback=function(_Ub)_bn.harvestTake=_Ub;_bs()end,})end)_Sp(string.char(84,97,98,58,65,117,116,111,68,70),function()local _Uc=_SH:Tab({Title=string.char(65,117,116,111,32,68,70,32,40,70,117,108,108,32,87,111,114,108,100,41),Icon=string.char(115,111,108,97,114,58,104,97,109,98,117,114,103,101,114,45,109,101,110,117,45,98,111,108,100),IconColor=_Sh,IconShape=string.char(83,113,117,97,114,101),Border=true,})_Sm.tabs.df=_Uc local _Ud=_Uc:Paragraph({Title=string.char(83,116,97,116,117,115,32,65,117,116,111,32,68,105,114,116,32,70,97,114,109,32,40,70,117,108,108,32,87,111,114,108,100,41),Desc=string.char(77,101,109,117,97,116,46,46,46)})task.spawn(function()while _e()and task.wait(0.4)do pcall(function()local _Ue=_rt.stats local _Uf=_gb()local _Ug=_gf()_Su(_Ud,string.char(83,116,97,116,117,115,58,32).._rt.status..string.char(32,40)..tostring(_Ue.step)..string.char(41),string.format((string.char(76,97,112,105,115,97,110,32,68,105,114,116,58,32,89,61,37,100,32,124,32,66,101,100,114,111,99,107,58,32,89,61,37,100,10,83,116,111,107,32,68,105,114,116,58,32,37,100,32,124,32,83,116,111,107,32,68,105,114,116,32,83,101,101)..string.char(100,58,32,37,100,10,72,97,110,99,117,114,58,32,37,100,32,124,32,68,105,114,116,32,68,105,112,97,115,97,110,103,58,32,37,100,32,124,32,68,114,111,112,32,68,105,97,109,98,105,108,58,32,37,100)),_Ue.topDirtY,_Ue.bedrockY,_fJ(_Uf),_fJ(_Ug),_Ue.broken,_Ue.placed,_Ue.picked))end)end end)_Sy(_Uc,string.char(74,97,108,97,110,107,97,110,32,65,117,116,111,32,68,105,114,116,32,70,97,114,109,32,40,70,117,108,108,32,87,111,114,108,100,41),(string.char(66,97,110,103,117,110,32,68,70,32,98,97,119,97,104,32,38,32,97,116,97,115,32,111,116,111,109,97,116,105,115,32,43,32,83,109,97,114,116,32,83,117,112,112,108,121,32,40,116,97,110,97,109,47,112,97,110,101,110,47,98,114,101,97)..string.char(107,32,68,105,114,116,32,111,116,111,109,97,116,105,115,32,115,97,97,116,32,115,116,111,107,32,104,97,98,105,115,44,32,116,97,110,112,97,32,77,111,100,70,108,121,41,46)),string.char(97,117,116,111,100,102))_Uc:Toggle({Title=string.char(71,97,110,116,105,32,76,97,118,97,47,82,111,99,107,32,100,101,110,103,97,110,32,68,105,114,116,32,100,105,32,80,108,97,116,102,111,114,109),Value=_bn.dfReplacePlatform,Callback=function(_Uh)_bn.dfReplacePlatform=_Uh;_bs()end,})_Uc:Toggle({Title=string.char(65,117,116,111,32,67,111,108,108,101,99,116,32,68,114,111,112),Value=_bn.dfTake,Callback=function(_Ui)_bn.dfTake=_Ui;_bs()end,})_Uc:Toggle({Title=string.char(65,107,116,105,102,107,97,110,32,77,111,100,70,108,121,32,83,97,97,116,32,65,117,116,111,32,68,70,32,40,65,110,116,105,45,76,97,118,97,41),Desc=(string.char(84,101,114,98,97,110,103,32,38,32,107,101,98,97,108,32,108,97,118,97,32,115,97,97,116,32,109,101,110,103,104,97,110,99,117,114,107,97,110,32,98,108,111,107,32,97,103,97,114,32,116,105,100,97,107,32,109,97,116,105,47,114,101,115)..string.char(112,97,119,110,46)),Value=_bn.dfModFly,Callback=function(_Uj)_bn.dfModFly=_Uj _bs()if _rt.on then _ie(string.char(97,117,116,111,100,102),_Uj)end end,})_Uc:Input({Title=string.char(68,101,108,97,121,32,80,117,107,117,108,97,110,32,66,114,101,97,107,32,40,100,101,116,105,107,41),Value=tostring(_bn.dfBreakDelay),Callback=function(_Uk)local _Ul=tonumber(_Uk)if _Ul and _Ul>=0.03 and _Ul<=5 then _bn.dfBreakDelay=_Ul;_bs()end end,})_Uc:Input({Title=string.char(68,101,108,97,121,32,71,101,114,97,107,32,47,32,76,97,110,103,107,97,104,32,40,100,101,116,105,107,41),Value=tostring(_bn.dfTpDelay),Callback=function(_Um)local _Un=tonumber(_Um)if _Un and _Un>=0.05 and _Un<=5 then _bn.dfTpDelay=_Un;_bs()end end,})end)_Sp(string.char(84,97,98,58,65,117,116,111,83,112,108,105,99,101),function()local _Uo=_SH:Tab({Title=string.char(65,117,116,111,32,83,112,108,105,99,101),Icon=string.char(115,111,108,97,114,58,115,113,117,97,114,101,45,116,114,97,110,115,102,101,114,45,104,111,114,105,122,111,110,116,97,108,45,98,111,108,100),IconColor=_Sg,IconShape=string.char(83,113,117,97,114,101),Border=true,})_Sm.tabs.splice=_Uo local _Up=_Uo:Paragraph({Title=string.char(83,116,97,116,117,115,32,65,117,116,111,32,83,112,108,105,99,101),Desc=string.char(77,101,109,117,97,116,46,46,46)})task.spawn(function()while _e()and task.wait(0.5)do pcall(function()_Su(_Up,string.char(83,116,97,116,117,115,58,32).._ru.status,string.format((string.char(37,115,10,83,101,101,100,32,65,58,32,37,115,32,91,37,100,93,32,40,120,37,100,41,32,124,32,83,101,101,100,32,66,58,32,37,115,32,91,37,100,93,32,40,120,37,100,41,10,68,105,116,97,110,97,109,58,32,37,100,32,124,32,66)..string.char(101,114,104,97,115,105,108,32,83,112,108,105,99,101,58,32,37,100)),_ru.ResultText(),_fG(_bn.spliceA),_bn.spliceA,_fJ(_bn.spliceA),_fG(_bn.spliceB),_bn.spliceB,_fJ(_bn.spliceB),_ru.planted,_ru.made))end)end end)_Sy(_Uo,string.char(74,97,108,97,110,107,97,110,32,65,117,116,111,32,83,112,108,105,99,101),string.char(84,97,110,97,109,32,83,101,101,100,32,65,32,108,97,108,117,32,103,97,98,117,110,103,107,97,110,32,40,115,112,108,105,99,101,41,32,100,101,110,103,97,110,32,83,101,101,100,32,66,46),string.char(97,117,116,111,115,112,108,105,99,101))_Uo:Input({Title=string.char(73,68,32,83,101,101,100,32,65,32,40,68,105,116,97,110,97,109,32,80,101,114,116,97,109,97,41),Value=tostring(_bn.spliceA),Placeholder=string.char(51,32,40,68,105,114,116,32,83,101,101,100,41),Callback=function(_Uq)local _Ur=tonumber(_Uq)if _Ur and _Ur>0 then _bn.spliceA=math.floor(_Ur);_bs()end end,})_Uo:Input({Title=string.char(73,68,32,83,101,101,100,32,66,32,40,68,105,45,115,112,108,105,99,101,32,107,101,32,80,111,104,111,110,32,65,41),Value=tostring(_bn.spliceB),Placeholder=string.char(53,32,40,76,97,118,97,32,83,101,101,100,41),Callback=function(_Us)local _Ut=tonumber(_Us)if _Ut and _Ut>0 then _bn.spliceB=math.floor(_Ut);_bs()end end,})_Uo:Toggle({Title=string.char(75,101,108,105,108,105,110,103,32,87,111,114,108,100,32,79,116,111,109,97,116,105,115,32,40,65,42,41),Desc=(string.char(78,121,97,108,97,32,61,32,99,97,114,105,32,116,101,109,112,97,116,32,107,111,115,111,110,103,32,100,105,32,115,101,108,117,114,117,104,32,119,111,114,108,100,46,32,77,97,116,105,32,61,32,104,97,110,121,97,32,100,105,32,107,111,116)..string.char(97,107,32,71,114,105,100,32,53,120,53,46)),Value=_bn.spliceRoam,Callback=function(_Uu)_bn.spliceRoam=_Uu;_bs()end,})_Uo:Slider({Title=string.char(74,101,100,97,32,84,97,110,97,109,32,47,32,83,112,108,105,99,101,32,40,109,115,41),IsTooltip=true,Step=10,Value={Min=140,Max=2000,Default=math.clamp(_bn.spliceMs,140,2000)},Callback=function(_Uv)_bn.spliceMs=math.floor(tonumber(_Uv)or 300);_bs()end,})end)_Sp(string.char(84,97,98,58,80,97,98,114,105,107),function()local _Uw=_SH:Tab({Title=string.char(80,97,98,114,105,107,32,40,70,97,99,116,111,114,121,41),Icon=string.char(115,111,108,97,114,58,102,111,108,100,101,114,45,119,105,116,104,45,102,105,108,101,115,45,98,111,108,100),IconColor=_Sj,IconShape=string.char(83,113,117,97,114,101),Border=true,})_Sm.tabs.pabrik=_Uw local _Ux=_Uw:Paragraph({Title=string.char(83,116,97,116,117,115,32,80,97,98,114,105,107,32,83,101,101,100),Desc=string.char(77,101,109,117,97,116,46,46,46)})task.spawn(function()while _e()and task.wait(0.5)do pcall(function()local _Uy=_bn.pabrikSeedId local _Uz=_fW(_Uy)local _UA,_UB=_rv.ParseDropTarget()local _UC=(_UA~=""and _UA or string.char(87,111,114,108,100,32,73,110,105))..(_UB and(string.char(32,80,105,110,116,117,58).._UB)or"")..(_bn.pabrikDropX>=0 and string.format(string.char(32,40,37,100,44,37,100,41),_bn.pabrikDropX,_bn.pabrikDropY)or"")_Su(_Ux,string.format(string.char(83,116,97,116,117,115,58,32,37,115,32,40,70,97,115,101,58,32,37,115,41),_rv.status,_rv.phase),string.format((string.char(83,101,101,100,58,32,37,115,32,91,37,100,93,32,120,37,100,32,124,32,66,108,111,99,107,58,32,37,115,32,120,37,100,10,83,101,116,80,111,115,32,66,114,101,97,107,58,32,37,115,10,84,97,114,103,101,116,32,68,114,111,112,58,32)..string.char(37,115,32,40,83,97,97,116,32,83,101,101,100,32,62,61,32,37,100,44,32,68,114,111,112,32,37,100,32,83,101,101,100,41,10,72,97,115,105,108,58,32,80,97,110,101,110,32,37,100,32,124,32,84,97,110,97,109,32,37,100,32,124,32)..string.char(68,105,45,100,114,111,112,32,37,100)),_fG(_Uy),_Uy,_fJ(_Uy),_Uz and _fG(_Uz)or string.char(45),_Uz and _fJ(_Uz)or 0,_bn.pabrikBreakX>=0 and string.format(string.char(84,105,108,101,32,40,37,100,44,32,37,100,41),_bn.pabrikBreakX,_bn.pabrikBreakY)or string.char(66,101,108,117,109,32,100,105,115,101,116,33),_bn.pabrikDrop and _UC or string.char(77,97,116,105),_bn.pabrikDropAt,_bn.pabrikDropAmount or 100,_rv.harvested,_rv.planted,_rv.dropped))end)end end)_Sy(_Uw,string.char(74,97,108,97,110,107,97,110,32,80,97,98,114,105,107),(string.char(83,105,107,108,117,115,58,32,66,114,101,97,107,32,66,108,111,107,32,45,62,32,84,97,110,97,109,32,45,62,32,84,117,110,103,103,117,32,45,62,32,80,97,110,101,110,32,45,62,32,68,114,111,112,32,49,48,48,32,83,101,101,100,32)..string.char(115,97,97,116,32,62,61,32,49,56,48,46)),string.char(112,97,98,114,105,107))_Uw:Input({Title=string.char(73,68,32,83,101,101,100,32,80,97,98,114,105,107),Desc=(string.char(66,108,111,99,107,32,111,116,111,109,97,116,105,115,32,116,101,114,100,101,116,101,107,115,105,32,40,99,111,110,116,111,104,58,32,51,32,61,32,68,105,114,116,32,83,101,101,100,32,45,62,32,66,108,111,99,107,32,73,68,32,50,32,61)..string.char(32,68,105,114,116,41,46)),Value=tostring(_bn.pabrikSeedId),Callback=function(_UD)local _UE=tonumber(_UD)if _UE and _UE>0 then _bn.pabrikSeedId=math.floor(_UE);_bs()end end,})_Uw:Input({Title=string.char(77,97,120,32,83,101,101,100,32,80,97,98,114,105,107,32,40,66,97,116,97,115,32,84,97,110,97,109,32,38,32,80,117,116,97,114,97,110,32,83,101,101,100,41),Desc=(string.char(67,111,110,116,111,104,58,32,49,48,48,32,61,32,72,97,110,121,97,32,109,101,110,97,110,97,109,32,49,48,48,32,115,101,101,100,46,32,74,105,107,97,32,115,101,116,101,108,97,104,32,98,114,101,97,107,32,115,101,101,100,32,62,32)..string.char(49,48,48,44,32,111,116,111,109,97,116,105,115,32,100,114,111,112,32,115,105,115,97,110,121,97,32,100,97,110,32,109,101,110,121,105,115,97,107,97,110,32,49,48,48,32,115,101,101,100,46)),Value=tostring(_bn.pabrikMaxSeed or 100),Placeholder=string.char(49,48,48),Callback=function(_UF)local _UG=tonumber(_UF)if _UG and _UG>=1 then _bn.pabrikMaxSeed=math.floor(_UG)_bs()_bI(string.char(77,97,120,32,83,101,101,100,32,80,97,98,114,105,107,32,100,105,115,101,116,32,107,101,58,32)..tostring(_bn.pabrikMaxSeed))end end,})_Uw:Space()_Uw:Section({Title=string.char(80,111,115,105,115,105,32,66,114,101,97,107,32,80,97,98,114,105,107,32,40,83,101,116,80,111,115,32,66,114,101,97,107,41)})local _UH=_Uw:Group({})_UH:Button({Title=string.char(83,101,116,80,111,115,32,66,114,101,97,107,32,40,83,105,109,112,97,110,32,80,111,115,105,115,105,41),Color=Color3.fromHex(string.char(35,49,48,67,53,53,48)),Justify=string.char(67,101,110,116,101,114),Callback=function()local _UI,_UJ=_gG()if not _UI then _bI(string.char(80,111,115,105,115,105,32,107,97,114,97,107,116,101,114,32,98,101,108,117,109,32,116,101,114,98,97,99,97,33));return end _bn.pabrikBreakX,_bn.pabrikBreakY=_UI,_UJ _bs()_bI(string.format(string.char(83,101,116,80,111,115,32,66,114,101,97,107,32,80,97,98,114,105,107,32,100,105,115,105,109,112,97,110,32,100,105,32,40,37,100,44,32,37,100,41,33),_UI,_UJ))end,})_UH:Button({Title=string.char(75,101,32,80,111,115,32,66,114,101,97,107),Justify=string.char(67,101,110,116,101,114),Callback=function()if _bn.pabrikBreakX<0 or _bn.pabrikBreakY<0 then _bI(string.char(83,101,116,80,111,115,32,66,114,101,97,107,32,98,101,108,117,109,32,100,105,115,105,109,112,97,110,33))return end task.spawn(function()_ik.To(_bn.pabrikBreakX,_bn.pabrikBreakY,nil,0.3,true)end)end,})_Uw:Button({Title=string.char(80,105,108,105,104,32,84,105,108,101,32,66,114,101,97,107,32,80,97,98,114,105,107,32,40,66,117,107,97,32,71,114,105,100,32,53,120,53,32,77,111,100,101,32,80,97,98,114,105,107,41),Color=Color3.fromHex(string.char(35,51,48,53,100,102,102)),Justify=string.char(67,101,110,116,101,114),Callback=function()if _rp then _rp(string.char(112,97,98,114,105,107))end if _rm then _rm.Enabled=true end end,})_Uw:Space()_Uw:Section({Title=string.char(80,101,110,103,97,116,117,114,97,110,32,80,101,110,121,105,109,112,97,110,97,110,32,47,32,65,117,116,111,32,68,114,111,112,32,83,101,101,100)})_Uw:Toggle({Title=string.char(65,107,116,105,102,107,97,110,32,65,117,116,111,32,68,114,111,112,32,83,101,101,100,32,107,101,32,80,101,110,121,105,109,112,97,110,97,110),Value=_bn.pabrikDrop,Callback=function(_UK)_bn.pabrikDrop=_UK;_bs()end,})_Uw:Slider({Title=string.char(68,114,111,112,32,83,97,97,116,32,83,101,101,100,32,77,101,110,99,97,112,97,105,32,62,61),Desc=string.char(68,101,102,97,117,108,116,58,32,49,56,48,32,115,101,101,100,46),IsTooltip=true,Step=5,Value={Min=20,Max=200,Default=math.clamp(_bn.pabrikDropAt or 180,20,200)},Callback=function(_UL)_bn.pabrikDropAt=math.floor(tonumber(_UL)or 180);_bs()end,})_Uw:Slider({Title=string.char(74,117,109,108,97,104,32,83,101,101,100,32,121,97,110,103,32,68,105,45,100,114,111,112),Desc=string.char(68,101,102,97,117,108,116,58,32,49,48,48,32,115,101,101,100,32,115,101,107,97,108,105,32,100,114,111,112,46),IsTooltip=true,Step=5,Value={Min=10,Max=200,Default=math.clamp(_bn.pabrikDropAmount or 100,10,200)},Callback=function(_UM)_bn.pabrikDropAmount=math.floor(tonumber(_UM)or 100);_bs()end,})_Uw:Input({Title=string.char(87,111,114,108,100,32,80,101,110,121,105,109,112,97,110,97,110,32,83,101,101,100,32,40,87,79,82,76,68,32,97,116,97,117,32,87,79,82,76,68,58,73,68,95,80,73,78,84,85,41),Value=_bn.pabrikDropWorld,Placeholder=string.char(67,111,110,116,111,104,58,32,83,84,79,82,65,71,69,32,97,116,97,117,32,83,84,79,82,65,71,69,58,49),Callback=function(_UN)_bn.pabrikDropWorld=_bF(_UN or"");_bs()end,})_Uw:Button({Title=string.char(83,101,116,80,111,115,32,68,114,111,112,32,83,101,101,100,32,40,83,105,109,112,97,110,32,84,105,116,105,107,32,68,114,111,112,32,83,101,107,97,114,97,110,103,41),Justify=string.char(67,101,110,116,101,114),Callback=function()local _UO,_UP=_gG()if not _UO then _bI(string.char(80,111,115,105,115,105,32,98,101,108,117,109,32,116,101,114,98,97,99,97,33));return end _bn.pabrikDropX,_bn.pabrikDropY=_UO,_UP _bs()_bI(string.format(string.char(80,111,115,105,115,105,32,68,114,111,112,32,83,101,101,100,32,100,105,115,105,109,112,97,110,32,100,105,32,40,37,100,44,32,37,100,41),_UO,_UP))end,})end)_Sp(string.char(84,97,98,58,66,97,103),function()local _UQ=_SI:Tab({Title=string.char(84,97,115,32,40,82,101,99,121,99,108,101,32,38,32,76,111,99,107,41),Icon=string.char(115,111,108,97,114,58,99,104,101,99,107,45,115,113,117,97,114,101,45,98,111,108,100),IconColor=_Si,IconShape=string.char(83,113,117,97,114,101),Border=true,})_Sm.tabs.bag=_UQ local _UR=_UQ:Paragraph({Title=string.char(83,116,97,116,117,115,32,77,97,110,97,106,101,109,101,110,32,84,97,115),Desc=string.char(77,101,109,117,97,116,46,46,46)})task.spawn(function()while _e()and task.wait(0.8)do pcall(function()local _US={}for _UT,_UU in ipairs(_bn.trashList or{})do table.insert(_US,_fG(_UU)..string.char(32,91).._UU..string.char(93))end _Su(_UR,string.char(65,107,115,105,32,84,101,114,97,107,104,105,114,58,32).._rw.status,string.format((string.char(84,111,116,97,108,32,68,105,45,114,101,99,121,99,108,101,58,32,37,100,32,105,116,101,109,32,124,32,67,111,110,118,101,114,116,32,76,111,99,107,58,32,37,100,32,107,97,108,105,10,68,97,102,116,97,114,32,73,116,101,109,32,82,101)..string.char(99,121,99,108,101,58,32,37,115)),_rw.recycled,_rw.converted,#_US>0 and table.concat(_US,string.char(44,32))or string.char(40,66,101,108,117,109,32,97,100,97,41)))end)end end)_UQ:Toggle({Title=string.char(65,107,116,105,102,107,97,110,32,65,117,116,111,32,82,101,99,121,99,108,101,32,40,66,117,97,110,103,32,73,116,101,109,32,79,116,111,109,97,116,105,115,41),Value=_bn.trashOn,Callback=function(_UV)_bn.trashOn=_UV;_bs()end,})_UQ:Input({Title=string.char(84,97,109,98,97,104,32,47,32,72,97,112,117,115,32,73,68,32,73,116,101,109,32,82,101,99,121,99,108,101),Desc=(string.char(75,101,116,105,107,32,97,110,103,107,97,32,73,68,32,105,116,101,109,32,40,109,105,115,97,108,32,50,32,117,110,116,117,107,32,68,105,114,116,41,32,108,97,108,117,32,69,110,116,101,114,32,117,110,116,117,107,32,109,101,110,97,109,98)..string.char(97,104,47,109,101,110,103,104,97,112,117,115,32,100,97,114,105,32,100,97,102,116,97,114,46)),Placeholder=string.char(75,101,116,105,107,32,73,68,32,105,116,101,109,46,46,46),Callback=function(_UW)local _UX=tonumber(_UW)if not _UX or _UX<=0 then return end _UX=math.floor(_UX)local _UY=table.find(_bn.trashList,_UX)if _UY then table.remove(_bn.trashList,_UY)_bI(_fG(_UX)..string.char(32,100,105,104,97,112,117,115,32,100,97,114,105,32,100,97,102,116,97,114,32,65,117,116,111,32,82,101,99,121,99,108,101,46))else table.insert(_bn.trashList,_UX)_bI(_fG(_UX)..string.char(32,100,105,116,97,109,98,97,104,107,97,110,32,107,101,32,100,97,102,116,97,114,32,65,117,116,111,32,82,101,99,121,99,108,101,46))end _bs()end,})_UQ:Slider({Title=string.char(82,101,99,121,99,108,101,32,75,97,108,97,117,32,74,117,109,108,97,104,32,62,61),IsTooltip=true,Step=5,Value={Min=5,Max=200,Default=math.clamp(_bn.trashAt,5,200)},Callback=function(_UZ)_bn.trashAt=math.floor(tonumber(_UZ)or 150);_bs()end,})_UQ:Slider({Title=string.char(83,105,115,97,107,97,110,32,100,105,32,84,97,115,32,40,74,97,110,103,97,110,32,68,105,45,114,101,99,121,99,108,101,41),IsTooltip=true,Step=5,Value={Min=0,Max=195,Default=math.clamp(_bn.trashKeep,0,195)},Callback=function(_Va)_bn.trashKeep=math.floor(tonumber(_Va)or 0);_bs()end,})_UQ:Space()_UQ:Section({Title=string.char(76,111,99,107,32,38,32,68,114,111,112,32,67,101,112,97,116)})_UQ:Toggle({Title=string.char(65,117,116,111,32,67,111,110,118,101,114,116,32,76,111,99,107,32,40,49,48,48,32,87,76,32,45,62,32,49,32,68,76,44,32,49,48,48,32,68,76,32,45,62,32,49,32,66,71,76,41),Value=_bn.convertLockOn,Callback=function(_Vb)_bn.convertLockOn=_Vb;_bs()end,})local _Vc=string.char(49,48,48)_UQ:Input({Title=string.char(74,117,109,108,97,104,32,68,114,111,112,32,87,111,114,108,100,32,76,111,99,107),Value=string.char(49,48,48),Placeholder=string.char(74,117,109,108,97,104,32,40,49,45,49,48,48,48,48,41),Callback=function(_Vd)_Vc=_Vd end,})_UQ:Button({Title=string.char(68,114,111,112,32,87,111,114,108,100,32,76,111,99,107,32,83,101,107,97,114,97,110,103),Color=Color3.fromHex(string.char(35,51,48,53,100,102,102)),Justify=string.char(67,101,110,116,101,114),Callback=function()local _Ve=tonumber(_Vc)if _Ve and _Ve>=1 and _Ve<=_bk then task.spawn(_qI,math.floor(_Ve))else _bI(string.char(74,117,109,108,97,104,32,87,76,32,116,105,100,97,107,32,118,97,108,105,100,33))end end,})end)_Sp(string.char(84,97,98,58,71,114,111,119,83,99,97,110),function()local _Vf=_SI:Tab({Title=string.char(71,114,111,119,83,99,97,110,32,57,48,48,48),Icon=string.char(115,111,108,97,114,58,105,110,102,111,45,115,113,117,97,114,101,45,98,111,108,100),IconColor=_Sj,IconShape=string.char(83,113,117,97,114,101),Border=true,})_Sm.tabs.scan=_Vf local _Vg=_Vf:Paragraph({Title=string.char(71,114,111,119,83,99,97,110,32,57,48,48,48),Desc=string.char(84,101,107,97,110,32,116,111,109,98,111,108,32,83,99,97,110,32,100,105,32,98,97,119,97,104,32,117,110,116,117,107,32,109,101,109,105,110,100,97,105,32,105,115,105,32,119,111,114,108,100,46)})local function _Vh()local _Vi=_Mf()if not _Vi then _Su(_Vg,string.char(71,114,111,119,83,99,97,110),string.char(87,111,114,108,100,32,98,101,108,117,109,32,116,101,114,98,97,99,97,46))return end local function _Vj(_Vk,_Vl)local _Vm={}for _Vn,_Vo in pairs(_Vk)do table.insert(_Vm,{id=_Vn,n=_Vo})end table.sort(_Vm,function(_Vp,_Vq)return _Vp.n>_Vq.n end)local _Vr={}for _Vs=1,math.min(_Vl or 12,#_Vm)do table.insert(_Vr,string.format(string.char(226,128,162,32,37,115,32,91,37,100,93,32,120,37,100),_fG(_Vm[_Vs].id),_Vm[_Vs].id,_Vm[_Vs].n))end return#_Vr>0 and table.concat(_Vr,string.char(10))or string.char(75,111,115,111,110,103)end local _Vt={}for _Vu,_Vv in pairs(_Vi.trees)do local _Vw=_Vv.nextIn and string.format(string.char(32,40,112,97,110,101,110,32,100,108,109,32,37,100,115,41),math.max(0,math.ceil(_Vv.nextIn)))or""table.insert(_Vt,string.format(string.char(226,128,162,32,37,115,58,32,37,100,32,115,105,97,112,32,124,32,37,100,32,116,117,109,98,117,104,37,115),_fG(_Vu),_Vv.ready,_Vv.growing,_Vw))end local _Vx=table.concat({string.format(string.char(87,111,114,108,100,58,32,37,115,32,40,37,100,120,37,100,41),_gJ(),_Vi.w,_Vi.h),string.format(string.char(70,71,58,32,37,100,32,124,32,66,71,58,32,37,100,32,124,32,70,108,111,97,116,105,110,103,58,32,37,100,32,40,37,100,32,116,117,109,112,117,107,97,110,41),_Vi.totalFg,_Vi.totalBg,_Vi.totalDrops,_Vi.piles),string.format(string.char(80,111,104,111,110,58,32,37,100,32,115,105,97,112,32,112,97,110,101,110,32,124,32,37,100,32,116,117,109,98,117,104),_Vi.readyTrees,_Vi.growingTrees),string.char(10,91,80,79,72,79,78,32,68,73,32,87,79,82,76,68,93,58,10)..(#_Vt>0 and table.concat(_Vt,string.char(10))or string.char(84,105,100,97,107,32,97,100,97,32,112,111,104,111,110)),string.char(10,91,70,76,79,65,84,73,78,71,32,68,82,79,80,83,93,58,10).._Vj(_Vi.drops,10),string.char(10,91,87,79,82,76,68,32,66,76,79,67,75,83,93,58,10).._Vj(_Vi.fg,12),},string.char(10))_Su(_Vg,string.char(72,97,115,105,108,32,71,114,111,119,83,99,97,110,32,40)..os.date(string.char(37,72,58,37,77,58,37,83))..string.char(41),_Vx)end _Vf:Button({Title=string.char(83,99,97,110,32,73,115,105,32,87,111,114,108,100,32,83,101,107,97,114,97,110,103),Color=Color3.fromHex(string.char(35,51,48,53,100,102,102)),Justify=string.char(67,101,110,116,101,114),Callback=_Vh,})_Vf:Button({Title=string.char(66,117,107,97,32,85,73,32,71,114,111,119,83,99,97,110,32,66,97,119,97,97,110,32,71,97,109,101),Justify=string.char(67,101,110,116,101,114),Callback=function()if not _Me()then _bI(string.char(71,114,111,119,83,99,97,110,32,98,97,119,97,97,110,32,116,105,100,97,107,32,116,101,114,115,101,100,105,97,46))end end,})end)_Sp(string.char(84,97,98,58,80,111,115),function()local _Vy=_SI:Tab({Title=string.char(84,101,108,101,112,111,114,116,32,38,32,80,111,115,105,115,105),Icon=string.char(115,111,108,97,114,58,104,97,109,98,117,114,103,101,114,45,109,101,110,117,45,98,111,108,100),IconColor=_Sh,IconShape=string.char(83,113,117,97,114,101),Border=true,})_Sm.tabs.pos=_Vy local _Vz=""_Vy:Input({Title=string.char(78,97,109,97,32,87,111,114,108,100,32,84,117,106,117,97,110,32,87,97,114,112),Placeholder=string.char(75,101,116,105,107,32,110,97,109,97,32,119,111,114,108,100,46,46,46),Callback=function(_VA)_Vz=_bF(_VA or"")end,})_Vy:Button({Title=string.char(87,97,114,112,32,107,101,32,87,111,114,108,100,32,84,117,106,117,97,110),Color=Color3.fromHex(string.char(35,51,48,53,100,102,102)),Justify=string.char(67,101,110,116,101,114),Callback=function()if _Vz~=""then task.spawn(_qN,_Vz)else _bI(string.char(75,101,116,105,107,32,110,97,109,97,32,119,111,114,108,100,32,116,101,114,108,101,98,105,104,32,100,97,104,117,108,117,33))end end,})_Vy:Space()_Vy:Section({Title=string.char(83,105,109,112,97,110,32,38,32,84,101,108,101,112,111,114,116,32,80,111,115,105,115,105,32,40,80,111,115,32,49,32,47,32,80,111,115,32,50,41)})for _VB=1,2 do local _VC=_Vy:Paragraph({Title=string.char(80,111,115,32).._VB,Desc=string.char(66,101,108,117,109,32,100,105,115,101,116)})local function _VD()local _VE=_bn[string.char(112,111,115).._VB]if type(_VE)==string.char(116,97,98,108,101)and type(_VE.x)==string.char(110,117,109,98,101,114)then _Su(_VC,string.char(80,111,115,32).._VB..string.char(32,84,101,114,115,105,109,112,97,110),string.format(string.char(84,105,108,101,32,40,37,100,44,32,37,100,41,32,100,105,32,87,111,114,108,100,32,37,115),_VE.x,_VE.y,_VE.world or string.char(45)))else _Su(_VC,string.char(80,111,115,32).._VB,string.char(66,101,108,117,109,32,100,105,115,101,116))end end table.insert(_Sm.refreshers,_VD)_VD()local _VF=_Vy:Group({})_VF:Button({Title=string.char(83,105,109,112,97,110,32,80,111,115,32).._VB,Justify=string.char(67,101,110,116,101,114),Callback=function()_qT(_VB);_rl()end})_VF:Button({Title=string.char(84,101,108,101,112,111,114,116,32,40,119,105,110).._VB..string.char(41),Justify=string.char(67,101,110,116,101,114),Callback=function()task.spawn(_re,_VB)end})end end)_Sp(string.char(84,97,98,58,71,117,97,114,100),function()local _VG=_SJ:Tab({Title=string.char(80,101,110,106,97,103,97,32,38,32,82,101,99,111,110,110,101,99,116),Icon=string.char(115,111,108,97,114,58,105,110,102,111,45,115,113,117,97,114,101,45,98,111,108,100),IconColor=_Sk,IconShape=string.char(83,113,117,97,114,101),Border=true,})_Sm.tabs.guard=_VG local _VH=_VG:Paragraph({Title=string.char(83,116,97,116,117,115,32,80,101,110,106,97,103,97,32,38,32,82,101,99,111,110,110,101,99,116),Desc=string.char(77,97,116,105)})task.spawn(function()while _e()and task.wait(0.5)do pcall(function()_Su(_VH,string.char(80,101,110,106,97,103,97,58,32).._rx.status..string.char(32,124,32,82,101,99,111,110,110,101,99,116,58,32).._ry.status,string.format((string.char(80,101,109,97,105,110,32,100,105,32,87,111,114,108,100,58,32,37,115,10,83,116,97,102,102,32,79,110,108,105,110,101,32,100,105,32,83,101,114,118,101,114,58,32,37,115,10,84,101,114,100,101,116,101,107,115,105,58,32,37,100,32,107,97)..string.char(108,105,32,124,32,66,101,114,104,97,115,105,108,32,82,101,106,111,105,110,58,32,37,100,32,107,97,108,105)),_rx.hereText,_rx.staffServerText,_rx.detected,_ry.count))end)end end)_Sy(_VG,string.char(65,107,116,105,102,107,97,110,32,80,101,110,106,97,103,97,32,40,65,110,116,105,45,77,111,100,41),(string.char(80,97,110,116,97,117,32,77,111,100,101,114,97,116,111,114,32,47,32,68,101,118,101,108,111,112,101,114,32,40,116,101,114,109,97,115,117,107,32,117,110,100,101,114,99,111,118,101,114,41,32,97,116,97,117,32,112,101,109,97,105,110,32,121)..string.char(97,110,103,32,109,97,115,117,107,32,107,101,32,119,111,114,108,100,46)),string.char(103,117,97,114,100))_VG:Dropdown({Title=string.char(84,97,114,103,101,116,32,68,101,116,101,107,115,105),Values={string.char(83,116,97,102,102,32,40,77,111,100,47,68,101,118,41),string.char(83,101,109,117,97,32,112,101,109,97,105,110)},Value=_bn.guardWho,Callback=function(_VI)_bn.guardWho=_VI or string.char(83,116,97,102,102,32,40,77,111,100,47,68,101,118,41);_bs()end,})_VG:Toggle({Title=string.char(72,101,110,116,105,107,97,110,32,83,101,109,117,97,32,65,107,116,105,118,105,116,97,115,32,66,111,116),Value=_bn.guardStopAll,Callback=function(_VJ)_bn.guardStopAll=_VJ;_bs()end,})_VG:Toggle({Title=string.char(76,97,110,103,115,117,110,103,32,75,101,108,117,97,114,32,87,111,114,108,100,32,40,76,101,97,118,101,32,87,111,114,108,100,41),Value=_bn.guardLeave,Callback=function(_VK)_bn.guardLeave=_VK;_bs()end,})_VG:Toggle({Title=string.char(76,97,110,106,117,116,32,79,116,111,109,97,116,105,115,32,83,101,116,101,108,97,104,32,65,109,97,110),Value=_bn.guardAutoBack,Callback=function(_VL)_bn.guardAutoBack=_VL;_bs()end,})_VG:Slider({Title=string.char(87,97,107,116,117,32,84,117,110,103,103,117,32,77,97,115,117,107,32,76,97,103,105,32,40,100,101,116,105,107,41),IsTooltip=true,Step=5,Value={Min=15,Max=300,Default=math.clamp(_bn.guardBackSec,15,300)},Callback=function(_VM)_bn.guardBackSec=tonumber(_VM)or 60;_bs()end,})_VG:Button({Title=string.char(87,104,105,116,101,108,105,115,116,32,80,101,109,97,105,110,32,121,97,110,103,32,65,100,97,32,100,105,32,87,111,114,108,100,32,83,101,107,97,114,97,110,103),Justify=string.char(67,101,110,116,101,114),Callback=function()local _VN=_rx.AllowCurrentPlayers()_bI(_VN..string.char(32,112,101,109,97,105,110,32,100,105,32,119,111,114,108,100,32,105,110,105,32,100,105,109,97,115,117,107,107,97,110,32,107,101,32,119,104,105,116,101,108,105,115,116,46))end,})_VG:Space()_VG:Section({Title=string.char(65,117,116,111,32,82,101,99,111,110,110,101,99,116,32,40,87,111,114,108,100,32,67,108,111,115,101,100,32,38,32,83,101,114,118,101,114,32,68,105,115,99,111,110,110,101,99,116,41)})_Sy(_VG,string.char(65,107,116,105,102,107,97,110,32,65,117,116,111,32,82,101,99,111,110,110,101,99,116),(string.char(77,97,115,117,107,32,107,101,109,98,97,108,105,32,38,32,108,97,110,106,117,116,107,97,110,32,97,107,116,105,118,105,116,97,115,32,98,111,116,32,106,105,107,97,32,116,101,114,108,101,109,112,97,114,32,97,116,97,117,32,100,105,115,99)..string.char(111,110,110,101,99,116,46)),string.char(97,117,116,111,114,101,106,111,105,110))_VG:Toggle({Title=string.char(77,97,115,117,107,32,76,97,103,105,32,83,97,97,116,32,87,111,114,108,100,32,68,105,116,117,116,117,112,32,47,32,68,105,45,107,105,99,107),Value=_bn.reconnectWorld,Callback=function(_VO)_bn.reconnectWorld=_VO;_bs()end,})_VG:Toggle({Title=string.char(83,101,108,97,108,117,32,75,101,109,98,97,108,105,32,107,101,32,87,111,114,108,100,32,40,74,105,107,97,32,66,101,114,97,100,97,32,100,105,32,77,101,110,117,41),Value=_bn.reconnectKeep,Callback=function(_VP)_bn.reconnectKeep=_VP;_bs()end,})_VG:Toggle({Title=string.char(84,101,108,101,112,111,114,116,32,85,108,97,110,103,32,83,97,97,116,32,68,105,115,99,111,110,110,101,99,116,32,100,97,114,105,32,83,101,114,118,101,114),Value=_bn.reconnectServer,Callback=function(_VQ)_bn.reconnectServer=_VQ;_bs()end,})_VG:Input({Title=string.char(87,111,114,108,100,32,84,117,106,117,97,110,32,82,101,99,111,110,110,101,99,116,32,40,75,111,115,111,110,103,32,61,32,87,111,114,108,100,32,84,101,114,97,107,104,105,114,41),Placeholder=string.char(78,65,77,65,87,79,82,76,68),Callback=function(_VR)_bn.targetWorld=_bF(_VR or"");_bs()end,})end)_Sp(string.char(84,97,98,58,66,111,110,117,115),function()local _VS=_SJ:Tab({Title=string.char(65,117,116,111,32,67,104,97,116,32,38,32,66,111,110,117,115),Icon=string.char(115,111,108,97,114,58,102,105,108,101,45,116,101,120,116,45,98,111,108,100),IconColor=_Sg,IconShape=string.char(83,113,117,97,114,101),Border=true,})_Sm.tabs.bonus=_VS local _VT=_VS:Paragraph({Title=string.char(83,116,97,116,117,115,32,65,117,116,111,32,67,104,97,116,32,38,32,66,111,110,117,115),Desc=string.char(77,101,109,117,97,116,46,46,46)})task.spawn(function()while _e()and task.wait(0.6)do pcall(function()_Su(_VT,string.format(string.char(65,117,116,111,32,67,104,97,116,58,32,37,115,32,40,84,101,114,107,105,114,105,109,58,32,37,100,41),_rz.on and string.char(65,75,84,73,70)or string.char(77,65,84,73),_rz.sent),string.format(string.char(80,101,115,97,110,32,68,105,115,101,116,116,105,110,103,58,32,37,115,10,84,101,114,97,107,104,105,114,32,84,101,114,107,105,114,105,109,58,32,37,115,10,81,117,101,115,116,58,32,37,115,10,82,101,100,101,101,109,58,32,37,115),_bn.chatText~=""and _bn.chatText or string.char(40,66,101,108,117,109,32,100,105,105,115,105,41),_rz.last,_Jk.questText,_Jk.codeText))end)end end)_VS:Section({Title=string.char(65,117,116,111,32,67,104,97,116,32,47,32,83,112,97,109,109,101,114,32,40,49,32,80,101,115,97,110,41)})_Sy(_VS,string.char(65,107,116,105,102,107,97,110,32,65,117,116,111,32,67,104,97,116),(string.char(75,105,114,105,109,32,49,32,112,101,115,97,110,32,121,97,110,103,32,116,101,108,97,104,32,100,105,115,101,116,116,105,110,103,32,115,101,99,97,114,97,32,111,116,111,109,97,116,105,115,32,107,101,32,99,104,97,110,110,101,108,32,119,111)..string.char(114,108,100,46)),string.char(97,117,116,111,99,104,97,116))_VS:Input({Title=string.char(80,101,115,97,110,32,65,117,116,111,32,67,104,97,116),Placeholder=string.char(75,101,116,105,107,32,49,32,112,101,115,97,110,32,121,97,110,103,32,97,107,97,110,32,100,105,107,105,114,105,109,32,111,116,111,109,97,116,105,115,46,46,46),Callback=function(_VU)_bn.chatText=_bF(_VU or"")_bs()end,})_VS:Slider({Title=string.char(73,110,116,101,114,118,97,108,32,67,104,97,116,32,40,100,101,116,105,107,41),IsTooltip=true,Step=1,Value={Min=3,Max=120,Default=math.clamp(_bn.chatInterval,3,120)},Callback=function(_VV)_bn.chatInterval=tonumber(_VV)or 6;_bs()end,})_VS:Space()_VS:Section({Title=string.char(66,111,110,117,115,58,32,65,117,116,111,32,67,108,97,105,109,32,81,117,101,115,116,32,38,32,65,117,116,111,32,82,101,100,101,101,109,32,67,111,100,101)})_VS:Toggle({Title=string.char(65,117,116,111,32,67,108,97,105,109,32,81,117,101,115,116,32,72,97,114,105,97,110,32,40,83,101,114,118,101,114,32,78,101,116,46,99,97,108,108,41),Value=_bn.bonusAutoQuest,Callback=function(_VW)_bn.bonusAutoQuest=_VW if _VW then _Jk.nextQuest=0 end _bs()end,})_VS:Button({Title=string.char(67,101,107,32,38,32,75,108,97,105,109,32,81,117,101,115,116,32,83,101,107,97,114,97,110,103),Justify=string.char(67,101,110,116,101,114),Callback=function()task.spawn(_Jk.CheckQuests)end,})_VS:Toggle({Title=string.char(65,117,116,111,32,82,101,100,101,101,109,32,65,99,116,105,118,101,32,67,111,100,101,115),Value=_bn.bonusAutoRedeem,Callback=function(_VX)_bn.bonusAutoRedeem=_VX if _VX then _Jk.nextCode=0 end _bs()end,})_VS:Input({Title=string.char(82,101,100,101,101,109,32,67,111,100,101,32,77,97,110,117,97,108),Placeholder=string.char(75,101,116,105,107,32,107,111,100,101,32,108,97,108,117,32,69,110,116,101,114,46,46,46),Callback=function(_VY)local _VZ=_bF(_VY)if _VZ==""then return end task.spawn(function()local _Wa,_Wb=_Jk.RedeemSingle(_VZ)_bI(_VZ..string.char(58,32)..tostring(_Wb),_Wa and string.char(82,101,100,101,101,109,32,83,117,107,115,101,115)or string.char(82,101,100,101,101,109,32,71,97,103,97,108))end)end,})end)_Sp(string.char(84,97,98,58,86,105,115,117,97,108),function()local _Wc=_SK:Tab({Title=string.char(86,105,115,117,97,108,32,38,32,87,97,116,101,114,109,97,114,107),Icon=string.char(115,111,108,97,114,58,112,97,115,115,119,111,114,100,45,109,105,110,105,109,97,108,105,115,116,105,99,45,105,110,112,117,116,45,98,111,108,100),IconColor=_Sg,IconShape=string.char(83,113,117,97,114,101),Border=true,})_Sm.tabs.visual=_Wc _Wc:Toggle({Title=string.char(87,97,116,101,114,109,97,114,107,32,78,97,109,97,32,66,101,114,97,110,105,109,97,115,105),Desc=(string.char(85,98,97,104,32,116,97,109,112,105,108,97,110,32,110,97,109,97,32,100,105,32,97,116,97,115,32,107,97,114,97,107,116,101,114,32,38,32,72,85,68,32,107,105,114,105,32,97,116,97,115,32,100,101,110,103,97,110,32,101,102,101,107,32)..string.char(103,114,97,100,105,101,110,116,46)),Value=_bn.customWatermark,Callback=function(_Wd)_bn.customWatermark=_Wd;_bs()end,})_Wc:Input({Title=string.char(84,101,107,115,32,87,97,116,101,114,109,97,114,107,32,78,97,109,97),Value=_bn.watermarkText~=""and _bn.watermarkText or string.char(65,78,67,72,32,72,85,66),Placeholder=string.char(65,78,67,72,32,72,85,66),Callback=function(_We)if _bF(_We)~=""then _bn.watermarkText=_bF(_We)_bs()end end,})_Wc:Space()_Wc:Section({Title=string.char(86,105,115,117,97,108,32,73,116,101,109,32,76,111,107,97,108,32,40,75,117,121,97,110,103,44,32,76,101,103,101,110,100,66,111,116,44,32,82,97,121,109,97,110,41)})local _Wf,_Wg=string.char(83,101,109,117,97),""local _Wh={}local _Wi local function _Wj()local _Wk=_Mk()_Wh={}local _Wl={}local _Wm=_bF(_Wg):lower()for _Wn,_Wo in ipairs(_Wk)do if(_Wf==string.char(83,101,109,117,97)or table.find(_Wo.tags,_Wf))and(_Wm==""or _Wo.lower:find(_Wm,1,true))then local _Wp=string.format(string.char(37,115,32,40,37,115,41,37,115,32,35,37,100),_Wo.name,_Wo.slot,_Mh(_Wo.id)and string.char(32,91,79,78,93)or"",_Wo.id)_Wh[_Wp]=_Wo.id table.insert(_Wl,_Wp)if#_Wl>=80 then break end end end if#_Wl==0 then _Wl={string.char(84,105,100,97,107,32,97,100,97,32,105,116,101,109)}end if _Wi and _Wi.Refresh then pcall(function()_Wi:Refresh(_Wl)end)end end _Wc:Dropdown({Title=string.char(70,105,108,116,101,114,32,75,97,116,101,103,111,114,105),Values={string.char(83,101,109,117,97),string.char(75,117,121,97,110,103),string.char(76,101,103,101,110,100,66,111,116),string.char(82,97,121,109,97,110)},Value=string.char(83,101,109,117,97),Callback=function(_Wq)_Wf=_Wq or string.char(83,101,109,117,97);_Wj()end,})_Wc:Input({Title=string.char(67,97,114,105,32,73,116,101,109,32,86,105,115,117,97,108),Placeholder=string.char(75,101,116,105,107,32,110,97,109,97,32,105,116,101,109,46,46,46),Callback=function(_Wr)_Wg=_Wr or"";_Wj()end,})_Wi=_Wc:Dropdown({Title=string.char(80,105,108,105,104,32,73,116,101,109,32,86,105,115,117,97,108,32,40,84,97,112,32,117,110,116,117,107,32,80,97,107,97,105,47,76,101,112,97,115,41),Values={string.char(77,101,109,117,97,116,46,46,46)},Callback=function(_Ws)local _Wt=_Wh[_Ws]if _Wt and _Mi(_Wt)then _bI(string.char(86,105,115,117,97,108,32,105,116,101,109,32,100,105,117,98,97,104,58,32).._fG(_Wt))_Wj()end end,})_Wc:Button({Title=string.char(82,101,115,101,116,32,83,101,109,117,97,32,86,105,115,117,97,108,32,73,116,101,109),Color=Color3.fromHex(string.char(35,102,102,52,56,51,48)),Justify=string.char(67,101,110,116,101,114),Callback=function()_Mj();_Wj()end,})_Wc:Space()_Wc:Section({Title=string.char(82,111,108,101,32,47,32,84,105,116,108,101,32,38,32,83,116,97,102,102,32,85,73)})local _Wv=_Wc:Dropdown({Title=string.char(80,105,108,105,104,32,82,111,108,101,32,47,32,84,105,116,108,101),Values={string.char(110,111,110,101)},Callback=function(_Wu)_bn.selectedRole=_Wu or string.char(110,111,110,101);_bs()end,})_Wc:Button({Title=string.char(82,101,102,114,101,115,104,32,38,32,80,97,115,97,110,103,32,82,111,108,101,32,83,101,107,97,114,97,110,103),Justify=string.char(67,101,110,116,101,114),Callback=function()if _Wv and _Wv.Refresh then pcall(function()_Wv:Refresh(_Ml())end)end _Mm(_bn.selectedRole)end,})_Wc:Button({Title=string.char(66,117,107,97,32,83,116,97,102,102,32,66,97,99,107,112,97,99,107),Justify=string.char(67,101,110,116,101,114),Callback=function()if _bN.Menu and type(_bN.Menu.openBackpack)==string.char(102,117,110,99,116,105,111,110)then pcall(_bN.Menu.openBackpack,{name=_H.DisplayName or _H.Name,userId=_H.UserId})else _bI(string.char(77,101,110,117,32,83,116,97,102,102,32,98,101,108,117,109,32,100,105,116,101,109,117,107,97,110,46))end end,})task.defer(_Wj)end)_Sp(string.char(84,97,98,58,83,101,116,116,105,110,103,115),function()local _Ww=_SK:Tab({Title=string.char(68,105,115,99,111,114,100,32,38,32,80,101,110,103,97,116,117,114,97,110),Icon=string.char(115,111,108,97,114,58,102,111,108,100,101,114,45,119,105,116,104,45,102,105,108,101,115,45,98,111,108,100),IconColor=_Sj,IconShape=string.char(83,113,117,97,114,101),Border=true,})_Sm.tabs.session=_Ww _Sm.tabs.settings=_Ww local _Wx=_Ww:Paragraph({Title=string.char(83,116,97,116,117,115,32,68,105,115,99,111,114,100,32,87,101,98,104,111,111,107),Desc=string.char(45)})task.spawn(function()while _e()and task.wait(1)do pcall(function()_Su(_Wx,string.char(83,116,97,116,117,115,32,87,101,98,104,111,111,107,58,32).._bW.Status,string.char(65,110,116,114,105,97,110,32,80,101,115,97,110,58,32)..#_bW.Queue)end)end end)_Ww:Toggle({Title=string.char(65,107,116,105,102,107,97,110,32,78,111,116,105,102,105,107,97,115,105,32,68,105,115,99,111,114,100,32,87,101,98,104,111,111,107),Value=_bn.webhookOn,Callback=function(_Wy)_bn.webhookOn=_Wy;_bs()end,})_Ww:Input({Title=string.char(85,82,76,32,87,101,98,104,111,111,107,32,68,105,115,99,111,114,100),Placeholder=string.char(104,116,116,112,115,58,47,47,100,105,115,99,111,114,100,46,99,111,109,47,97,112,105,47,119,101,98,104,111,111,107,115,47,46,46,46),Callback=function(_Wz)_bn.webhookUrl=_bF(_Wz or"")_bs()if _bn.webhookUrl~=""and not _bW.Valid(_bn.webhookUrl)then _bI(string.char(70,111,114,109,97,116,32,85,82,76,32,87,101,98,104,111,111,107,32,68,105,115,99,111,114,100,32,116,105,100,97,107,32,118,97,108,105,100,33))end end,})_Ww:Button({Title=string.char(84,101,115,32,75,105,114,105,109,32,87,101,98,104,111,111,107,32,68,105,115,99,111,114,100),Justify=string.char(67,101,110,116,101,114),Callback=function()if not _bW.Valid(_bn.webhookUrl)then _bI(string.char(73,115,105,32,85,82,76,32,87,101,98,104,111,111,107,32,68,105,115,99,111,114,100,32,121,97,110,103,32,118,97,108,105,100,32,116,101,114,108,101,98,105,104,32,100,97,104,117,108,117,33))return end local _WA=_bn.webhookOn _bn.webhookOn=true _bW.Send(string.char(116,101,115,116),string.char(84,101,115,32,110,111,116,105,102,105,107,97,115,105,32,100,97,114,105,32,65,78,67,72,32,72,117,98,32,118,49,46,50,32,85,108,116,105,109,97,116,101,33))_bn.webhookOn=_WA _bI(string.char(80,101,115,97,110,32,116,101,115,32,109,97,115,117,107,32,97,110,116,114,105,97,110,32,107,105,114,105,109,32,68,105,115,99,111,114,100,46))end,})_Ww:Slider({Title=string.char(73,110,116,101,114,118,97,108,32,76,97,112,111,114,97,110,32,83,116,97,116,105,115,116,105,107,32,107,101,32,68,105,115,99,111,114,100,32,40,77,101,110,105,116,44,32,48,32,61,32,77,97,116,105,41),IsTooltip=true,Step=5,Value={Min=0,Max=180,Default=math.clamp(_bn.webhookReportMin,0,180)},Callback=function(_WB)_bn.webhookReportMin=math.floor(tonumber(_WB)or 0);_bs()end,})_Ww:Space()_Ww:Section({Title=string.char(83,101,115,105,44,32,75,97,108,105,98,114,97,115,105,32,38,32,65,117,116,111,101,120,101,99)})_Ww:Toggle({Title=string.char(80,117,108,105,104,107,97,110,32,70,105,116,117,114,32,79,116,111,109,97,116,105,115,32,83,97,97,116,32,77,97,115,117,107),Value=_bn.autoRestore,Callback=function(_WC)_bn.autoRestore=_WC;_bs()end,})_Ww:Toggle({Title=string.char(65,117,116,111,45,82,101,108,111,97,100,32,83,107,114,105,112,32,83,97,97,116,32,84,101,108,101,112,111,114,116),Value=_bn.autoReload,Callback=function(_WD)_bn.autoReload=_WD;_bs();if _WD then _qM()end end,})_Ww:Input({Title=string.char(85,82,76,32,83,99,114,105,112,116,32,40,85,110,116,117,107,32,65,117,116,111,45,82,101,108,111,97,100,32,84,101,108,101,112,111,114,116,41),Placeholder=string.char(104,116,116,112,115,58,47,47,46,46,46),Callback=function(_WE)_bn.scriptUrl=_bF(_WE or"");_bs()end,})_Ww:Input({Title=string.char(80,114,101,102,105,120,32,67,111,109,109,97,110,100,32,67,104,97,116),Value=_bn.prefix~=""and _bn.prefix or string.char(47),Callback=function(_WF)_bn.prefix=_bF(_WF);_bs()end,})_Ww:Input({Title=string.char(75,97,108,105,98,114,97,115,105,32,80,111,115,105,115,105,32,88),Value=tostring(_bn.calibX),Callback=function(_WG)_bn.calibX=tonumber(_WG)or 0;_bs()end,})_Ww:Input({Title=string.char(75,97,108,105,98,114,97,115,105,32,80,111,115,105,115,105,32,89),Value=tostring(_bn.calibY),Callback=function(_WH)_bn.calibY=tonumber(_WH)or 0;_bs()end,})_Ww:Keybind({Title=string.char(75,101,121,98,105,110,100,32,66,117,107,97,47,84,117,116,117,112,32,85,73),Value=string.char(82,105,103,104,116,67,111,110,116,114,111,108),Callback=function(_WI)pcall(function()_Sl:SetToggleKey(Enum.KeyCode[_WI])end)end,})_Ww:Button({Title=string.char(80,97,115,97,110,103,32,65,117,116,111,45,69,120,101,99,117,116,101,32,40,97,117,116,111,101,120,101,99,41),Justify=string.char(67,101,110,116,101,114),Callback=_QS,})end)_Sp(string.char(84,97,98,58,72,101,108,112),function()local _WJ=_SK:Tab({Title=string.char(80,97,110,100,117,97,110,32,67,111,109,109,97,110,100),Icon=string.char(115,111,108,97,114,58,105,110,102,111,45,115,113,117,97,114,101,45,98,111,108,100),IconColor=_Si,IconShape=string.char(83,113,117,97,114,101),Border=true,})_Sm.tabs.help=_WJ _WJ:Paragraph({Title=string.char(68,97,102,116,97,114,32,80,101,114,105,110,116,97,104,32,67,104,97,116,32,65,78,67,72,32,72,117,98,32,118,49,46,50,32,66,101,116,97),Desc=table.concat({string.char(47,97,102,32,91,111,110,47,111,102,102,93,32,32,226,128,148,32,32,65,117,116,111,32,70,97,114,109,32,40,77,117,108,116,105,45,84,97,114,103,101,116,32,43,32,82,97,121,109,97,110,41),(string.char(47,97,99,32,91,111,110,47,111,102,102,93,32,32,226,128,148,32,32,65,117,116,111,32,67,108,101,97,114,32,87,111,114,108,100,32,40,77,111,100,70,108,121,32,43,32,66,101,114,100,105,114,105,32,100,105,32,65,116,97,115,32,66,108)..string.char(111,107,41)),string.char(47,97,104,32,91,111,110,47,111,102,102,93,32,32,226,128,148,32,32,70,97,114,109,101,114,32,40,65,117,116,111,32,72,97,114,118,101,115,116,32,43,32,65,117,116,111,32,80,108,97,110,116,41),string.char(47,97,100,102,32,91,111,110,47,111,102,102,93,32,226,128,148,32,32,65,117,116,111,32,68,105,114,116,32,70,97,114,109,32,40,70,117,108,108,32,87,111,114,108,100,32,43,32,83,109,97,114,116,32,83,117,112,112,108,121,41),string.char(47,97,115,32,91,111,110,47,111,102,102,93,32,32,226,128,148,32,32,65,117,116,111,32,83,112,108,105,99,101,32,40,83,101,101,100,32,65,32,43,32,83,101,101,100,32,66,41),(string.char(47,112,97,98,114,105,107,32,91,111,110,47,111,102,102,93,32,226,128,148,32,80,97,98,114,105,107,32,83,101,101,100,32,40,80,97,110,101,110,32,45,62,32,84,97,110,97,109,32,45,62,32,66,114,101,97,107,32,45,62,32,68,114,111)..string.char(112,41)),string.char(47,103,117,97,114,100,32,91,111,110,47,111,102,102,93,32,226,128,148,32,80,101,110,106,97,103,97,32,65,110,116,105,45,77,111,100,32,47,32,83,116,97,102,102,32,68,101,116,101,99,116,111,114),string.char(47,99,104,97,116,32,91,111,110,47,111,102,102,93,32,32,226,128,148,32,65,117,116,111,32,67,104,97,116,32,47,32,83,112,97,109,109,101,114,32,40,49,32,80,101,115,97,110,41),string.char(47,99,116,112,32,91,111,110,47,111,102,102,93,32,226,128,148,32,32,67,108,105,99,107,32,84,80,32,40,76,101,103,105,116,32,65,42,32,47,32,80,105,108,108,97,114,41),string.char(47,109,111,118,101,32,60,108,101,103,105,116,124,119,97,108,107,124,102,108,121,124,109,105,120,62,32,226,128,148,32,85,98,97,104,32,109,111,100,101,32,103,101,114,97,107),(string.char(47,110,111,99,108,105,112,32,124,32,47,117,106,32,124,32,47,103,111,100,32,124,32,47,108,105,116,101,32,124,32,47,98,108,105,110,107,32,124,32,47,108,104,32,91,110,124,111,102,102,93,32,124,32,47,97,113,32,91,111,110,124,111,102)..string.char(102,124,115,99,97,110,93)),string.char(47,119,108,100,32,60,106,117,109,108,97,104,62,32,124,32,47,116,112,32,60,119,111,114,108,100,62,32,124,32,47,112,111,115,49,32,124,32,47,112,111,115,50,32,124,32,47,119,105,110,49,32,124,32,47,119,105,110,50),},string.char(10)),})end)local function _WK(_WL)local _WM=_Sm.tabs[_WL or string.char(102,101,97,116,117,114,101,115)]if _WM and _WM.Select then pcall(function()_WM:Select()end)end if _Sl.Open then pcall(function()_Sl:Open()end)end end local function _WN(_WO,_WP)if _WO==string.char(111,110)or _WO==string.char(115,116,97,114,116)then return true elseif _WO==string.char(111,102,102)or _WO==string.char(115,116,111,112)then return false end return not _WP end local function _WQ(_WR)_WR=_bF(_WR)if _WR==""then return false end local _WS=_bn.prefix local _WT if _WS==""then _WT=_WR elseif _WR:sub(1,#_WS)==_WS then _WT=_WR:sub(#_WS+1)elseif _WR:sub(1,1)==string.char(47)then local _WU=_WR:sub(2):lower()if _WU==string.char(115,101,116,116,105,110,103,115,103,98)or _WU==string.char(115,103,98)or _WU==string.char(97,110,99,104)then _WT=_WR:sub(2)end end if not _WT then return false end local _WV,_WW=_WT:match(string.char(94,40,37,83,43,41,37,115,42,40,46,45,41,37,115,42,36))if not _WV then return false end _WV,_WW=_WV:lower(),(_WW or""):lower()if _WV==string.char(119,108,100)or _WV==string.char(119,100)then local _WX=tonumber(_WW:match(string.char(94,40,37,100,43,41,36)))if _WX and _WX>=1 and _WX<=_bk then task.spawn(_qI,_WX)else _bI(string.char(74,117,109,108,97,104,32,87,76,32,116,105,100,97,107,32,118,97,108,105,100,33))end return true elseif _WV==string.char(116,112)or _WV==string.char(119,97,114,112)then task.spawn(_qN,_WW);return true elseif _WV==string.char(112,111,115,49)or _WV==string.char(112,111,115,50)then _qT(tonumber(_WV:sub(4)));_rl();return true elseif _WV==string.char(112,111,115)then _qY();return true elseif _WV==string.char(119,105,110,49)or _WV==string.char(119,49)or _WV==string.char(119,105,110,50)or _WV==string.char(119,50)then local _WY=tonumber(_WV:match(string.char(37,100,36)))local _WZ=tonumber(_WW:match(string.char(94,40,37,100,43,41,36)))task.spawn(_re,_WY,_WZ);return true elseif _WV==string.char(114,101,106,111,105,110)or _WV==string.char(114,106)then task.spawn(_qR);return true elseif _WV==string.char(110,111,99,108,105,112)then _QF(string.char(110,111,99,108,105,112),_WN(_WW,_hW));return true elseif _WV==string.char(117,110,108,105,109,105,116,101,100,106,117,109,112)or _WV==string.char(117,106)or _WV==string.char(105,110,102,106,117,109,112)then _QF(string.char(117,106,117,109,112),_WN(_WW,_LK));return true elseif _WV==string.char(97,102,107)or _WV==string.char(97,110,116,105,97,102,107)then _QF(string.char(97,110,116,105,97,102,107),_WN(_WW,_LL));return true elseif _WV==string.char(97,117,116,111,114,101,106,111,105,110)or _WV==string.char(97,114,106)then _QF(string.char(97,117,116,111,114,101,106,111,105,110),_WN(_WW,_bn.reconnectOn));return true elseif _WV==string.char(98,108,105,110,107)then _QF(string.char(98,108,105,110,107),_WN(_WW,_LI));return true elseif _WV==string.char(108,111,110,103,104,97,110,100)or _WV==string.char(108,104)then local _Xa=tonumber(_WW)if _Xa and _Xa>0 then _bn.longhandRange=_Xa _bs()_QF(string.char(108,111,110,103,104,97,110,100),true)else _QF(string.char(108,111,110,103,104,97,110,100),_WN(_WW,_LJ))end return true elseif _WV==string.char(97,117,116,111,113,117,101,115,116)or _WV==string.char(97,113)then if _WW==string.char(115,99,97,110)then task.spawn(_Md)else _QF(string.char(97,117,116,111,113,117,101,115,116),_WN(_WW,_LO))end return true elseif _WV==string.char(103,111,100)or _WV==string.char(103,111,100,109,111,100,101)then _QF(string.char(103,111,100),_WN(_WW,_LN));return true elseif _WV==string.char(108,105,116,101)then _QF(string.char(108,105,116,101),_WN(_WW,_bn.liteMode));return true elseif _WV==string.char(103,117,97,114,100)or _WV==string.char(112,101,110,106,97,103,97)then _QF(string.char(103,117,97,114,100),_WN(_WW,_rx.on));return true elseif _WV==string.char(99,104,97,116)or _WV==string.char(97,117,116,111,99,104,97,116)then _QF(string.char(97,117,116,111,99,104,97,116),_WN(_WW,_rz.on));return true elseif _WV==string.char(97,117,116,111,102,97,114,109)or _WV==string.char(97,102)then if _WW==""then _WK(string.char(102,97,114,109))else _QF(string.char(97,117,116,111,102,97,114,109),_WN(_WW,_rq.on))end return true elseif _WV==string.char(97,117,116,111,99,108,101,97,114)or _WV==string.char(97,99)or _WV==string.char(99,108,101,97,114)then if _WW==""then _WK(string.char(99,108,101,97,114))else _QF(string.char(97,117,116,111,99,108,101,97,114),_WN(_WW,_rr.on))end return true elseif _WV==string.char(97,117,116,111,104,97,114,118,101,115,116)or _WV==string.char(97,104)or _WV==string.char(104,97,114,118,101,115,116)or _WV==string.char(102,97,114,109,101,114)then if _WW==""then _WK(string.char(104,97,114,118,101,115,116))else _QF(string.char(97,117,116,111,104,97,114,118,101,115,116),_WN(_WW,_rs.on))end return true elseif _WV==string.char(97,117,116,111,100,102)or _WV==string.char(97,100,102)or _WV==string.char(100,102)then if _WW==""then _WK(string.char(100,102))else _QF(string.char(97,117,116,111,100,102),_WN(_WW,_rt.on))end return true elseif _WV==string.char(97,117,116,111,115,112,108,105,99,101)or _WV==string.char(97,115)or _WV==string.char(115,112,108,105,99,101)then if _WW==""then _WK(string.char(115,112,108,105,99,101))else _QF(string.char(97,117,116,111,115,112,108,105,99,101),_WN(_WW,_ru.on))end return true elseif _WV==string.char(112,97,98,114,105,107)or _WV==string.char(102,97,99,116,111,114,121)then if _WW==""then _WK(string.char(112,97,98,114,105,107))else _QF(string.char(112,97,98,114,105,107),_WN(_WW,_rv.on))end return true elseif _WV==string.char(99,108,105,99,107,116,112)or _WV==string.char(99,116,112)then _QF(string.char(99,108,105,99,107,116,112),_WN(_WW,_ik.clickOn));return true elseif _WV==string.char(109,111,118,101)or _WV==string.char(109,118)then local _Xb={legit=string.char(108,101,103,105,116),walk=string.char(119,97,108,107),jalan=string.char(119,97,108,107),fly=string.char(102,108,121),terbang=string.char(102,108,121),mix=string.char(109,105,120),campur=string.char(109,105,120)}if _Xb[_WW]then _bn.moveMode=_Xb[_WW]_bs()_bI(string.char(77,111,100,101,32,103,101,114,97,107,58,32).._Xb[_WW])else _bI(string.char(77,111,100,101,32,97,107,116,105,102,58,32).._bn.moveMode..string.char(32,40,112,105,108,105,104,97,110,58,32,108,101,103,105,116,32,124,32,119,97,108,107,32,124,32,102,108,121,32,124,32,109,105,120,41))end return true elseif _WV==string.char(103,114,111,119,115,99,97,110)or _WV==string.char(103,115)then _WK(string.char(115,99,97,110));return true elseif _WV==string.char(118,105,115,117,97,108,105,116,101,109)or _WV==string.char(118,105)then _WK(string.char(118,105,115,117,97,108));return true elseif _WV==string.char(115,101,116,116,105,110,103,115,103,98)or _WV==string.char(115,103,98)or _WV==string.char(115,101,115,115,105,111,110)or _WV==string.char(115,101,115,105)then _WK(string.char(115,101,115,115,105,111,110));return true elseif _WV==string.char(98,108,111,99,107,105,100)or _WV==string.char(98,105,100)then local _Xc=_Mg(_WW,5)local _Xd={}for _Xe,_Xf in ipairs(_Xc)do table.insert(_Xd,_Xf.name..string.char(32,61,32).._Xf.id)end _bI(#_Xd>0 and table.concat(_Xd,string.char(32,124,32))or string.char(66,108,111,99,107,32,116,105,100,97,107,32,100,105,116,101,109,117,107,97,110,46))return true elseif _WV==string.char(97,110,99,104)then _WK(string.char(104,101,108,112));return true end return false end do(function()local _Xg,_Xh,_Xi={},nil,0 local function _Xj(_Xk)if type(_Xk)~=string.char(115,116,114,105,110,103)then return end local _Xl=_bF(_Xk):lower()if _Xl==_Xh and os.clock()-_Xi<1.5 then return end if _WQ(_bF(_Xk))then _Xh,_Xi=_Xl,os.clock()end end local function _Xm(_Xn)if _Xg[_Xn]or not _Xn:IsA(string.char(84,101,120,116,66,111,120))then return end local _Xo=_Xn:FindFirstAncestorOfClass(string.char(83,99,114,101,101,110,71,117,105))if _Xo and(_Xo.Name:find(string.char(65,78,67,72),1,true)or _Xo.Name:lower():find(string.char(119,105,110,100,117,105),1,true))then return end _Xg[_Xn]=true local _Xp=""_Xn:GetPropertyChangedSignal(string.char(84,101,120,116)):Connect(function()if _Xn.Text~=""then _Xp=_Xn.Text end end)_Xn.FocusLost:Connect(function(_Xq)if _Xq then local _Xr=_Xn.Text~=""and _Xn.Text or _Xp _Xp=""_Xj(_Xr)end end)end for _Xs,_Xt in ipairs(_I:GetDescendants())do _Xm(_Xt)end _f(_I.DescendantAdded:Connect(_Xm))_f(_H.Chatted:Connect(_Xj))end)()end _d.Cleanup=function()_d.Alive=false _tX()_rr.Stop()_rs.Stop()_rt.Stop()_ru.Stop()_rv.Stop()_ik.StopClick()_rx.Set(false)_rz.on=false _LQ()_LS()_ii()_LU()_Ma()if _d.RestoreFastWrench then pcall(_d.RestoreFastWrench)end _Jl.Set(false)if _d.RestoreWatermark then pcall(_d.RestoreWatermark)end if _cu and _be and rawget(_bf,string.char(105,115,68,111,119,110))~=_cu then _bf.isDown=_cu end for _Xu,_Xv in ipairs(_d.Connections)do pcall(function()_Xv:Disconnect()end)end if _rm then pcall(function()_rm:Destroy()end)end if _hY then pcall(function()_hY:Destroy()end)end if _Sl then pcall(function()_Sl:Destroy()end)end end task.spawn(function()_LV()_bN.Scan()_bV.Reset()if _bn.liteMode then _Jl.Set(true)end pcall(_qM)_f(_H.OnTeleport:Connect(function()_bs()pcall(_qM)end))if _bn.autoRestore then for _Xw,_Xx in pairs(_QE)do if _bn.session[_Xw]and not _Xx.noSession and not _Xx.get()then pcall(_Xx.set,true)end end if _rl then _rl()end end task.spawn(_ry.CheckStartup)task.spawn(_rv.CheckStartup)_bI(string.char(65,78,67,72,32,72,85,66,32,118,49,46,50,32,66,101,116,97,32,76,111,97,100,101,100,33,32,83,101,109,117,97,32,116,97,98,32,38,32,102,105,116,117,114,32,115,105,97,112,32,100,105,103,117,110,97,107,97,110,46))end)
+--[[
+    ANCH HUB | GrowBlox  (v1.2 Ultimate - All-in-One WindUI)
+
+    Daftar Perintah Chat (Prefix default "/"):
+      wld|wd <jumlah>             Drop World Lock
+      tp|warp <world>             Pindah world
+      pos1 | pos2                 Simpan posisi sekarang
+      win1|w1 | win2|w2 [jumlah]  Teleport ke Pos 1 / Pos 2 (+opsional drop WL)
+      pos                         Lihat posisi sekarang & pos tersimpan
+      rejoin|rj                   Masuk ulang ke world ini
+      noclip [on|off]             Fly + tembus blok (+ tombol layar ▲/▼)
+      unlimitedjump|uj            Lompat di udara tanpa batas
+      blink [on|off]              Warna skin berganti otomatis
+      longhand|lh [n|off]         Jangkauan punch/build lebih jauh
+      visualitem|vi               GUI item visual (lokal)
+      settingsgb|sgb              GUI pengaturan
+      afk                         Anti-AFK
+      autorejoin|arj              Rejoin otomatis kalau disconnect
+      session|sesi                GUI sesi (simpan & pulihkan otomatis)
+      af|autofarm [on|off]        Auto Farm (Multi-target, Rayman, Grid 5x5)
+      ac|autoclear [on|off]       Auto Clear World (ModFly Always On + Stand Above Block)
+      ah|autoharvest [on|off]     Auto Harvest & Auto Plant (Farmer)
+      adf|autodf [on|off]         Auto Dirt Farm (Full World Builder + Smart Supply)
+      as|autosplice [on|off]      Auto Splice (Seed A + Seed B, Roam A* / Grid)
+      pabrik|factory [on|off]     Pabrik Seed (Panen -> Tanam -> Break -> Auto Drop)
+      guard|penjaga [on|off]      Anti-Mod / Staff & Player Detector
+      chat|autochat [on|off]      Auto Chat / Spammer (1 Pesan)
+      ctp|clicktp [on|off]        Click TP (Legit A* / Fly / Mix)
+      move|mv <legit|walk|fly|mix> Ubah mode pergerakan
+      aq|autoquest [on|off|scan]  Auto Quest
+      gs|growscan                 Buka GrowScan
+      god [on|off]                God Mode (kebal lava, spike, api)
+      lite [on|off]               Mode Lite (matikan partikel & suara)
+      blockid|bid <nama>          Cari ID block dari nama
+      anch                         Daftar perintah
+]]
+
+----------------------------------------------------------------------
+-- SESI & CEGAH DOBEL EKSEKUSI (DENGAN CLEANUP OTOMATIS)
+----------------------------------------------------------------------
+local G = (getgenv and getgenv()) or _G
+for _, key in ipairs({ "__ANCHHubSession", "__Alfian", "__GTFarm" }) do
+    if G[key] and G[key].Cleanup then
+        pcall(G[key].Cleanup)
+    end
+    G[key] = nil
+end
+
+local Session = { Alive = true, Connections = {} }
+G.__ANCHHubSession = Session
+G.ANCHHubGB_Loaded = os.clock()
+
+local function alive()
+    return Session.Alive and G.__ANCHHubSession == Session
+end
+
+local function trackConn(conn)
+    if conn then
+        table.insert(Session.Connections, conn)
+    end
+    return conn
+end
+
+-- Pelaksana UI dengan izin thread awal (mencegah error capability pada Dropdown)
+do
+    local getId = getthreadidentity or get_thread_identity or getidentity or (syn and syn.get_thread_identity)
+    if type(getId) == "function" then pcall(function() Session.Ident = getId() end) end
+    Session.Exec = coroutine.create(function(job)
+        while true do
+            local ok, err = pcall(job)
+            job = coroutine.yield(ok, err)
+        end
+    end)
+end
+
+local function ExecUI(fn)
+    local setId = setthreadidentity or set_thread_identity or setidentity or (syn and syn.set_thread_identity)
+    local function elevate()
+        if Session.Ident and type(setId) == "function" then pcall(setId, Session.Ident) end
+    end
+    local co = Session.Exec
+    if co and coroutine.status(co) == "suspended" then
+        local okR, ok = coroutine.resume(co, function()
+            elevate()
+            fn()
+        end)
+        if okR and ok ~= false then return true end
+    end
+    elevate()
+    return pcall(fn)
+end
+
+----------------------------------------------------------------------
+-- SERVICES & MODULE GAME
+----------------------------------------------------------------------
+local cloneref = (cloneref or clonereference or function(instance)
+    return instance
+end)
+
+local Players = cloneref(game:GetService("Players"))
+local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
+local StarterGui = cloneref(game:GetService("StarterGui"))
+local GuiService = cloneref(game:GetService("GuiService"))
+local UserInputService = cloneref(game:GetService("UserInputService"))
+local HttpService = cloneref(game:GetService("HttpService"))
+local TweenService = cloneref(game:GetService("TweenService"))
+local RunService = cloneref(game:GetService("RunService"))
+local TeleportService = cloneref(game:GetService("TeleportService"))
+local VirtualUser = cloneref(game:GetService("VirtualUser"))
+local TextChatService = cloneref(game:GetService("TextChatService"))
+local TextService = cloneref(game:GetService("TextService"))
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared", 10)
+local WorldRemotes = ReplicatedStorage:WaitForChild("WorldRemotes", 10)
+local DropEvent = WorldRemotes and WorldRemotes:WaitForChild("DropItem", 5)
+local SetTileRemote = WorldRemotes and WorldRemotes:FindFirstChild("SetTile")
+local TakeDropRemote = WorldRemotes and WorldRemotes:FindFirstChild("TakeDrop")
+local PickTitleRemote = WorldRemotes and WorldRemotes:FindFirstChild("PickTitle")
+local WorldClosedRemote = WorldRemotes and WorldRemotes:FindFirstChild("WorldClosed")
+
+local ItemDB = Shared and require(Shared:WaitForChild("ItemDB", 5)) or {}
+local InvModOk, InventoryModule = pcall(function() return require(Shared:WaitForChild("Inventory", 5)) end)
+local NetOk, Net = pcall(function() return require(Shared:WaitForChild("Net", 5)) end)
+local RolesOk, RolesModule = pcall(function() return require(Shared:FindFirstChild("Roles")) end)
+local SfxOk, SfxModule = pcall(function() return require(Shared:FindFirstChild("Sfx")) end)
+local SpliceOk, SpliceModule = pcall(function() return require(Shared:FindFirstChild("Splice")) end)
+
+local GameGui = PlayerGui:WaitForChild("GameGui", 10)
+local ParticlesOk, ParticlesModule = pcall(function() return require(GameGui:WaitForChild("Particles", 5)) end)
+local MenuModOk, MenuModule = pcall(function() return require(GameGui:WaitForChild("WorldMenu", 5)) end)
+
+----------------------------------------------------------------------
+-- CONFIG & STATE GLOBAL
+----------------------------------------------------------------------
+local CONFIG_FILE = "ANCHHub_GrowBlox.json"
+local REJOIN_FILE = "ANCHHub_Rejoin_" .. tostring(Player.UserId) .. ".json"
+local PABRIK_STATE_FILE = "ANCHHub_Pabrik_" .. tostring(Player.UserId) .. ".json"
+local SCRIPT_FILE = "ANCHHub_GrowBlox.lua"
+local MAX_AMOUNT = 10000
+local COOLDOWN = 0.3
+local PLACE_GUARD = 0.34
+
+local Config = {
+    prefix = "/",
+    dropId = 242,
+    longhandRange = 3,
+    blinkMin = 0.2,
+    blinkMax = 0.5,
+    winDrop = 0,
+    pos1 = {},
+    pos2 = {},
+    -- Fast Wrench Action (Fast Pull / Fast Kick / Fast Ban)
+    fastPull = false,
+    fastKick = false,
+    fastBan = false,
+    -- Sesi & Reconnect
+    autoRestore = true,
+    autoReload = true,
+    autoWarp = false,
+    launcher = true,
+    lastWorld = "",
+    scriptUrl = "",
+    session = {},
+    reconnectOn = false,
+    reconnectWorld = true,
+    reconnectServer = true,
+    reconnectKeep = false,
+    reconnectDelay = 5,
+    targetWorld = "",
+    -- Karakter & Misc
+    walkSpeed = 100,
+    mutePunch = true,
+    visualAnim = true, -- Animasi ayunan tangan & efek partikel saat place/break
+    liteMode = false,
+    customWatermark = true,
+    watermarkText = "ANCH HUB",
+    selectedRole = "none",
+    calibX = 0,
+    calibY = 0,
+    -- Auto Collect Global ("Sentuhan" = fisik badan anti-tolak server | "Remote" = jarak jauh)
+    collectMode = "Sentuhan",
+    collectAround = false,
+    collectRadius = 3,
+    -- Vending Machine
+    vendMode = "Isi stock dari drop",
+    vendPoint = "",
+    vendDropX = -1,
+    vendDropY = -1,
+    vendItems = {},
+    -- Auto Farm (+ Auto Save/Drop Seed)
+    farmMode = "Place + Break",
+    farmPlaceMs = 250,
+    farmDelay = 0.22,
+    farmAfterBreakMs = 300,
+    farmMultiTarget = 1,
+    farmHitsOverride = 0,
+    farmBreakBg = true,
+    farmPlaceId = 2,
+    farmGrid = { ["1,0"] = true },
+    farmTake = true,
+    farmAutoDropSeed = false,
+    farmSeedDropAt = 200,
+    farmSeedKeep = 0,
+    farmDropWorld = "",
+    farmDropX = -1,
+    farmDropY = -1,
+    -- Auto Clear World
+    clearSweep = "Zig-zag",
+    clearIncludeBg = true,
+    clearBreakDelay = 0.16,
+    clearTpDelay = 0.22,
+    clearTake = true,
+    clearModFly = true,
+    -- Farmer (Auto Harvest + Auto Plant)
+    harvestDoHarvest = true,
+    harvestDoPlant = false,
+    harvestSeedId = 3,
+    harvestUseBlock = false, -- Default false agar tidak menaruh/merusak blok DF
+    harvestScaffoldId = 2,
+    harvestDelay = 0.22,
+    harvestPlantDelay = 0.25,
+    harvestTpDelay = 0.30,
+    harvestTake = true,
+    harvestModFly = false,
+    -- Auto Dirt Farm (DF Full World)
+    dfBreakDelay = 0.15,
+    dfTpDelay = 0.28,
+    dfTake = true,
+    dfModFly = true,
+    dfReplacePlatform = true,
+    -- Auto Splice
+    spliceA = 3,
+    spliceB = 5,
+    spliceRoam = true,
+    spliceMs = 300,
+    -- Pabrik (Factory - Sistem Max Seed)
+    pabrikSeedId = 3,
+    pabrikMaxSeed = 100, -- Batas maksimal seed yang ditanam & diputarkan di pabrik
+    pabrikWholeWorld = true,
+    pabrikTiles = { ["1,0"] = true },
+    pabrikBreakX = -1,
+    pabrikBreakY = -1,
+    pabrikBreakSec = 120,
+    pabrikDrop = true,
+    pabrikDropWorld = "",
+    pabrikDropX = -1,
+    pabrikDropY = -1,
+    -- Tas (Auto Recycle & Auto Convert Lock)
+    trashOn = false,
+    trashList = {},
+    trashAt = 150,
+    trashKeep = 0,
+    convertLockOn = false,
+    -- Navigasi / Pathfinding Universal
+    moveMode = "legit",      -- "legit" = Legit Walking | "teleport" = Teleport Stepper
+    moveMethod = "Legit Walking", -- "Legit Walking" | "Teleport Mode"
+    navSpeed = 1,
+    moveStepDelay = 0.28,
+    clickTpShift = false,
+    -- Penjaga (Anti-Mod / Staff)
+    guardWho = "Staff (Mod/Dev)",
+    guardStopAll = true,
+    guardLeave = false,
+    guardAutoBack = true,
+    guardBackSec = 60,
+    guardCalmSec = 5,
+    -- Auto Chat (1 Pesan)
+    chatText = "",
+    chatInterval = 6,
+    -- Bonus
+    bonusAutoQuest = false,
+    bonusAutoRedeem = false,
+    -- GrowScan
+    scanAuto = false,
+    scanLayer = "Semua",
+    scanFilter = "",
+    -- Discord Webhook
+    webhookOn = false,
+    webhookUrl = "",
+    webhookReportMin = 0,
+    whPenjaga = true,
+    whStop = true,
+    whFull = true,
+    whBonus = true,
+    whRejoin = true,
+    whPabrik = true,
+}
+
+local function LoadConfig()
+    pcall(function()
+        if isfile and readfile and isfile(CONFIG_FILE) then
+            local data = HttpService:JSONDecode(readfile(CONFIG_FILE))
+            for key, value in pairs(data) do
+                if Config[key] ~= nil and type(value) == type(Config[key]) then
+                    Config[key] = value
+                end
+            end
+        end
+    end)
+end
+
+local function SaveConfig()
+    pcall(function()
+        if writefile then
+            writefile(CONFIG_FILE, HttpService:JSONEncode(Config))
+        end
+    end)
+end
+
+LoadConfig()
+
+----------------------------------------------------------------------
+-- REFERENSI INTERNAL GAME (getgc) & KONTROL INPUT FISIK (WorldMenu.isDown)
+----------------------------------------------------------------------
+local getgcFn = getgc or (debug and debug.getgc)
+local getupvalueFn = (debug and debug.getupvalue) or getupvalue
+local setupvalueFn = (debug and debug.setupvalue) or setupvalue
+local getconstsFn = (debug and debug.getconstants) or getconstants
+
+local function GetUpvalues(fn)
+    if debug and debug.getupvalues then
+        local ok, ups = pcall(debug.getupvalues, fn)
+        if ok and type(ups) == "table" then
+            return ups
+        end
+    end
+    local list = {}
+    if getupvalueFn then
+        for i = 1, 255 do
+            local ok, value = pcall(getupvalueFn, fn, i)
+            if not ok then
+                break
+            end
+            list[i] = value
+        end
+    end
+    return list
+end
+
+local function Trim(text)
+    return (tostring(text or ""):gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+local ToastHook = nil
+local function Notify(message, title, duration)
+    if ToastHook then
+        local ok = pcall(ToastHook, tostring(message), title, duration)
+        if ok then
+            return
+        end
+    end
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = title or "ANCH HUB | GrowBlox",
+            Text = tostring(message),
+            Duration = duration or 4,
+        })
+    end)
+end
+
+local Refs = {
+    World = nil,
+    Inv = nil,
+    InvTable = nil,
+    SetTile = nil,
+    Punch = nil,
+    State = nil,
+    Menu = nil,
+    Gems = nil,
+    Hud = nil,
+    Trees = nil,
+    Others = nil,
+    Rigs = nil,
+    Particles = {},
+}
+
+local Drops = { list = nil, update = nil, brokeAt = {}, seen = {}, nextTick = 0 }
+local Anim = { fn = nil, idx = nil, set = nil, Particles = nil }
+local DropFailUntil = {}
+local PlacedAt = {}
+local HitCount = {}
+local InvChangedConn = nil
+local OnInventoryChanged = nil
+
+-- Statistik Sesi & Discord Webhook
+local Stats = {
+    T0 = os.clock(),
+    Gems0 = nil,
+    Placed = 0,
+    Broken = 0,
+    Collected = 0,
+    Harvested = 0,
+    Planted = 0,
+    Items = {},
+}
+
+local Webhook = {
+    Queue = {},
+    LastFull = {},
+    Status = "-",
+}
+
+do (function()
+    local function getRequestFn()
+        return (syn and syn.request) or (http and http.request) or http_request or request or (fluxus and fluxus.request)
+    end
+
+    function Webhook.Valid(url)
+        url = tostring(url or "")
+        for _, host in ipairs({ "discord.com", "discordapp.com", "ptb.discord.com", "canary.discord.com" }) do
+            if string.sub(url, 1, #host + 22) == "https://" .. host .. "/api/webhooks/" then
+                return true
+            end
+        end
+        return false
+    end
+
+    function Webhook.Send(category, message)
+        if not Config.webhookOn or not Webhook.Valid(Config.webhookUrl) then return end
+        local allowed = category == "test"
+            or category == "report"
+            or (category == "penjaga" and Config.whPenjaga)
+            or (category == "stop" and Config.whStop)
+            or (category == "full" and Config.whFull)
+            or (category == "bonus" and Config.whBonus)
+            or (category == "rejoin" and Config.whRejoin)
+            or (category == "pabrik" and Config.whPabrik)
+        if not allowed or #Webhook.Queue >= 20 then return end
+        table.insert(Webhook.Queue, tostring(message))
+    end
+
+    task.spawn(function()
+        while alive() do
+            local msg = table.remove(Webhook.Queue, 1)
+            if not msg then
+                task.wait(0.5)
+            else
+                local req = getRequestFn()
+                if not req then
+                    Webhook.Status = "Executor tidak mendukung request HTTP"
+                else
+                    local body = HttpService:JSONEncode({
+                        username = "ANCH Hub | GrowBlox",
+                        content = string.format("**[%s]** %s", Player.Name, msg),
+                    })
+                    local ok, res = pcall(req, {
+                        Url = Config.webhookUrl,
+                        Method = "POST",
+                        Headers = { ["Content-Type"] = "application/json" },
+                        Body = body,
+                    })
+                    local code = ok and type(res) == "table" and tonumber(res.StatusCode or res.Status) or nil
+                    if ok and (code == nil or code < 300) then
+                        Webhook.Status = "Terkirim " .. os.date("%H:%M:%S")
+                    else
+                        Webhook.Status = "Gagal kirim (" .. tostring(code or res) .. ")"
+                    end
+                end
+                task.wait(2.5)
+            end
+        end
+    end)
+end)() end
+
+-- Input buatan untuk Legit Walking, Auto Collect & FlyPad (Hook langsung ke getgc + VirtualInputManager)
+local AutoInput = { active = false, left = false, right = false, jump = false, down = false }
+local FlyPadState = { up = false, down = false }
+local VIM = cloneref(game:GetService("VirtualInputManager"))
+local vimState = { left = false, right = false, jump = false }
+
+local function SetVimKey(keyName, kc, down)
+    if vimState[keyName] == down then return end
+    vimState[keyName] = down
+    pcall(function()
+        if VIM and VIM.SendKeyEvent then
+            VIM:SendKeyEvent(down, kc, false, game)
+        end
+    end)
+end
+
+local function SyncVimKeys()
+    if not AutoInput.active then
+        SetVimKey("left", Enum.KeyCode.A, false)
+        SetVimKey("right", Enum.KeyCode.D, false)
+        SetVimKey("jump", Enum.KeyCode.Space, false)
+        return
+    end
+    SetVimKey("left", Enum.KeyCode.A, AutoInput.left == true)
+    SetVimKey("right", Enum.KeyCode.D, AutoInput.right == true)
+    SetVimKey("jump", Enum.KeyCode.Space, AutoInput.jump == true)
+end
+
+local function ReleaseInput()
+    AutoInput.left, AutoInput.right, AutoInput.jump, AutoInput.down = false, false, false, false
+    SetVimKey("left", Enum.KeyCode.A, false)
+    SetVimKey("right", Enum.KeyCode.D, false)
+    SetVimKey("jump", Enum.KeyCode.Space, false)
+end
+
+local OrigIsDown = G.__ANCH_TrueOrigIsDown
+local function IsDownInterceptor(saved, key, ...)
+    if alive() then
+        if AutoInput.active then
+            if key == "keyLeft" then return AutoInput.left end
+            if key == "keyRight" then return AutoInput.right end
+            if key == "keyJump" then return AutoInput.jump end
+            if key == "keyDown" then return AutoInput.down end
+        end
+        if FlyPadState.up and key == "keyJump" then return true end
+        if FlyPadState.down and key == "keyDown" then return true end
+    end
+    if OrigIsDown then
+        return OrigIsDown(saved, key, ...)
+    end
+    return false
+end
+
+local function HookAllIsDownTables()
+    if MenuModOk and type(MenuModule) == "table" and type(rawget(MenuModule, "isDown")) == "function" then
+        local fn = rawget(MenuModule, "isDown")
+        if not OrigIsDown and not (isexecutorclosure and pcall(isexecutorclosure, fn) and isexecutorclosure(fn)) then
+            OrigIsDown = fn
+            G.__ANCH_TrueOrigIsDown = fn
+        end
+        rawset(MenuModule, "isDown", IsDownInterceptor)
+    end
+    if getgcFn then
+        for _, v in ipairs(getgcFn(true)) do
+            if type(v) == "table" then
+                local fn = rawget(v, "isDown")
+                if type(fn) == "function" then
+                    if not OrigIsDown and not (isexecutorclosure and pcall(isexecutorclosure, fn) and isexecutorclosure(fn)) then
+                        OrigIsDown = fn
+                        G.__ANCH_TrueOrigIsDown = fn
+                    end
+                    rawset(v, "isDown", IsDownInterceptor)
+                end
+            end
+        end
+    end
+end
+HookAllIsDownTables()
+
+do (function()
+    local function isSetTileFn(fn)
+        if not getconstsFn or (islclosure and not islclosure(fn)) then return false end
+        local ok, consts = pcall(getconstsFn, fn)
+        if not ok or type(consts) ~= "table" then return false end
+        local hasSend, hasPlaced, hasFlips = false, false, false
+        for _, c in pairs(consts) do
+            if c == "tile" or c == "SetTile" then hasSend = true
+            elseif c == "placedAt" then hasPlaced = true
+            elseif c == "flips" then hasFlips = true end
+        end
+        return hasSend and hasPlaced and hasFlips
+    end
+
+    local function isPunchFn(fn)
+        if not getconstsFn or (islclosure and not islclosure(fn)) then return false end
+        local ok, consts = pcall(getconstsFn, fn)
+        if not ok or type(consts) ~= "table" then return false end
+        local hasVend, hasMark = false, false
+        for _, c in pairs(consts) do
+            if c == "Empty the Vending Machine first!" then hasVend = true
+            elseif c == "newCrack" or c == "HarvestProvider" then hasMark = true end
+        end
+        return hasVend and hasMark
+    end
+
+    local function isStateHolder(v)
+        local fn = rawget(v, "state")
+        if type(fn) ~= "function" then return false end
+        local ok, s = pcall(fn)
+        return ok and type(s) == "table" and type(s.x) == "number" and type(s.y) == "number"
+            and s.facing ~= nil and s.vx ~= nil
+    end
+
+    local function isGameFn(fn)
+        if fn == isSetTileFn or fn == isPunchFn then return false end
+        if isexecutorclosure then
+            local ok, res = pcall(isexecutorclosure, fn)
+            if ok and res then return false end
+        end
+        return true
+    end
+
+    local function isDropList(t)
+        if type(t) ~= "table" or t == Refs.World then return false end
+        local first = rawget(t, 1)
+        if first == nil then return next(t) == nil end
+        return type(first) == "table" and rawget(first, "uid") ~= nil and rawget(first, "frame") ~= nil
+    end
+
+    function Anim.isArmFn(fn)
+        if not getconstsFn or (islclosure and not islclosure(fn)) then return false end
+        local ok, consts = pcall(getconstsFn, fn)
+        if not ok or type(consts) ~= "table" then return false end
+        local a, b, c = false, false, false
+        for _, k in pairs(consts) do
+            if k == "forearm" then a = true
+            elseif k == "heldReach" then b = true
+            elseif k == "punchReach" then c = true end
+        end
+        return a and b and c
+    end
+
+    function Anim.bind(fn)
+        if not (getupvalueFn and setupvalueFn) then return false end
+        local vals, last = {}, 0
+        for i = 1, 16 do
+            local ok, v = pcall(getupvalueFn, fn, i)
+            if not ok then break end
+            vals[i] = v
+            if v ~= nil then last = i end
+        end
+        for i = 1, last - 1 do
+            local v = vals[i]
+            if v == nil or (type(v) == "table" and rawget(v, "t") ~= nil and rawget(v, "facing") ~= nil) then
+                Anim.fn, Anim.idx, Anim.set = fn, i, setupvalueFn
+                return true
+            end
+        end
+        return false
+    end
+
+    -- Cari World, Inv, dan fungsi Animasi langsung dari koneksi RunService (Tanpa getgc!)
+    local function scanViaConnections()
+        if not getconnections then return end
+        local queue, seen, n = {}, {}, 0
+        for _, sigName in ipairs({ "RenderStepped", "Heartbeat", "Stepped" }) do
+            local okS, sig = pcall(function() return RunService[sigName] end)
+            if okS and sig then
+                local okC, conns = pcall(getconnections, sig)
+                if okC and type(conns) == "table" then
+                    for _, c in ipairs(conns) do
+                        local okF, fn = pcall(function() return c.Function end)
+                        if okF and type(fn) == "function" then
+                            table.insert(queue, fn)
+                        end
+                    end
+                end
+            end
+        end
+        local i = 1
+        while i <= #queue and n < 450 do
+            local fn = queue[i]
+            i = i + 1
+            if not seen[fn] then
+                seen[fn] = true
+                n = n + 1
+                if not Anim.fn and Anim.isArmFn(fn) then Anim.bind(fn) end
+                for _, u in pairs(GetUpvalues(fn)) do
+                    local tu = type(u)
+                    if tu == "table" then
+                        if not Refs.World then
+                            local ok, valid = pcall(function()
+                                return type(rawget(u, "fg")) == "table" and type(rawget(u, "bg")) == "table"
+                                    and type(rawget(u, "w")) == "number" and rawget(u, "w") > 0
+                                    and rawget(u, "spawn") ~= nil
+                            end)
+                            if ok and valid then Refs.World = u end
+                        end
+                        if not Refs.Inv and InvModOk and InventoryModule then
+                            local ok, valid = pcall(function()
+                                return getmetatable(u) == InventoryModule and type(rawget(u, "slots")) == "table"
+                            end)
+                            if ok and valid then Refs.Inv = u end
+                        end
+                        if not Refs.State then
+                            local ok, valid = pcall(isStateHolder, u)
+                            if ok and valid then Refs.State = rawget(u, "state") end
+                        end
+                    elseif tu == "function" and not seen[u] then
+                        if not Anim.fn and Anim.isArmFn(u) then Anim.bind(u) end
+                        table.insert(queue, u)
+                    end
+                end
+            end
+        end
+    end
+
+    -- Cari Tabel Pohon dari struktur World.tileChanged (tetap ketemu walau world kosong tanpa pohon)
+    local function findTreesFromWorldStruct()
+        local w = Refs.World
+        if not w then return false end
+        for _, fname in ipairs({ "tileChanged", "treeChanged", "setTree" }) do
+            local root = rawget(w, fname)
+            if type(root) == "function" then
+                local ups = GetUpvalues(root)
+                local tset = {}
+                for _, u in pairs(ups) do
+                    if type(u) == "table" and u ~= w then tset[u] = true end
+                end
+                for _, g in pairs(ups) do
+                    if type(g) == "function" then
+                        local gu = GetUpvalues(g)
+                        local hasW, nT, shared = false, 0, {}
+                        for _, v in pairs(gu) do
+                            if rawequal(v, w) then
+                                hasW = true
+                            elseif type(v) == "table" then
+                                nT = nT + 1
+                                if tset[v] then table.insert(shared, v) end
+                            end
+                        end
+                        if hasW and nT <= 3 and #shared == 1 then
+                            Refs.Trees = shared[1]
+                            return true
+                        end
+                    end
+                end
+            end
+        end
+        return false
+    end
+
+    function Refs.Scan()
+        Refs.World, Refs.Inv, Refs.InvTable, Refs.SetTile, Refs.Punch, Refs.State, Refs.Menu, Refs.Gems, Refs.Hud, Refs.Others =
+            nil, nil, nil, nil, nil, nil, nil, nil, nil, nil
+        Refs.Particles = {}
+        scanViaConnections()
+        if getgcFn then
+            for _, v in ipairs(getgcFn(true)) do
+            local tv = type(v)
+            if tv == "table" then
+                if not Refs.World then
+                    local ok, valid = pcall(function()
+                        return type(rawget(v, "fg")) == "table" and type(rawget(v, "bg")) == "table"
+                            and type(rawget(v, "w")) == "number" and type(rawget(v, "h")) == "number"
+                            and rawget(v, "spawn") ~= nil
+                    end)
+                    if ok and valid then Refs.World = v end
+                end
+                if not Refs.InvTable then
+                    local ok, valid = pcall(function()
+                        return type(rawget(v, "onDrop")) == "function"
+                            and type(rawget(v, "canDrop")) == "function"
+                            and type(rawget(v, "isWorn")) == "function"
+                    end)
+                    if ok and valid then
+                        Refs.InvTable = v
+                        Refs.Hud = Refs.Hud or v
+                    end
+                end
+                if not Refs.Inv and InvModOk and InventoryModule then
+                    local ok, valid = pcall(function()
+                        return getmetatable(v) == InventoryModule and type(rawget(v, "slots")) == "table"
+                    end)
+                    if ok and valid then Refs.Inv = v end
+                end
+                if not Refs.State then
+                    local ok, valid = pcall(isStateHolder, v)
+                    if ok and valid then Refs.State = rawget(v, "state") end
+                end
+                if not Refs.Menu then
+                    local ok, valid = pcall(function()
+                        return type(rawget(v, "openBackpack")) == "function" and type(rawget(v, "ui")) == "table"
+                    end)
+                    if ok and valid then Refs.Menu = v end
+                end
+                if not Refs.Gems then
+                    local ok, valid = pcall(function() return type(rawget(v, "addGems")) == "function" end)
+                    if ok and valid then Refs.Gems = v end
+                end
+                if not Refs.Hud then
+                    local ok, valid = pcall(function()
+                        return type(rawget(v, "punchRange")) == "function" and type(rawget(v, "buildRange")) == "function"
+                    end)
+                    if ok and valid then Refs.Hud = v end
+                end
+                if not Refs.Others then
+                    local ok, valid = pcall(function()
+                        return type(rawget(v, "list")) == "function" and type(rawget(v, "where")) == "function"
+                            and type(rawget(v, "playerAt")) == "function"
+                    end)
+                    if ok and valid then Refs.Others = v end
+                end
+                if not Refs.Rigs then
+                    local ok, valid = pcall(function()
+                        local a, b = rawget(v, 1), rawget(v, -1)
+                        return type(a) == "table" and type(b) == "table"
+                            and typeof(rawget(a, "body")) == "Instance"
+                            and typeof(rawget(b, "head")) == "Instance"
+                    end)
+                    if ok and valid then Refs.Rigs = v end
+                end
+                if ParticlesOk and ParticlesModule then
+                    local ok, valid = pcall(function()
+                        return getmetatable(v) == ParticlesModule and type(rawget(v, "live")) == "table"
+                    end)
+                    if ok and valid then table.insert(Refs.Particles, v) end
+                end
+            elseif tv == "function" and isGameFn(v) then
+                if not Refs.SetTile and isSetTileFn(v) then
+                    Refs.SetTile = v
+                elseif not Refs.Punch and isPunchFn(v) then
+                    Refs.Punch = v
+                end
+            end
+        end
+    end
+
+        if Refs.World and (not Refs.SetTile or not Refs.Punch) and debug and debug.info then
+            for _, fn in ipairs(getgcFn(true)) do
+                if type(fn) == "function" then
+                    local okN, fnName = pcall(debug.info, fn, "n")
+                    if okN and (fnName == "setTile" or fnName == "hit") then
+                        for _, up in pairs(GetUpvalues(fn)) do
+                            if up == Refs.World then
+                                if fnName == "setTile" and not Refs.SetTile then Refs.SetTile = fn end
+                                if fnName == "hit" and not Refs.Punch then Refs.Punch = fn end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        if not Refs.Inv and Refs.World and type(rawget(Refs.World, "backpackNow")) == "function" then
+            for _, u in pairs(GetUpvalues(Refs.World.backpackNow)) do
+                if type(u) == "table" and type(u.slots) == "table" then
+                    Refs.Inv = u
+                    break
+                end
+            end
+        end
+
+        -- Hook Inventory changed event
+        if InvChangedConn then pcall(function() InvChangedConn:Disconnect() end); InvChangedConn = nil end
+        if Refs.Inv and typeof(Refs.Inv.changed) == "Instance" then
+            InvChangedConn = trackConn(Refs.Inv.changed.Event:Connect(function()
+                if alive() and OnInventoryChanged then
+                    pcall(OnInventoryChanged)
+                end
+            end))
+        end
+
+        function Drops.findUpdate()
+            local w, list = Refs.World, Drops.list
+            local wd = w and rawget(w, "dropTaken")
+            if type(wd) ~= "function" or not list then return false end
+            for _, u in pairs(GetUpvalues(wd)) do
+                if type(u) == "function" then
+                    for _, uu in pairs(GetUpvalues(u)) do
+                        if rawequal(uu, list) then
+                            Drops.update = u
+                            return true
+                        end
+                    end
+                end
+            end
+            return false
+        end
+
+        function Drops.findRefs()
+            local w0 = Refs.World
+            local dl = w0 and rawget(w0, "dropList")
+            if type(dl) == "function" then
+                local okL, l = pcall(dl)
+                if okL and isDropList(l) then
+                    if Drops.list ~= l then Drops.update = nil end
+                    Drops.list = l
+                    if not Drops.update then Drops.findUpdate() end
+                    return true
+                end
+            end
+            Drops.list, Drops.update = nil, nil
+            local wd = w0 and rawget(w0, "dropTaken")
+            if type(wd) == "function" then
+                for _, u in pairs(GetUpvalues(wd)) do
+                    if not Drops.list and isDropList(u) then
+                        Drops.list = u
+                    elseif not Drops.update and type(u) == "function" then
+                        Drops.update = u
+                    end
+                end
+                if Drops.list and not Drops.update then Drops.findUpdate() end
+            end
+            local evDrop = WorldRemotes and WorldRemotes:FindFirstChild("DropTaken")
+            if not Drops.list and evDrop and getconnections then
+                local okC, conns = pcall(getconnections, evDrop.OnClientEvent)
+                if okC and type(conns) == "table" then
+                    for _, c in ipairs(conns) do
+                        local okF, fn = pcall(function() return c.Function end)
+                        if okF and type(fn) == "function" then
+                            for _, u in pairs(GetUpvalues(fn)) do
+                                if not Drops.list and isDropList(u) then
+                                    Drops.list = u
+                                elseif not Drops.update and type(u) == "function" then
+                                    Drops.update = u
+                                end
+                            end
+                        end
+                        if Drops.list then break end
+                    end
+                end
+            end
+            return Drops.list ~= nil
+        end
+
+        Drops.findRefs()
+
+        Refs.Trees = nil
+        if not Refs.Trees then findTreesFromWorldStruct() end
+        if Refs.World and type(rawget(Refs.World, "treeLook")) == "function" and getupvalueFn then
+            local okT, tMap = pcall(getupvalueFn, Refs.World.treeLook, 8)
+            if okT and type(tMap) == "table" then
+                Refs.Trees = tMap
+            end
+        end
+        local evTree = WorldRemotes and WorldRemotes:FindFirstChild("TreeChanged")
+        if not Refs.Trees and evTree and getconnections then
+            local okC, conns = pcall(getconnections, evTree.OnClientEvent)
+            if okC and type(conns) == "table" then
+                for _, c in ipairs(conns) do
+                    local okF, fn = pcall(function() return c.Function end)
+                    if okF and type(fn) == "function" then
+                        for _, u in pairs(GetUpvalues(fn)) do
+                            if type(u) == "table" and u ~= Refs.World and rawget(u, "fg") == nil then
+                                local _, sample = next(u)
+                                if sample == nil or (type(sample) == "table" and type(rawget(sample, "p")) == "number") then
+                                    Refs.Trees = u
+                                    break
+                                end
+                            end
+                        end
+                    end
+                    if Refs.Trees then break end
+                end
+            end
+        end
+
+        return Refs.World ~= nil
+    end
+end)() end
+
+local function FindWorld()
+    if Refs.World and type(rawget(Refs.World, "fg")) == "table" then
+        return Refs.World
+    end
+    Refs.Scan()
+    return Refs.World
+end
+
+local function FindInventory()
+    if Refs.InvTable then
+        return Refs.InvTable
+    end
+    Refs.Scan()
+    return Refs.InvTable
+end
+
+local function FindRigs()
+    if Refs.Rigs then
+        return Refs.Rigs
+    end
+    Refs.Scan()
+    return Refs.Rigs
+end
+
+local function ItemName(id)
+    local it = ItemDB and ItemDB[id]
+    return (type(it) == "table" and type(it.name) == "string") and it.name or ("Item #" .. tostring(id))
+end
+
+local function CountItem(id)
+    if not id then return 0 end
+    if not Refs.Inv then Refs.Scan() end
+    local bag = Refs.Inv
+    if not bag then return 0 end
+    if type(bag.count) == "function" then
+        local ok, n = pcall(function() return bag:count(id) end)
+        if ok and type(n) == "number" then return n end
+    end
+    local total = 0
+    if type(bag.slots) == "table" then
+        for _, slot in pairs(bag.slots) do
+            if type(slot) == "table" and slot.id == id then
+                total = total + ((slot.n or 0))
+            end
+        end
+    end
+    return total
+end
+
+local function SeedOfBlock(blockId)
+    local it = blockId and ItemDB[blockId]
+    if not it then return nil end
+    local sid = it.seedId or (blockId + 1)
+    local sit = ItemDB[sid]
+    return (sit and sit.kind == "seed") and sid or nil
+end
+
+local function BlockOfSeed(seedId)
+    if not seedId then return nil end
+    local bid = seedId - 1
+    local bit = ItemDB[bid]
+    if bit and bit.kind ~= "seed" and (bit.seedId == nil or bit.seedId == seedId) then
+        return bid
+    end
+    return nil
+end
+
+local cachedDirtId = nil
+local function GetDirtId()
+    if cachedDirtId then return cachedDirtId end
+    if ItemDB[2] and type(ItemDB[2].name) == "string" and ItemDB[2].name:lower() == "dirt" then
+        cachedDirtId = 2
+        return 2
+    end
+    for id, it in pairs(ItemDB) do
+        if type(id) == "number" and type(it) == "table" and type(it.name) == "string" and it.name:lower() == "dirt" then
+            cachedDirtId = id
+            return id
+        end
+    end
+    return 2
+end
+
+local cachedDirtSeedId = nil
+local function GetDirtSeedId()
+    if cachedDirtSeedId then return cachedDirtSeedId end
+    local sid = SeedOfBlock(GetDirtId())
+    if sid then
+        cachedDirtSeedId = sid
+        return sid
+    end
+    return 3
+end
+
+local function GetGuiCameraState()
+    local gg = PlayerGui:FindFirstChild("GameGui")
+    local worldGui = gg and gg:FindFirstChild("World")
+    local cam = worldGui and worldGui:FindFirstChild("Camera")
+    local tiles = cam and cam:FindFirstChild("Tiles")
+    local pv = cam and cam:FindFirstChild("PlayerView")
+    if not (tiles and pv and tiles:IsA("GuiObject") and pv:IsA("GuiObject")) then return nil end
+    local sample = tiles:FindFirstChildWhichIsA("ImageLabel")
+    local ts = (sample and sample.AbsoluteSize.X > 0) and sample.AbsoluteSize.X or 64
+    local center = pv.AbsolutePosition + (pv.AbsoluteSize / 2)
+    local rel = center - tiles.AbsolutePosition
+    return {
+        x = rel.X / ts,
+        y = (rel.Y / ts) + 0.475,
+        vx = 0, vy = 0, facing = 1, grounded = true, dead = false, active = true,
+    }
+end
+
+local function PlayerPhysicsState()
+    if not Refs.State then Refs.Scan() end
+    if Refs.State then
+        local ok, s = pcall(Refs.State)
+        if ok and type(s) == "table" and type(s.x) == "number" and type(s.y) == "number" and s.active ~= false then
+            return s
+        end
+    end
+    return GetGuiCameraState()
+end
+
+local function GetGridState()
+    local s = PlayerPhysicsState()
+    if s then
+        return s.x + Config.calibX, s.y + Config.calibY, (s.facing and s.facing < 0) and -1 or 1
+    end
+    return nil, "Karakter belum berada di world"
+end
+
+function Anim.Swing(x, y, kind)
+    if not Config.visualAnim or not (Anim.fn and Anim.idx and Anim.set) then return end
+    local s = PlayerPhysicsState()
+    local facing = (s and x + 0.5 < s.x) and -1 or 1
+    pcall(Anim.set, Anim.fn, Anim.idx, { t = os.clock(), x = x + 0.5, y = y + 0.5, facing = facing, kind = kind })
+end
+
+function Anim.Place(x, y, id)
+    if not Config.visualAnim then return end
+    Anim.Swing(x, y, "build")
+    local it = ItemDB[id]
+    if it and it.kind ~= "seed" and Refs.Particles and #Refs.Particles > 0 then
+        local pick = Anim.Particles or Refs.Particles[1]
+        Anim.Particles = pick
+        pcall(function() pick:place(x + 0.5, y + 0.5) end)
+    end
+end
+
+local function GetTile()
+    local x, y = GetGridState()
+    if not x then return nil end
+    return math.floor(x), math.floor(y - 0.475)
+end
+
+local function CurrentWorldName()
+    local w = FindWorld()
+    local name = w and rawget(w, "name")
+    return type(name) == "string" and name or ""
+end
+
+local function TileValue(world, layer, x, y)
+    local w = world or FindWorld()
+    if not w or x < 0 or y < 0 or x >= w.w or y >= w.h then return nil end
+    local grid = rawget(w, layer)
+    local row = grid and grid[y]
+    return row and (row[x] or 0) or nil
+end
+
+local function InBounds(world, x, y)
+    local w = world or FindWorld()
+    return w and type(w.w) == "number" and x >= 0 and y >= 0 and x < w.w and y < w.h
+end
+
+local function LayerOf(id)
+    local it = ItemDB and ItemDB[id]
+    return (type(it) == "table" and it.background) and "bg" or "fg"
+end
+
+local function PunchReach()
+    local hud = Refs.Hud or FindInventory()
+    if hud and type(hud.punchRange) == "function" then
+        local ok, r = pcall(hud.punchRange)
+        if ok and type(r) == "number" and r > 0 then return r end
+    end
+    return 2.5
+end
+
+local function BuildReach()
+    local hud = Refs.Hud or FindInventory()
+    if hud and type(hud.buildRange) == "function" then
+        local ok, r = pcall(hud.buildRange)
+        if ok and type(r) == "number" and r > 0 then return r end
+    end
+    return 2.5
+end
+
+----------------------------------------------------------------------
+-- AKSI DASAR: PLACE & BREAK (KOMPATIBEL BYTENET + CLASSIC)
+----------------------------------------------------------------------
+local function SendSetTile(layer, x, y, id, facingLeft)
+    if id ~= 0 and Anim.Place then Anim.Place(x, y, id) end
+    if not Refs.SetTile then Refs.Scan() end
+    if Refs.SetTile then
+        local ok = pcall(Refs.SetTile, layer, x, y, id, false, facingLeft == true)
+        if ok then
+            PlacedAt[x .. "," .. y] = os.clock()
+            return true
+        end
+    end
+    if NetOk and type(Net) == "table" and type(Net.tile) == "table" then
+        local ok = pcall(Net.tile.send, {
+            layer = (layer == "bg") and 2 or 1, x = x, y = y, id = id, flip = facingLeft == true,
+        })
+        if ok then
+            local w = FindWorld()
+            if w and w[layer] and w[layer][y] then w[layer][y][x] = id end
+            PlacedAt[x .. "," .. y] = os.clock()
+            return true
+        end
+    elseif SetTileRemote then
+        pcall(function() SetTileRemote:FireServer(layer, x, y, id, facingLeft == true) end)
+        local w = FindWorld()
+        if w and w[layer] and w[layer][y] then w[layer][y][x] = id end
+        PlacedAt[x .. "," .. y] = os.clock()
+        return true
+    end
+    return false
+end
+
+local function PlaceCell(id, cell, facing)
+    if not id or id <= 0 then return false end
+    if CountItem(id) <= 0 then return false end
+    local layer = LayerOf(id)
+    local ok = SendSetTile(layer, cell.x, cell.y, id, (facing or 1) < 0)
+    if not ok then return false end
+    if Refs.Inv and type(Refs.Inv.remove) == "function" then
+        pcall(function() Refs.Inv:remove(id, 1) end)
+    end
+    Stats.Placed = Stats.Placed + (1)
+    return true
+end
+
+local function WaitPlaceGuard(x, y)
+    local key = x .. "," .. y
+    local t = PlacedAt[key]
+    if t then
+        local age = os.clock() - t
+        if age < PLACE_GUARD then
+            task.wait(PLACE_GUARD - age)
+        end
+        PlacedAt[key] = nil
+    end
+end
+
+local function CanBreakId(id)
+    if not id or id == 0 then return false end
+    local it = ItemDB[id]
+    if not it then return true end
+    if it.lock or it.area or it.guildLock or it.vend or it.display then return false end
+    local name = type(it.name) == "string" and it.name:lower() or ""
+    if name:find("bedrock", 1, true) or name:find("main door", 1, true) or name:find("white door", 1, true) then
+        return false
+    end
+    local h = (it.kind == "seed") and 20 or it.hits
+    if type(h) == "number" and h > 0 then return true end
+    local w = FindWorld()
+    if it.staffHits and w and w.areas and w.areas.staff then return true end
+    return h == nil
+end
+
+local function TryBreakOnce(x, y, includeBg)
+    if includeBg == nil then includeBg = true end
+    local w = FindWorld()
+    if not w then return nil end
+    local fg = TileValue(w, "fg", x, y)
+    if fg == nil then return nil end
+    local bg = TileValue(w, "bg", x, y)
+    local layer, id
+    if fg ~= 0 then
+        layer, id = "fg", fg
+    elseif includeBg and bg and bg ~= 0 then
+        layer, id = "bg", bg
+    end
+    if not layer or not CanBreakId(id) then return nil end
+
+    WaitPlaceGuard(x, y)
+
+    if not Refs.Punch then Refs.Scan() end
+    if Refs.Punch then
+        local ok = pcall(Refs.Punch, x, y, Config.mutePunch or nil, nil)
+        if not ok then return nil end
+        Anim.Swing(x, y, "punch")
+        if TileValue(w, layer, x, y) ~= id then
+            Stats.Broken = Stats.Broken + (1)
+            Drops.brokeAt[x .. "," .. y] = os.clock()
+            return "broke", id, layer
+        end
+        return "hit", id, layer
+    end
+    return nil
+end
+
+----------------------------------------------------------------------
+-- NOCLIP / MODFLY + TOMBOL LAYAR FLYPAD (▲ / ▼)
+----------------------------------------------------------------------
+local noclipOn = false
+local autoFlyLocks = {}
+local FlyPadGui = nil
+
+local function IsAnyFlyActive()
+    if noclipOn then return true end
+    for _, active in pairs(autoFlyLocks) do
+        if active then return true end
+    end
+    return false
+end
+
+local function SyncGhostState()
+    local world = FindWorld()
+    if not world then return end
+    if IsAnyFlyActive() then
+        world.ghost = true
+    else
+        FlyPadState.up, FlyPadState.down = false, false
+        world.ghost = (Player:GetAttribute("Ghost") == true)
+    end
+    if FlyPadGui then
+        FlyPadGui.Enabled = noclipOn
+    end
+end
+
+local function SetAutoFly(sourceKey, enabled)
+    autoFlyLocks[sourceKey] = enabled and true or nil
+    SyncGhostState()
+end
+
+local function StartNoclip()
+    noclipOn = true
+    SyncGhostState()
+    return true
+end
+
+local function StopNoclip()
+    noclipOn = false
+    SyncGhostState()
+    return true
+end
+
+trackConn(RunService.Heartbeat:Connect(function()
+    if not alive() then return end
+    local w = Refs.World
+    if not w then return end
+    if Drops.collecting then
+        w.speedScale = 1
+    elseif Config.walkSpeed ~= 100 then
+        w.speedScale = Config.walkSpeed / 100
+    end
+    if IsAnyFlyActive() and w.ghost ~= true then
+        w.ghost = true
+    end
+end))
+
+----------------------------------------------------------------------
+-- MESIN NAVIGASI UNIVERSAL: LEGIT WALKING (A*) + PILLAR CLIMB + FLYTO
+----------------------------------------------------------------------
+local Nav = {
+    clickOn = false,
+    token = 0,
+    conn = nil,
+    last = "-",
+    BadEdge = {},
+    PlacedScaffolds = 0,
+}
+
+do (function()
+    local floor, abs = math.floor, math.abs
+
+    local function fgIdAt(x, y)
+        local w = FindWorld()
+        local row = w and w.fg and w.fg[y]
+        return (row and row[x]) or 0
+    end
+
+    local function fgItemAt(x, y)
+        local id = fgIdAt(x, y)
+        if id ~= 0 then return ItemDB[id] end
+        return nil
+    end
+
+    local function solidAt(x, y)
+        local w = FindWorld()
+        if not w then return true end
+        if x < 0 or x >= w.w or y >= w.h then return true end
+        if y < 0 then return false end
+        local it = fgItemAt(x, y)
+        if not it then return false end
+        if it.combiner then
+            local ok, shut = pcall(w.combinerShut, x, y)
+            return (not ok) or (shut and true or false)
+        end
+        if it.vip then
+            local ok, may = pcall(w.vipMay, x, y)
+            return not (ok and may)
+        end
+        if it.entrance then
+            local sw = w.switches and w.switches[y * w.w + x]
+            if it.gate then
+                return not (sw and sw.off == true)
+            end
+            if sw and sw.public then return false end
+            local ok, may = pcall(function() return w.areas.mayBuild(w.lock, x, y) end)
+            return not (ok and may)
+        end
+        return it.solid and true or false
+    end
+
+    local function hazardAt(x, y)
+        local it = fgItemAt(x, y)
+        return it ~= nil and (it.deadly or it.hurts or it.laser) and true or false
+    end
+
+    local function platformAt(x, y)
+        local it = fgItemAt(x, y)
+        return it ~= nil and it.platform and true or false
+    end
+
+    local function openAt(x, y)
+        return not solidAt(x, y) and not hazardAt(x, y)
+    end
+
+    local function realSupport(x, y)
+        return not hazardAt(x, y + 1) and (solidAt(x, y + 1) or platformAt(x, y + 1))
+    end
+
+    local function stateReaches(s, tx, ty, R)
+        return abs(tx + 0.5 - s.x) <= R and abs(ty + 0.5 - (s.y - 0.475)) <= R
+    end
+
+    local function placeOk(x, y)
+        local w = FindWorld()
+        if not w or x < 0 or y < 0 or x >= w.w or y >= w.h then return false end
+        if fgIdAt(x, y) ~= 0 then return false end
+        local ok, res = pcall(function()
+            if w.areas and type(w.areas.canEdit) == "function" and not w.areas.canEdit(x, y) then return false end
+            if type(w.builderOk) == "function" and not w.builderOk(x, y, true) then return false end
+            return true
+        end)
+        return (not ok) or res
+    end
+
+    local function activeScaffoldId()
+        local candidates = {
+            Config.harvestScaffoldId,
+            GetDirtId(),
+            Config.farmPlaceId,
+        }
+        for _, id in ipairs(candidates) do
+            if type(id) == "number" and id > 0 and CountItem(id) > 0 then
+                local it = ItemDB[id]
+                if it and it.solid and it.kind ~= "seed" then
+                    return id
+                end
+            end
+        end
+        if Refs.Inv and type(Refs.Inv.slots) == "table" then
+            for _, slot in ipairs(Refs.Inv.slots) do
+                local it = slot.id and ItemDB[slot.id]
+                if it and it.solid and it.kind ~= "seed" and not it.lock and (slot.n or 0) > 0 then
+                    return slot.id
+                end
+            end
+        end
+        return GetDirtId()
+    end
+
+    local function placeScaffold(x, y)
+        local id = activeScaffoldId()
+        if not id or CountItem(id) <= 0 or not placeOk(x, y) then return false end
+        local s = PlayerPhysicsState()
+        if s and not stateReaches(s, x, y, BuildReach() + 0.5) then return false end
+        if PlaceCell(id, { x = x, y = y }, 1) then
+            Nav.PlacedScaffolds = Nav.PlacedScaffolds + (1)
+            return true
+        end
+        return false
+    end
+
+    Nav.SolidAt = solidAt
+    Nav.OpenAt = openAt
+    Nav.RealSupport = realSupport
+    Nav.PlaceScaffold = placeScaffold
+    Nav.StateReaches = stateReaches
+    Nav.PlaceOk = placeOk
+
+    -- Cek apakah target tidak terhalang blok lantai/atap di antaranya
+    function Nav.Los(nx, ny, tx, ty)
+        if ty - ny >= 2 then
+            for y = ny + 1, ty - 1 do
+                if solidAt(tx, y) then return false end
+            end
+        elseif ny - ty >= 2 then
+            for y = ty + 1, ny - 1 do
+                if solidAt(tx, y) then return false end
+            end
+        end
+        return true
+    end
+
+    -- Lepaskan karakter jika nyangkut di udara / pinggir blok > 3 detik
+    function Nav.AirCheck(s)
+        if not s or s.grounded then
+            Nav.AirAt = nil
+            return
+        end
+        if not Nav.AirAt then
+            Nav.AirAt = os.clock()
+        elseif os.clock() - Nav.AirAt > 3 then
+            Nav.AirAt = nil
+            local right = (s.facing or 1) < 0
+            AutoInput.active = true
+            AutoInput.right, AutoInput.left = right, not right
+            task.wait(0.2)
+            AutoInput.right, AutoInput.left = false, false
+        end
+    end
+
+    local function heapPush(hf, hi, n, f, i)
+        n = n + (1)
+        local k = n
+        while k > 1 do
+            local p = math.floor(k / 2)
+            if hf[p] <= f then break end
+            hf[k], hi[k] = hf[p], hi[p]
+            k = p
+        end
+        hf[k], hi[k] = f, i
+        return n
+    end
+
+    local function heapPop(hf, hi, n)
+        local top = hi[1]
+        local lf, li = hf[n], hi[n]
+        hf[n], hi[n] = nil, nil
+        n = n - (1)
+        if n > 0 then
+            local k = 1
+            while true do
+                local c = k * 2
+                if c > n then break end
+                if c < n and hf[c + 1] < hf[c] then c = c + (1) end
+                if lf <= hf[c] then break end
+                hf[k], hi[k] = hf[c], hi[c]
+                k = c
+            end
+            hf[k], hi[k] = lf, li
+        end
+        return top, n
+    end
+
+    function Nav.AStar(sx, sy, goals, gx, gy, R, useBlock, cancel)
+        local w = FindWorld()
+        if not w then return nil, false, {} end
+        local W, H = w.w, w.h
+        local WH = W * H
+        R = R or 0.4
+        local dxm = floor(R)
+        local dyLo = math.ceil(-R + 0.025)
+        local dyHi = floor(R + 0.025)
+        local oC, sC, bC = {}, {}, {}
+
+        local function open(x, y)
+            if x < 0 or x >= W or y >= H then return false end
+            if y < 0 then return true end
+            local i = y * W + x
+            local v = oC[i]
+            if v == nil then v = openAt(x, y); oC[i] = v end
+            return v
+        end
+
+        local function sup(x, y)
+            if x < 0 or x >= W or y < 0 or y >= H then return false end
+            local i = y * W + x
+            local v = sC[i]
+            if v == nil then v = realSupport(x, y); sC[i] = v end
+            return v
+        end
+
+        local function buildable(x, y)
+            if not useBlock or x < 0 or x >= W or y < 0 or y >= H then return false end
+            local i = y * W + x
+            local v = bC[i]
+            if v == nil then v = placeOk(x, y); bC[i] = v end
+            return v
+        end
+
+        local function h(x, y)
+            local dx = abs(gx - x) - R
+            local dyRaw = gy - y
+            local dy = abs(dyRaw) - R
+            local vw = (dyRaw < 0) and 1.5 or 0.5
+            return (dx > 0 and dx or 0) + vw * (dy > 0 and dy or 0)
+        end
+
+        local function isGoal(nx, ny)
+            if goals[ny * W + nx] then return true end
+            if R >= 1 then
+                for ty = ny + dyLo, ny + dyHi do
+                    if ty >= 0 and ty < H then
+                        local base = ty * W
+                        for tx = nx - dxm, nx + dxm do
+                            if tx >= 0 and tx < W and goals[base + tx] and not (tx == nx and ty == ny + 1) then
+                                return true
+                            end
+                        end
+                    end
+                end
+            end
+            return false
+        end
+
+        local ex, ey, ek, ec, eb = {}, {}, {}, {}, {}
+        local n = 0
+        local function add(x, y, kind, cost, build)
+            n = n + (1)
+            ex[n], ey[n], ek[n], ec[n], eb[n] = x, y, kind, cost, build
+        end
+
+        local function expand(x, y)
+            n = 0
+            for s = -1, 1, 2 do
+                local ax = x + s
+                if open(ax, y) then
+                    if sup(ax, y) then
+                        add(ax, y, "walk", 1, false)
+                    else
+                        if buildable(ax, y + 1) then
+                            add(ax, y, "walk", 3, true)
+                        end
+                        local fy = y + 1
+                        while fy < H and fy - y <= 40 and open(ax, fy) and not sup(ax, fy) do
+                            fy = fy + (1)
+                        end
+                        if fy < H and open(ax, fy) and sup(ax, fy) then
+                            add(ax, fy, "fall", 1 + 0.5 * (fy - y), false)
+                        end
+                        if open(x, y - 1) and open(x, y - 2) then
+                            for dist = 2, 3 do
+                                local mx = x + (dist - 1) * s
+                                if not (open(mx, y) and open(mx, y - 1) and open(mx, y - 2)) then break end
+                                if dist == 3 and sup(mx, y) then break end
+                                local bx = x + dist * s
+                                if open(bx, y - 1) and open(bx, y - 2) then
+                                    for k = 0, 2 do
+                                        if not open(bx, y + k) then break end
+                                        if sup(bx, y + k) then
+                                            add(bx, y + k, "gap", dist + 0.5 + 0.5 * k, false)
+                                            break
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+                for dy = 1, 3 do
+                    if not open(x, y - dy) then break end
+                    if open(x, y - dy - 1) and open(ax, y - dy) and sup(ax, y - dy) and open(ax, y - dy - 1) then
+                        add(ax, y - dy, "jump", 1 + 1.5 * dy, false)
+                    end
+                end
+                -- Tangga lahan/DF: naik 1-2 tile ke lorong setinggi 1 tile (atap langsung di atas kepala)
+                for dy = 1, 2 do
+                    if open(x, y - 1) and (dy == 1 or open(x, y - 2)) and open(ax, y - dy) and sup(ax, y - dy)
+                        and not (open(x, y - dy - 1) and open(ax, y - dy - 1)) then
+                        add(ax, y - dy, "stair", 3 + 1.5 * dy, false)
+                    end
+                end
+            end
+            if useBlock and open(x, y - 1) and open(x, y - 2) and open(x, y - 3) and buildable(x, y) then
+                add(x, y - 1, "pillar", 4, true)
+            end
+            return n
+        end
+
+        local startI = sy * W + sx
+        local g, came, kind, buildOf, closed = { [startI] = 0 }, {}, {}, {}, {}
+        local hf, hi, hn = {}, {}, 0
+        hn = heapPush(hf, hi, hn, h(sx, sy), startI)
+        local expanded = 0
+        local now = os.clock()
+
+        while hn > 0 do
+            local cur
+            cur, hn = heapPop(hf, hi, hn)
+            if not closed[cur] then
+                closed[cur] = true
+                local cx, cy = cur % W, math.floor(cur / W)
+                if isGoal(cx, cy) then
+                    local path = {}
+                    local i = cur
+                    while i ~= startI do
+                        local p = came[i]
+                        table.insert(path, 1, {
+                            fx = p % W, fy = math.floor(p / W), x = i % W, y = math.floor(i / W),
+                            kind = kind[i], build = buildOf[i], key = p * WH + i,
+                        })
+                        i = p
+                    end
+                    return path, false, closed
+                end
+                expanded = expanded + (1)
+                if expanded > 6500 then return nil, false, closed end
+                if expanded % 400 == 0 then
+                    task.wait()
+                    if cancel and cancel() then return nil, false, closed end
+                end
+                local gc = g[cur]
+                local cnt = expand(cx, cy)
+                for k = 1, cnt do
+                    local ni = ey[k] * W + ex[k]
+                    if not closed[ni] then
+                        local bad = Nav.BadEdge[cur * WH + ni]
+                        if not (bad and bad > now) then
+                            local ng = gc + ec[k]
+                            local old = g[ni]
+                            if old == nil or ng < old then
+                                g[ni], came[ni], kind[ni], buildOf[ni] = ng, cur, ek[k], eb[k]
+                                hn = heapPush(hf, hi, hn, ng + h(ex[k], ey[k]), ni)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        return nil, true, closed
+    end
+
+    local function steerX(s, targetX, tol)
+        local dx = targetX - s.x
+        local vx = s.vx or 0
+        local decel = s.grounded and 48 or 17
+        local dir = 0
+        if abs(dx) > tol then
+            dir = dx > 0 and 1 or -1
+            if vx * dir > 0 and (vx * vx) / (2 * decel) >= abs(dx) - tol * 0.5 then
+                dir = 0
+            end
+        end
+        AutoInput.left = dir < 0
+        AutoInput.right = dir > 0
+    end
+
+    local function execWalk(tx, ty, cancel)
+        local w = FindWorld()
+        if not OrigIsDown or not PlayerPhysicsState() then
+            if w and w.goTo then
+                pcall(w.goTo, tx, ty)
+                task.wait(math.max(0.25, Config.moveStepDelay))
+                return true
+            end
+            return false
+        end
+        AutoInput.active = true
+        local cx = tx + 0.5
+        local s0 = PlayerPhysicsState()
+        if not s0 then ReleaseInput(); return false end
+        local limit = 1.6 + abs(cx - s0.x) * 0.38
+        local t0 = os.clock()
+        while os.clock() - t0 <= limit and alive() do
+            if cancel and cancel() then ReleaseInput(); return false end
+            local s = PlayerPhysicsState()
+            if not s or s.dead then ReleaseInput(); return false end
+            local nx, ny = floor(s.x), floor(s.y - 0.475)
+            if s.grounded and ny ~= ty then ReleaseInput(); return false end
+            steerX(s, cx, 0.1)
+            if nx == tx and abs(s.x - cx) <= 0.22 and s.grounded and abs(s.vx or 0) < 2.2 then
+                ReleaseInput()
+                return true
+            end
+            task.wait()
+        end
+        ReleaseInput()
+        return false
+    end
+
+    local function execFall(e, cancel)
+        AutoInput.active = true
+        local cx = e.x + 0.5
+        local limit = 1.6 + 0.3 * (e.y - e.fy)
+        local t0 = os.clock()
+        while os.clock() - t0 <= limit and alive() do
+            if cancel and cancel() then ReleaseInput(); return false end
+            local s = PlayerPhysicsState()
+            if not s or s.dead then ReleaseInput(); return false end
+            steerX(s, cx, 0.1)
+            if s.grounded then
+                local nx, ny = floor(s.x), floor(s.y - 0.475)
+                if ny == e.y then
+                    if nx == e.x and abs(s.x - cx) <= 0.25 then
+                        ReleaseInput()
+                        return true
+                    end
+                elseif ny ~= e.fy then
+                    ReleaseInput()
+                    return false
+                end
+            end
+            task.wait()
+        end
+        ReleaseInput()
+        return false
+    end
+
+    local function execJump(e, cancel)
+        if not execWalk(e.fx, e.fy, cancel) then return false end
+        AutoInput.active = true
+        local dy = e.fy - e.y
+        local top = e.y + 1
+        local releaseY = top - ((dy == 1) and 0 or 0.4)
+        local cx = e.x + 0.5
+        ReleaseInput()
+        task.wait()
+        AutoInput.jump = true
+        local t0 = os.clock()
+        local airborne = false
+        while os.clock() - t0 <= 1.8 and alive() do
+            if cancel and cancel() then ReleaseInput(); return false end
+            local s = PlayerPhysicsState()
+            if not s or s.dead then ReleaseInput(); return false end
+            if not s.grounded then airborne = true end
+            if AutoInput.jump and (s.y <= releaseY or (airborne and (s.vy or 0) >= 0)) then
+                AutoInput.jump = false
+            end
+            if s.y <= top + 0.25 then
+                steerX(s, cx, 0.1)
+            else
+                steerX(s, e.fx + 0.5, 0.15)
+            end
+            if airborne and s.grounded then
+                local nx, ny = floor(s.x), floor(s.y - 0.475)
+                ReleaseInput()
+                return (ny == e.y and nx == e.x and abs(s.x - cx) <= 0.26)
+            end
+            if not airborne and os.clock() - t0 > 0.38 then break end
+            task.wait()
+        end
+        ReleaseInput()
+        return false
+    end
+
+    local function execGap(e, cancel)
+        if not execWalk(e.fx, e.fy, cancel) then return false end
+        AutoInput.active = true
+        local s0 = PlayerPhysicsState()
+        if not s0 then ReleaseInput(); return false end
+        local dir = (e.x > e.fx) and 1 or -1
+        local takeoff = e.fx + 0.5 + dir * 0.6
+        local startY = s0.y
+        local cx = e.x + 0.5
+        ReleaseInput()
+        local t0 = os.clock()
+        local jumped, airborne, jumpAt = false, false, 0
+        while os.clock() - t0 <= 2.2 and alive() do
+            if cancel and cancel() then ReleaseInput(); return false end
+            local s = PlayerPhysicsState()
+            if not s or s.dead then ReleaseInput(); return false end
+            if not jumped then
+                AutoInput.left, AutoInput.right = dir < 0, dir > 0
+                if (s.x - takeoff) * dir >= 0 or not s.grounded then
+                    jumped, jumpAt = true, os.clock()
+                    AutoInput.jump = s.grounded
+                end
+            else
+                if not s.grounded then airborne = true end
+                if AutoInput.jump and (s.y <= startY - 1 or (airborne and (s.vy or 0) >= 0)) then
+                    AutoInput.jump = false
+                end
+                steerX(s, cx, 0.1)
+                if airborne and s.grounded then
+                    local nx, ny = floor(s.x), floor(s.y - 0.475)
+                    ReleaseInput()
+                    return (ny == e.y and nx == e.x and abs(s.x - cx) <= 0.26)
+                end
+                if not airborne and os.clock() - jumpAt > 0.38 then break end
+            end
+            task.wait()
+        end
+        ReleaseInput()
+        return false
+    end
+
+    local function execStair(e, cancel)
+        if not execWalk(e.fx, e.fy, cancel) then return false end
+        AutoInput.active = true
+        local dir = (e.x > e.fx) and 1 or -1
+        local top = e.y + 1
+        local hug = e.fx + 0.5 + dir * 0.17
+        for try = 1, 3 do
+            local t0 = os.clock()
+            while os.clock() - t0 <= 0.8 and alive() do
+                if cancel and cancel() then ReleaseInput(); return false end
+                local s = PlayerPhysicsState()
+                if not s or s.dead then ReleaseInput(); return false end
+                steerX(s, hug, 0.03)
+                if abs(s.x - hug) <= 0.06 and abs(s.vx or 0) < 1 then break end
+                task.wait()
+            end
+            ReleaseInput()
+            task.wait()
+            local s0 = PlayerPhysicsState()
+            if not s0 then return false end
+            local y0 = s0.y
+            AutoInput.jump = true
+            t0 = os.clock()
+            local airborne, landed = false, nil
+            while os.clock() - t0 <= 1.8 and alive() do
+                if cancel and cancel() then ReleaseInput(); return false end
+                local s = PlayerPhysicsState()
+                if not s or s.dead then ReleaseInput(); return false end
+                if not s.grounded then airborne = true end
+                if AutoInput.jump and (s.y <= top - 0.1 or (airborne and (s.vy or 0) >= 0)) then
+                    AutoInput.jump = false
+                end
+                local press = (try == 1 and s.y <= top + 0.02)
+                    or (try == 2 and s.y <= y0 - 0.15)
+                    or (try == 3 and s.y <= top + 0.25)
+                if airborne and press then
+                    AutoInput.right, AutoInput.left = dir > 0, dir < 0
+                else
+                    steerX(s, hug, 0.03)
+                end
+                if airborne and s.grounded then
+                    landed = floor(s.y - 0.475)
+                    break
+                end
+                if not airborne and os.clock() - t0 > 0.35 then break end
+                task.wait()
+            end
+            ReleaseInput()
+            if landed == e.y then
+                return execWalk(e.x, e.y, cancel)
+            end
+            if landed ~= nil and landed ~= e.fy then return false end
+            if not execWalk(e.fx, e.fy, cancel) then return false end
+        end
+        return false
+    end
+
+    local function execPillar(e, cancel)
+        if not execWalk(e.fx, e.fy, cancel) then return false end
+        if fgIdAt(e.fx, e.fy) ~= 0 then return false end
+        AutoInput.active = true
+        ReleaseInput()
+        task.wait()
+        AutoInput.jump = true
+        local t0 = os.clock()
+        local placed, airborne = false, false
+        while os.clock() - t0 <= 1.8 and alive() do
+            if cancel and cancel() then ReleaseInput(); return false end
+            local s = PlayerPhysicsState()
+            if not s or s.dead then ReleaseInput(); return false end
+            if not s.grounded then airborne = true end
+            steerX(s, e.fx + 0.5, 0.12)
+            if AutoInput.jump and (s.y < e.fy - 0.9 or (airborne and (s.vy or 0) >= 0)) then
+                AutoInput.jump = false
+            end
+            if not placed and airborne and s.y < e.fy - 0.25 and ((s.vy or 0) > -6 or s.y < e.fy - 0.8) then
+                placed = placeScaffold(e.fx, e.fy)
+                if not placed then ReleaseInput(); return false end
+            end
+            if s.grounded and airborne then
+                ReleaseInput()
+                local nx, ny = floor(s.x), floor(s.y - 0.475)
+                return placed and nx == e.x and ny == e.y
+            end
+            if not airborne and os.clock() - t0 > 0.38 then break end
+            task.wait()
+        end
+        ReleaseInput()
+        return false
+    end
+
+    Nav.ExecWalk = execWalk
+    Nav.ExecPillar = execPillar
+
+    function Nav.FollowPath(path, cancel)
+        local savedLocks = {}
+        for k, v in pairs(autoFlyLocks) do savedLocks[k] = v end
+        table.clear(autoFlyLocks)
+        local wasNoclip = noclipOn
+        noclipOn = false
+        SyncGhostState()
+        AutoInput.active = true
+
+        local tempScaffolds = {}
+
+        local function cleanupScaffolds()
+            if #tempScaffolds == 0 then return end
+            for idx = #tempScaffolds, 1, -1 do
+                local sc = tempScaffolds[idx]
+                local cx, cy = GetTile()
+                if not (cx == sc.x and cy == sc.y - 1) then
+                    local s = PlayerPhysicsState()
+                    if s and stateReaches(s, sc.x, sc.y, PunchReach() - 0.1) and fgIdAt(sc.x, sc.y) ~= 0 and CanBreakId(fgIdAt(sc.x, sc.y)) then
+                        WaitPlaceGuard(sc.x, sc.y)
+                        local t0 = os.clock()
+                        while fgIdAt(sc.x, sc.y) ~= 0 and os.clock() - t0 < 3.0 and alive() do
+                            if cancel and cancel() then break end
+                            TryBreakOnce(sc.x, sc.y, false)
+                            task.wait(0.15)
+                        end
+                    end
+                    if fgIdAt(sc.x, sc.y) == 0 then
+                        table.remove(tempScaffolds, idx)
+                    end
+                end
+            end
+        end
+
+        local function finish(result)
+            cleanupScaffolds()
+            ReleaseInput()
+            AutoInput.active = false
+            noclipOn = wasNoclip
+            for k, v in pairs(savedLocks) do autoFlyLocks[k] = v end
+            SyncGhostState()
+            return result
+        end
+
+        local i = 1
+        while i <= #path and alive() do
+            if cancel and cancel() then return finish(false) end
+            local e = path[i]
+            local last, ok = i, false
+            if e.kind == "walk" then
+                local dir = e.x - e.fx
+                while path[last + 1] and path[last + 1].kind == "walk" and (path[last + 1].x - path[last + 1].fx) == dir do
+                    last = last + (1)
+                end
+                local anyBuild = false
+                for j = i, last do
+                    if path[j].build then anyBuild = true; break end
+                end
+                if anyBuild then
+                    ok = true
+                    for j = i, last do
+                        if cancel and cancel() then return finish(false) end
+                        local st = path[j]
+                        if st.build and not realSupport(st.x, st.y) then
+                            if not placeScaffold(st.x, st.y + 1) then ok = false; break end
+                            table.insert(tempScaffolds, { x = st.x, y = st.y + 1 })
+                            task.wait(0.14)
+                        end
+                        if not execWalk(st.x, st.y, cancel) then ok = false; break end
+                        cleanupScaffolds()
+                    end
+                else
+                    ok = execWalk(path[last].x, path[last].y, cancel)
+                    cleanupScaffolds()
+                end
+            elseif e.kind == "pillar" then
+                ok = execPillar(e, cancel)
+                if ok then
+                    table.insert(tempScaffolds, { x = e.fx, y = e.fy })
+                    task.wait(0.08)
+                    cleanupScaffolds()
+                end
+            elseif e.kind == "fall" then
+                ok = execFall(e, cancel)
+                cleanupScaffolds()
+            elseif e.kind == "jump" then
+                ok = execJump(e, cancel)
+                cleanupScaffolds()
+            elseif e.kind == "gap" then
+                ok = execGap(e, cancel)
+                cleanupScaffolds()
+            elseif e.kind == "stair" then
+                ok = execStair(e, cancel)
+                cleanupScaffolds()
+            end
+            ReleaseInput()
+            if not ok then
+                Nav.BadEdge[e.key] = os.clock() + 20
+                return finish(false)
+            end
+            i = last + 1
+        end
+        return finish(true)
+    end
+
+    -- FUNGSI MEMANJAT VERTIKAL (DENGAN OPSI allowBreakOverhead AGAR TIDAK MERUSAK DIRT FARM)
+    function Nav.ClimbUpWithDirt(x, targetY, cancel, cleanBehind, stepDelayOverride, allowBreakOverhead)
+        local world = FindWorld()
+        if not world then return false end
+        if cleanBehind == nil then cleanBehind = true end
+        if allowBreakOverhead == nil then allowBreakOverhead = false end
+        local settleDelay = math.max(0.28, tonumber(stepDelayOverride) or tonumber(Config.moveStepDelay) or 0.30)
+
+        local savedLocks = {}
+        for k, v in pairs(autoFlyLocks) do savedLocks[k] = v end
+        table.clear(autoFlyLocks)
+        local wasNoclip = noclipOn
+        noclipOn = false
+        SyncGhostState()
+        AutoInput.active = true
+        ReleaseInput()
+
+        local function restore()
+            ReleaseInput()
+            AutoInput.active = false
+            noclipOn = wasNoclip
+            for k, v in pairs(savedLocks) do autoFlyLocks[k] = v end
+            SyncGhostState()
+        end
+
+        local cx, cy = GetTile()
+        if not cx then restore(); return false end
+
+        if cx ~= x then
+            if not execWalk(x, cy, cancel) then
+                pcall(world.goTo, x, cy)
+                task.wait(settleDelay)
+            end
+            cx, cy = GetTile()
+            if not cx then restore(); return false end
+        end
+
+        local tempPlaced = {}
+        local scaffoldBlock = activeScaffoldId()
+
+        if InBounds(world, x, cy + 1) and not realSupport(x, cy) then
+            if fgIdAt(x, cy + 1) == 0 and placeScaffold(x, cy + 1) then
+                tempPlaced[cy + 1] = scaffoldBlock
+                task.wait(PLACE_GUARD)
+            end
+        end
+
+        local stuckTries = 0
+        while cy > targetY and alive() do
+            if cancel and cancel() then restore(); return false end
+            local nextY = cy - 1
+
+            -- Jika di atas kepala ada blok dan tidak diizinkan menghancurkan (misal di Pabrik/Farmer), batalkan panjat di kolom ini!
+            if not allowBreakOverhead and fgIdAt(x, nextY) ~= 0 and solidAt(x, nextY) then
+                restore()
+                return false
+            end
+
+            if allowBreakOverhead then
+                for checkY = nextY, math.max(0, nextY - 2), -1 do
+                    local fgUp = fgIdAt(x, checkY)
+                    if fgUp ~= 0 and CanBreakId(fgUp) then
+                        local t0 = os.clock()
+                        while fgIdAt(x, checkY) ~= 0 and os.clock() - t0 < 4 do
+                            if cancel and cancel() then restore(); return false end
+                            TryBreakOnce(x, checkY, false)
+                            task.wait(0.16)
+                        end
+                    end
+                end
+            end
+
+            local beforeX, beforeY = GetTile()
+            local okPillar = execPillar({ fx = x, fy = cy, x = x, y = nextY }, cancel)
+            if okPillar then
+                tempPlaced[cy] = scaffoldBlock
+            else
+                if fgIdAt(x, cy) == 0 then
+                    placeScaffold(x, cy)
+                    tempPlaced[cy] = scaffoldBlock
+                end
+                task.wait(0.15)
+                pcall(world.goTo, x, nextY)
+            end
+
+            task.wait(math.max(PLACE_GUARD, settleDelay))
+
+            -- Verifikasi posisi Real-Time setelah lompat
+            local nowX, nowY = GetTile()
+            if nowY and nowY < (beforeY or cy) then
+                cy = nowY
+                stuckTries = 0
+            else
+                stuckTries = stuckTries + 1
+                if stuckTries >= 3 then
+                    restore()
+                    return false
+                end
+            end
+
+            if cleanBehind then
+                for py, _ in pairs(tempPlaced) do
+                    if py >= cy + 2 and math.abs(py - cy) <= 3 and fgIdAt(x, py) ~= 0 and CanBreakId(fgIdAt(x, py)) then
+                        WaitPlaceGuard(x, py)
+                        local t0 = os.clock()
+                        while fgIdAt(x, py) ~= 0 and os.clock() - t0 < 3.5 do
+                            if cancel and cancel() then restore(); return false end
+                            TryBreakOnce(x, py, false)
+                            task.wait(0.16)
+                        end
+                        if fgIdAt(x, py) == 0 then tempPlaced[py] = nil end
+                    end
+                end
+            end
+        end
+
+        if cleanBehind and next(tempPlaced) ~= nil then
+            local sideCandidates = (x <= 2) and { x + 1, x + 2, x - 1 }
+                or ((x >= world.w - 3) and { x - 1, x - 2, x + 1 } or { x + 1, x - 1, x + 2, x - 2 })
+            local steppedSide = false
+            for _, sx in ipairs(sideCandidates) do
+                if InBounds(world, sx, targetY) and openAt(sx, targetY) and realSupport(sx, targetY) then
+                    if not execWalk(sx, targetY, cancel) then pcall(world.goTo, sx, targetY) end
+                    task.wait(settleDelay)
+                    steppedSide = true
+                    break
+                end
+            end
+            if steppedSide then
+                local sortedY = {}
+                for py in pairs(tempPlaced) do table.insert(sortedY, py) end
+                table.sort(sortedY)
+                for _, py in ipairs(sortedY) do
+                    if fgIdAt(x, py) ~= 0 and math.abs(py - targetY) <= 3 and CanBreakId(fgIdAt(x, py)) then
+                        WaitPlaceGuard(x, py)
+                        local t0 = os.clock()
+                        while fgIdAt(x, py) ~= 0 and os.clock() - t0 < 3.5 do
+                            if cancel and cancel() then break end
+                            TryBreakOnce(x, py, false)
+                            task.wait(0.16)
+                        end
+                    end
+                end
+            end
+        end
+
+        restore()
+        return true
+    end
+
+    -- TELEPORT MODE STEPPER REAL-TIME (Cek GetTile() Tiap 1 Tile + Cari Rute A* Agar Tidak Nembus Blok + Retry 3x)
+    function Nav.FlyTo(tx, ty, cancel, stepDelayOverride, allowThroughBlocks)
+        local w = FindWorld()
+        if not w or type(w.goTo) ~= "function" then return false end
+        local stepDelay = math.max(0.20, tonumber(stepDelayOverride) or tonumber(Config.moveStepDelay) or 0.25)
+
+        for attempt = 1, 3 do
+            if cancel and cancel() then return false end
+            local cx, cy = GetTile()
+            if not cx then return false end
+            if cx == tx and cy == ty then return true end
+
+            w.ghost = true
+            local failCount = 0
+            local maxLoops = 220
+
+            while (cx ~= tx or cy ~= ty) and maxLoops > 0 and alive() do
+                maxLoops = maxLoops - 1
+                if cancel and cancel() then return false end
+                w.ghost = true
+
+                -- Selalu baca posisi Real-Time sebelum melangkah 1 tile!
+                local rx, ry = GetTile()
+                if not rx then return false end
+                cx, cy = rx, ry
+                if cx == tx and cy == ty then return true end
+
+                local stepX = (tx > cx and 1) or (tx < cx and -1) or 0
+                local stepY = (ty > cy and 1) or (ty < cy and -1) or 0
+                local nx, ny = cx + stepX, cy + stepY
+
+                -- Jika tidak boleh menembus blok solid (seperti di DF), prioritaskan geser di sumbu yang terbuka
+                if not allowThroughBlocks and not openAt(nx, ny) then
+                    if stepX ~= 0 and openAt(cx + stepX, cy) then
+                        nx, ny = cx + stepX, cy
+                    elseif stepY ~= 0 and openAt(cx, cy + stepY) then
+                        nx, ny = cx, cy + stepY
+                    elseif cx <= 2 or cx >= w.w - 3 then
+                        nx, ny = cx, cy + stepY
+                    else
+                        -- Jika terhalang platform di atas/bawah, jalan ke ujung kiri/kanan dulu baru naik/turun!
+                        local edgeX = (math.abs(cx - 1) <= math.abs(cx - (w.w - 2))) and 1 or (w.w - 2)
+                        local dirEdge = (edgeX > cx) and 1 or -1
+                        if openAt(cx + dirEdge, cy) then
+                            nx, ny = cx + dirEdge, cy
+                        end
+                    end
+                end
+
+                pcall(w.goTo, nx, ny)
+                task.wait(stepDelay)
+
+                -- Cek apakah posisi karakter benar-benar berpindah
+                local ax, ay = GetTile()
+                if ax == cx and ay == cy then
+                    failCount = failCount + 1
+                    if failCount >= 3 then
+                        -- Gagal berpindah 3x berturut-turut: mundur/geser sedikit lalu ulangi pencarian rute
+                        local nudgeX = (cx > 1 and openAt(cx - 1, cy)) and (cx - 1) or (cx + 1)
+                        pcall(w.goTo, nudgeX, cy)
+                        task.wait(stepDelay)
+                        break
+                    end
+                else
+                    failCount = 0
+                end
+            end
+
+            local fx, fy = GetTile()
+            if fx == tx and fy == ty then return true end
+        end
+        return false
+    end
+
+    -- LEGIT WALKING DENGAN REAL-TIME POSITION CHECK & 3X RE-PATHFIND OTOMATIS
+    function Nav.LegitTo(tx, ty, cancel, reachRadius, allowScaffold)
+        local started = os.clock()
+        local w = FindWorld()
+        if not w then return false, "world" end
+        if allowScaffold == nil then allowScaffold = false end
+        local R = reachRadius or 0.4
+
+        -- Lakukan hingga 3x percobaan pencarian rute ulang (Re-pathfind) jika di tengah jalan nyangkut/rollback
+        for attempt = 1, 3 do
+            if cancel and cancel() then return false, "cancel" end
+            local sx, sy = GetTile()
+            if not sx then return false, "pos" end
+            if sx == tx and sy == ty then return true, os.clock() - started end
+            local sNow = PlayerPhysicsState()
+            if sNow and R >= 1 and stateReaches(sNow, tx, ty, R) then
+                return true, os.clock() - started
+            end
+
+            local goals = { [ty * w.w + tx] = true }
+            local path = Nav.AStar(sx, sy, goals, tx, ty, R, allowScaffold, cancel)
+            if path and #path > 0 then
+                if Nav.FollowPath(path, cancel) then
+                    local fx, fy = GetTile()
+                    local sEnd = PlayerPhysicsState()
+                    if (fx == tx and fy == ty) or (sEnd and stateReaches(sEnd, tx, ty, R + 0.35)) then
+                        return true, os.clock() - started
+                    end
+                end
+            else
+                -- Jika A* tidak menemukan jalan karena target di lantai berbeda pada DF, lewat tangga ujung kiri/kanan (x=1 atau x=W-2)
+                if sy ~= ty then
+                    local stairX = (math.abs(sx - 1) <= math.abs(sx - (w.w - 2))) and 1 or (w.w - 2)
+                    local stairGoals = { [ty * w.w + stairX] = true }
+                    local stairPath = Nav.AStar(sx, sy, stairGoals, stairX, ty, 0.5, allowScaffold, cancel)
+                    if stairPath and #stairPath > 0 then
+                        Nav.FollowPath(stairPath, cancel)
+                    end
+                end
+            end
+            task.wait(0.15)
+        end
+
+        return false, "nopath"
+    end
+
+    function Nav.StepGoTo(tx, ty, cancel, flyMode)
+        local ok = Nav.FlyTo(tx, ty, cancel, Config.moveStepDelay, flyMode == true)
+        SyncGhostState()
+        return ok, ok and 0 or "stuck"
+    end
+
+    -- FUNGSI GERAK UTAMA: Jika Legit Walking dipilih, 100% murni jalan fisik A* TANPA Noclip/Ghost!
+    function Nav.Go(tx, ty, cancel, reachRadius, allowScaffold)
+        local isTeleport = (Config.moveMethod == "Teleport Mode") or (Config.moveMode == "fly") or (Config.moveMode == "teleport")
+        if not isTeleport then
+            -- Matikan semua ghost/noclip agar server tidak melakukan rollback/kick
+            local w = FindWorld()
+            if w and not noclipOn then w.ghost = false end
+            local ok, info = Nav.LegitTo(tx, ty, cancel, reachRadius, allowScaffold)
+            return ok, info
+        end
+        return Nav.StepGoTo(tx, ty, cancel, false)
+    end
+
+    function Nav.To(tx, ty, cancel, reachRadius, allowScaffold)
+        local ok = Nav.Go(tx, ty, cancel, reachRadius, allowScaffold)
+        return ok
+    end
+
+    -- Click TP Kamera -> Tile (Diperbaiki dari hasil Camera Spy)
+    local actFn = nil
+    local function CamInfo()
+        if not actFn and getgcFn and debug and debug.info then
+            for _, fn in ipairs(getgcFn(true)) do
+                if type(fn) == "function" then
+                    local okN, fnName = pcall(debug.info, fn, "n")
+                    if okN and fnName == "act" and getupvalueFn then
+                        local ok1, u1 = pcall(getupvalueFn, fn, 1)
+                        local ok2, u2 = pcall(getupvalueFn, fn, 2)
+                        local ok4, u4 = pcall(getupvalueFn, fn, 4)
+                        local ok5, u5 = pcall(getupvalueFn, fn, 5)
+                        if ok1 and typeof(u1) == "Instance" and u1.ClassName == "Players"
+                            and ok2 and type(u2) == "number"
+                            and ok4 and type(u4) == "number"
+                            and ok5 and type(u5) == "number" then
+                            actFn = fn
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        if actFn and getupvalueFn then
+            local okX, camX = pcall(getupvalueFn, actFn, 2)
+            local okT, tile = pcall(getupvalueFn, actFn, 4)
+            local okY, camY = pcall(getupvalueFn, actFn, 5)
+            if okX and okT and okY and type(camX) == "number" and type(tile) == "number" and type(camY) == "number" and tile > 0 then
+                return camX, camY, tile
+            end
+        end
+
+        local gg = PlayerGui:FindFirstChild("GameGui")
+        local worldGui = gg and gg:FindFirstChild("World")
+        local camGui = worldGui and worldGui:FindFirstChild("Camera")
+        local tilesFrame = camGui and camGui:FindFirstChild("Tiles")
+        if tilesFrame and tilesFrame:IsA("GuiObject") then
+            local tileSize = 64
+            local camX = -tilesFrame.Position.X.Offset / tileSize
+            local camY = -tilesFrame.Position.Y.Offset / tileSize
+            return camX, camY, tileSize
+        end
+        return nil
+    end
+
+    function Nav.ScreenToTile(pos)
+        local camX, camY, tile = CamInfo()
+        if not camX then return nil end
+        local gg = PlayerGui:FindFirstChild("GameGui")
+        local worldGui = (gg and gg:FindFirstChild("World")) or PlayerGui:FindFirstChild("World", true)
+        if not worldGui or not worldGui:IsA("GuiObject") then return nil end
+        local scaleObj = worldGui:FindFirstChildWhichIsA("UIScale", true)
+        local scale = scaleObj and scaleObj.Scale or 1
+        local rel = (Vector2.new(pos.X, pos.Y) - worldGui.AbsolutePosition) / scale
+        return floor(camX + rel.X / tile), floor(camY + rel.Y / tile)
+    end
+
+    local function OnClick(input, processed)
+        if processed or not Nav.clickOn then return end
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1
+            and input.UserInputType ~= Enum.UserInputType.Touch then
+            return
+        end
+        if Config.clickTpShift and not (UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
+            or UserInputService:IsKeyDown(Enum.KeyCode.RightShift)) then
+            return
+        end
+        local tx, ty = Nav.ScreenToTile(input.Position)
+        if not tx then
+            Notify("Click TP: posisi klik tidak terbaca.")
+            return
+        end
+        Nav.token = Nav.token + (1)
+        local token = Nav.token
+        task.spawn(function()
+            local started = os.clock()
+            local ok, info = Nav.Go(tx, ty, function()
+                return Nav.token ~= token or not Nav.clickOn or not alive()
+            end, 0.4, true)
+            if ok then
+                Nav.last = string.format("Sampai (%d,%d) dalam %.2fs", tx, ty, os.clock() - started)
+                Notify(Nav.last)
+            elseif info ~= "cancel" then
+                Nav.last = "Gagal (" .. tostring(info) .. ")"
+                Notify("Click TP gagal: " .. tostring(info))
+            end
+        end)
+    end
+
+    function Nav.StartClick()
+        if Nav.clickOn then return true end
+        if not CamInfo() then
+            Notify("Click TP: data kamera game tidak ditemukan.")
+            return false
+        end
+        Nav.clickOn = true
+        Nav.conn = trackConn(UserInputService.InputBegan:Connect(OnClick))
+        return true
+    end
+
+    function Nav.StopClick()
+        if not Nav.clickOn then return false end
+        Nav.clickOn = false
+        Nav.token = Nav.token + (1)
+        if Nav.conn then
+            Nav.conn:Disconnect()
+            Nav.conn = nil
+        end
+        ReleaseInput()
+        return true
+    end
+end)() end
+
+----------------------------------------------------------------------
+-- UTILITAS AKSI CEPAT: DROP WL, WARP, POS 1/2, REJOIN
+----------------------------------------------------------------------
+local lastDropClock = 0
+
+local function DropWorldLock(amount)
+    amount = math.floor(tonumber(amount) or 0)
+    if amount < 1 or amount > MAX_AMOUNT then
+        Notify("Jumlah WL tidak valid!")
+        return false
+    end
+    local now = os.clock()
+    if now - lastDropClock < COOLDOWN then
+        task.wait(COOLDOWN - (now - lastDropClock))
+    end
+    lastDropClock = os.clock()
+
+    local id = Config.dropId or 242
+    if DropEvent then
+        pcall(function() DropEvent:FireServer(id, amount) end)
+        Notify(string.format("Drop %d %s dikirim!", amount, ItemName(id)))
+        return true
+    elseif NetOk and type(Net) == "table" and Net.drop then
+        pcall(Net.drop.send, { id = id, n = amount })
+        Notify(string.format("Drop %d %s dikirim!", amount, ItemName(id)))
+        return true
+    end
+    Notify("Remote DropItem tidak ditemukan!")
+    return false
+end
+
+local QueueReload
+local function WarpToWorld(worldName)
+    worldName = Trim(worldName):upper()
+    if worldName == "" then
+        Notify("Nama world tidak boleh kosong!")
+        return false
+    end
+    Config.lastWorld = worldName
+    SaveConfig()
+    if QueueReload then pcall(QueueReload) end
+    local m = Refs.Menu
+    if m and type(rawget(m, "enter")) == "function" then
+        pcall(m.enter, worldName)
+        Notify("Memasuki world: " .. worldName)
+        return true
+    end
+    local w = FindWorld()
+    if w and type(rawget(w, "enter")) == "function" then
+        pcall(w.enter, worldName)
+        Notify("Memasuki world: " .. worldName)
+        return true
+    end
+    Notify("Fungsi enter world tidak ditemukan.")
+    return false
+end
+
+
+local function Rejoin()
+    local wName = CurrentWorldName()
+    if wName ~= "" then
+        Config.lastWorld = wName
+        SaveConfig()
+    end
+    if QueueReload then pcall(QueueReload) end
+    pcall(function()
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, Player)
+    end)
+end
+
+local function SetPos(slot)
+    local tx, ty = GetTile()
+    if not tx then
+        Notify("Posisi karakter belum terbaca!")
+        return false
+    end
+    local key = "pos" .. tostring(slot)
+    Config[key] = { x = tx, y = ty, world = CurrentWorldName() }
+    SaveConfig()
+    Notify(string.format("Pos %d disimpan di (%d, %d) [%s]", slot, tx, ty, CurrentWorldName()))
+    return true
+end
+
+local function ShowPos()
+    local tx, ty = GetTile()
+    local p1, p2 = Config.pos1 or {}, Config.pos2 or {}
+    local msg = string.format(
+        "Sekarang: (%s, %s) | Pos1: (%s, %s) | Pos2: (%s, %s)",
+        tx and tostring(tx) or "-", ty and tostring(ty) or "-",
+        p1.x and tostring(p1.x) or "-", p1.y and tostring(p1.y) or "-",
+        p2.x and tostring(p2.x) or "-", p2.y and tostring(p2.y) or "-"
+    )
+    Notify(msg, "Info Posisi")
+end
+
+local function GoToPos(slot, dropAmount)
+    local key = "pos" .. tostring(slot)
+    local p = Config[key]
+    if type(p) ~= "table" or type(p.x) ~= "number" or type(p.y) ~= "number" then
+        Notify("Pos " .. tostring(slot) .. " belum disimpan!")
+        return false
+    end
+    local ok = Nav.To(p.x, p.y, nil, 0.3, true)
+    if ok then
+        local amt = tonumber(dropAmount) or tonumber(Config.winDrop) or 0
+        if amt >= 1 then
+            task.wait(0.15)
+            DropWorldLock(amt)
+        end
+    end
+    return ok
+end
+
+----------------------------------------------------------------------
+-- STATE MODUL BOT & HELPER POHON UNIVERSAL
+----------------------------------------------------------------------
+local RefreshHub
+local GridGui = nil
+local GridMode = "farm" -- "farm" | "pabrik"
+local UpdateGridVisuals = nil
+local SetGridMode = nil
+
+local Farm = {
+    on = false,
+    token = 0,
+    Override = nil,
+    Quiet = false,
+    stats = { status = "Mati", placed = 0, broken = 0, picked = 0, fail = 0, cycles = 0 },
+}
+local Clear = {
+    on = false,
+    token = 0,
+    status = "Mati",
+    stats = { scanned = 0, broken = 0, picked = 0, skipped = 0, left = 0, pass = 0, row = -1 },
+}
+local Farmer = {
+    on = false,
+    token = 0,
+    status = "Mati",
+    stats = { totalTrees = 0, ready = 0, harvested = 0, planted = 0, skipped = 0, picked = 0 },
+}
+local DF = {
+    on = false,
+    token = 0,
+    status = "Mati",
+    stats = { topDirtY = 0, bedrockY = 0, broken = 0, placed = 0, picked = 0, step = "-" },
+}
+local SpliceBot = {
+    on = false,
+    roaming = false,
+    token = 0,
+    status = "Mati",
+    made = 0,
+    planted = 0,
+    fail = {},
+    skip = {},
+}
+local Pabrik = {
+    on = false,
+    token = 0,
+    phase = "-",
+    status = "Mati",
+    harvested = 0,
+    planted = 0,
+    dropped = 0,
+    traveling = false,
+    home = "",
+    Zone = nil,
+    skip = {},
+}
+local Bag = {
+    recycled = 0,
+    converted = 0,
+    status = "-",
+}
+local Guard = {
+    on = false,
+    mode = "idle",
+    allow = {},
+    alerted = {},
+    saved = nil,
+    token = 0,
+    backAt = 0,
+    calmAt = nil,
+    leftFg = nil,
+    status = "Mati",
+    detected = 0,
+    hereText = "tidak ada",
+    staffServerText = "tidak ada",
+}
+local Reconnect = {
+    busy = false,
+    leaving = false,
+    last = nil,
+    lastAt = 0,
+    count = 0,
+    status = "-",
+}
+local Spam = { on = false, sent = 0, last = "-", nextAt = 0 }
+
+local function IsSeedId(id)
+    local it = ItemDB and ItemDB[id]
+    return type(it) == "table" and (it.kind == "seed" or type(it.tree) == "table" or type(it.grow) == "number")
+end
+
+local function TreeReadyAt(w, x, y, id)
+    w = w or FindWorld()
+    if not w then return nil end
+    local it = ItemDB[id]
+    if not it then return nil end
+    local growTime = tonumber(it.grow) or tonumber(it.baseGrow) or 31
+    local idx = y * w.w + x
+
+    if type(w.treeLook) == "function" then
+        pcall(w.treeLook, x, y)
+    end
+    if not Refs.Trees then Refs.Scan() end
+    local entry = Refs.Trees and Refs.Trees[idx]
+    if type(entry) == "table" then
+        if entry.ripe == true or entry.fruitMade == true or entry.step == 1 then
+            return 0
+        end
+        if type(entry.tree) == "table" and type(entry.tree.p) == "number" then
+            return entry.tree.p + growTime
+        end
+        if type(entry.p) == "number" then
+            return entry.p + growTime
+        end
+    end
+    local placedFg = w.placedAt and w.placedAt.fg
+    if placedFg and type(placedFg[idx]) == "number" then
+        return workspace:GetServerTimeNow() - (os.clock() - placedFg[idx]) + growTime
+    end
+    return nil
+end
+
+local function IsTreeReady(w, x, y, id)
+    local readyAt = TreeReadyAt(w, x, y, id)
+    if not readyAt then return false end
+    return workspace:GetServerTimeNow() >= readyAt
+end
+
+local function CanPlantAt(w, x, y, seedId)
+    w = w or FindWorld()
+    if not InBounds(w, x, y) or y + 1 >= w.h then return false end
+    if (TileValue(w, "fg", x, y) or 0) ~= 0 then return false end
+    local below = TileValue(w, "fg", x, y + 1) or 0
+    if below == 0 then return false end
+    local it = ItemDB[below]
+    if not it or it.kind == "seed" then return false end
+    if not (Nav.SolidAt(x, y + 1) or it.platform) then return false end
+    local ok, res = pcall(function()
+        if w.areas and type(w.areas.canEdit) == "function" and not w.areas.canEdit(x, y) then return false end
+        if type(w.builderOk) == "function" and not w.builderOk(x, y, true) then return false end
+        local sItem = seedId and ItemDB[seedId]
+        if sItem and type(w.needsWay) == "function" and w.needsWay(sItem) and type(w.wayBlocked) == "function" and w.wayBlocked(x, y) then
+            return false
+        end
+        return true
+    end)
+    return (not ok) or res
+end
+
+----------------------------------------------------------------------
+-- FAST AUTO-COLLECT DUAL MODE ("Sentuhan" Badan Fisik & "Remote")
+----------------------------------------------------------------------
+do (function()
+    local function inTile(t, x, y)
+        return x >= t.x - 0.15 and x < t.x + 1.15 and y >= t.y - 0.15 and y < t.y + 1.15
+    end
+
+    local function canTryDrop(d, now)
+        if type(d) ~= "table" or d.taking or d.pending or d.display or (d.n or 0) <= 0 or type(d.x) ~= "number" then
+            return false
+        end
+        if d.armed == false and d.id ~= 112 then return false end
+        local fail = d.uid and DropFailUntil[d.uid]
+        return not (fail and now < fail)
+    end
+
+    function Drops.applyTaken(d, left)
+        local list = Drops.list
+        if not list or not table.find(list, d) then return end
+        if not Drops.update and Drops.findUpdate then Drops.findUpdate() end
+        if Drops.update then
+            local ok = pcall(Drops.update, d, left)
+            if ok then
+                if left > 0 then
+                    d.flown = nil
+                    if typeof(d.frame) == "Instance" then pcall(function() d.frame.Visible = not d.culled end) end
+                end
+                return
+            end
+        end
+        d.n = left
+        if left > 0 then
+            d.flown = nil
+            if typeof(d.frame) == "Instance" then pcall(function() d.frame.Visible = not d.culled end) end
+        else
+            local i = table.find(list, d)
+            if i then table.remove(list, i) end
+            if typeof(d.frame) == "Instance" then pcall(function() d.frame:Destroy() end) end
+        end
+    end
+
+    -- Tunggu sampai drop yang menempel di badan selesai dipungut oleh fisika game
+    function Drops.waitNearDrops(maxSec)
+        local list = Drops.list
+        if not list then return end
+        task.wait(0.15)
+        local t0 = os.clock()
+        while os.clock() - t0 < (maxSec or 0.45) and alive() do
+            local s = PlayerPhysicsState()
+            if not s or not s.x then return end
+            local busy = false
+            for _, d in ipairs(list) do
+                if type(d) == "table" and type(d.x) == "number" and (d.n or 0) > 0 and d.armed ~= false
+                    and math.abs(d.x - s.x) < 0.6 and d.y + 0.3 > s.y - 0.95 and d.y - 0.3 < s.y then
+                    local room = true
+                    if d.id ~= 112 and Refs.Inv and type(Refs.Inv.room) == "function" then
+                        local okr, r = pcall(function() return Refs.Inv:room(d.id) end)
+                        if okr and type(r) == "number" and r <= 0 then room = false end
+                    end
+                    if room then busy = true; break end
+                end
+            end
+            if not busy then return end
+            task.wait()
+        end
+    end
+
+    -- Tunggu drop baru dari blok yang barusan pecah muncul dari server (sesuai ping)
+    function Drops.waitSpawn(tiles)
+        if not Drops.list and Drops.findRefs then Drops.findRefs() end
+        local ping = 0.1
+        pcall(function() ping = Player:GetNetworkPing() end)
+        local limit = math.clamp(0.15 + 2.5 * ping, 0.25, 0.85)
+        local newest = nil
+        for _, t in ipairs(tiles) do
+            local b = Drops.brokeAt[t.x .. "," .. t.y]
+            if b and os.clock() - b < limit and (not newest or b > newest) then newest = b end
+        end
+        if not newest then return end
+        local list = Drops.list
+        while os.clock() - newest < limit and alive() do
+            if list then
+                for _, d in ipairs(list) do
+                    if type(d) == "table" and type(d.x) == "number" and (d.born or 0) >= newest - 0.2 then
+                        for _, t in ipairs(tiles) do
+                            if inTile(t, d.x, d.y) then
+                                task.wait(0.05)
+                                return
+                            end
+                        end
+                    end
+                end
+            end
+            task.wait()
+        end
+    end
+
+    local function takeSingleDrop(d)
+        local w = FindWorld()
+        local worldTake = w and rawget(w, "takeDrop")
+        if type(worldTake) ~= "function" and not TakeDropRemote then return false end
+        local now = os.clock()
+        if not canTryDrop(d, now) then return false end
+
+        local amount = d.n
+        if d.id ~= 112 and Refs.Inv and type(Refs.Inv.room) == "function" then
+            local okR, room = pcall(function() return Refs.Inv:room(d.id) end)
+            if okR and type(room) == "number" then amount = math.min(amount, room) end
+        end
+        if amount <= 0 then
+            if d.uid then DropFailUntil[d.uid] = now + 1 end
+            local lastFull = Webhook.LastFull[d.id]
+            if not lastFull or now - lastFull > 120 then
+                Webhook.LastFull[d.id] = now
+                Webhook.Send("full", "Inventori penuh: " .. ItemName(d.id) .. " tidak bisa diambil lagi")
+            end
+            return false
+        end
+
+        d.taking = true
+        if typeof(d.frame) == "Instance" then pcall(function() d.frame.Visible = false end) end
+
+        local ok, taken
+        if type(worldTake) == "function" then
+            ok, taken = pcall(worldTake, d.uid, amount)
+        else
+            ok, taken = pcall(TakeDropRemote.InvokeServer, TakeDropRemote, d.uid, amount)
+        end
+
+        d.taking = false
+
+        if not (ok and type(taken) == "number" and taken > 0) then
+            Farm.stats.fail = Farm.stats.fail + 1
+            d.refused = os.clock()
+            d.failN = (d.failN or 0) + 1
+            if d.uid then DropFailUntil[d.uid] = os.clock() + math.min(8, d.failN) end
+            d.flown = nil
+            if typeof(d.frame) == "Instance" then pcall(function() d.frame.Visible = not d.culled end) end
+            return false
+        end
+
+        if d.uid then DropFailUntil[d.uid] = nil end
+        if d.id == 112 then
+            if Refs.Gems and type(Refs.Gems.addGems) == "function" then pcall(Refs.Gems.addGems, taken) end
+        elseif Refs.Inv and type(Refs.Inv.add) == "function" then
+            pcall(function() Refs.Inv:add(d.id, taken) end)
+        end
+
+        Drops.applyTaken(d, math.max(0, (d.n or 0) - taken))
+
+        Stats.Collected = Stats.Collected + taken
+        Stats.Items[d.id] = (Stats.Items[d.id] or 0) + taken
+        Farm.stats.picked = Farm.stats.picked + taken
+        if Clear.on then Clear.stats.picked = Clear.stats.picked + taken end
+        if Farmer.on then Farmer.stats.picked = Farmer.stats.picked + taken end
+        if DF.on then DF.stats.picked = DF.stats.picked + taken end
+        return true
+    end
+
+    -- Jalan fisik lurus ke titik tengah tile X (menggunakan Hook isDown + VirtualInputManager A/D)
+    function Drops.walkToX(targetCenterX, maxSec)
+        local s0 = PlayerPhysicsState()
+        if not s0 or s0.dead then return false end
+        local dx0 = targetCenterX - s0.x
+        if math.abs(dx0) <= 0.14 then
+            ReleaseInput()
+            return true
+        end
+        local dir = (dx0 > 0) and 1 or -1
+        AutoInput.active = true
+        AutoInput.left = (dir < 0)
+        AutoInput.right = (dir > 0)
+        SyncVimKeys()
+
+        local t0 = os.clock()
+        while alive() and (Farm.on or Farm.Override ~= nil) and (os.clock() - t0) < (maxSec or 1.8) do
+            local s = PlayerPhysicsState()
+            if not s or s.dead then break end
+            local rem = (targetCenterX - s.x) * dir
+            if rem <= 0.10 then
+                ReleaseInput()
+                return true
+            end
+            AutoInput.left = (dir < 0)
+            AutoInput.right = (dir > 0)
+            SyncVimKeys()
+            task.wait()
+        end
+        ReleaseInput()
+        return false
+    end
+
+    -- Setelah break selesai, karakter langsung jalan ke setiap tile yang di-break untuk collect lalu balik ke (hx, hy)
+    function Drops.touchAll(brokenTiles, hx, hy)
+        if type(brokenTiles) ~= "table" or #brokenTiles == 0 then return false end
+        local w = FindWorld()
+        if not w then return false end
+
+        -- Urutkan tile yang habis di-break dari yang terdekat ke terjauh dari (hx, hy)
+        local list = {}
+        for _, t in ipairs(brokenTiles) do
+            if not Nav.SolidAt(t.x, t.y) then
+                table.insert(list, { x = t.x, y = t.y })
+            end
+        end
+        if #list == 0 then return false end
+
+        table.sort(list, function(a, b)
+            local da = math.abs(a.x - hx) + math.abs(a.y - hy)
+            local db = math.abs(b.x - hx) + math.abs(b.y - hy)
+            return da < db
+        end)
+
+        local wasActive = AutoInput.active
+        AutoInput.active = true
+        Drops.collecting = true
+        w.speedScale = 1
+
+        pcall(function()
+            for _, t in ipairs(list) do
+                if not alive() or not (Farm.on or Farm.Override ~= nil) then break end
+                if not Nav.SolidAt(t.x, t.y) then
+                    -- 1. Jalan ke kolom X tile yang telah di-break
+                    Drops.walkToX(t.x + 0.5, 1.8)
+
+                    -- 2. Jika tile yang di-break berada di atas kepala (t.y < hy), lompat untuk mengambil drop-nya
+                    if t.y < hy then
+                        AutoInput.jump = true
+                        SyncVimKeys()
+                        task.wait(0.18)
+                        AutoInput.jump = false
+                        SyncVimKeys()
+                        local jt0 = os.clock()
+                        while alive() and (os.clock() - jt0) < 0.8 do
+                            local s = PlayerPhysicsState()
+                            if not s or s.grounded then break end
+                            task.wait()
+                        end
+                    else
+                        -- Berhenti sejenak di tile tersebut agar dropped item terambil sempurna
+                        task.wait(0.18)
+                    end
+                end
+            end
+
+            -- 3. Jalan kembali ke posisi tengah Auto Farm (hx + 0.5)
+            if alive() and (Farm.on or Farm.Override ~= nil) then
+                Drops.walkToX(hx + 0.5, 2.0)
+                task.wait(0.08)
+            end
+        end)
+
+        ReleaseInput()
+        Drops.collecting = false
+        if Config.walkSpeed ~= 100 and Refs.World then
+            Refs.World.speedScale = Config.walkSpeed / 100
+        end
+        AutoInput.active = wasActive
+        return true
+    end
+
+    local nextDropScan = 0
+    trackConn(RunService.Heartbeat:Connect(function()
+        if not alive() then return end
+        local activeGrid = (Farm.Override and Farm.Override.offsets) or Config.farmGrid
+        local farmArea = (Farm.on and Config.farmTake) or (Farm.Override ~= nil)
+        local nearArea = Config.collectAround
+            or (Clear.on and Config.clearTake)
+            or (Farmer.on and Config.harvestTake)
+            or (DF.on and Config.dfTake)
+            or SpliceBot.on
+            or Pabrik.on
+        if not farmArea and not nearArea then return end
+
+        local tnow = os.clock()
+        if tnow < (Drops.nextTick or 0) then return end
+        Drops.nextTick = tnow + ((Config.collectMode == "Remote") and 0.1 or 0.2)
+
+        local list = Drops.list
+        if not list then
+            if tnow >= nextDropScan then
+                nextDropScan = tnow + 5
+                if Drops.findRefs then Drops.findRefs() else Refs.Scan() end
+            end
+            return
+        end
+
+        local s = PlayerPhysicsState()
+        if not s or type(s.x) ~= "number" then return end
+        local cx, cy = s.x, s.y - 0.475
+
+        -- Mode "Sentuhan": drop dipungut otomatis oleh game saat tersentuh badan; hitung statistiknya
+        if Config.collectMode ~= "Remote" then
+            local seen = {}
+            for _, d in ipairs(list) do
+                if type(d) == "table" and type(d.x) == "number" and math.abs(d.x - cx) <= 1.5 and math.abs(d.y - cy) <= 1.5 then
+                    seen[d] = d.n or 0
+                end
+            end
+            for d, n in pairs(Drops.seen or {}) do
+                if seen[d] == nil and not table.find(list, d) and d.id and n > 0 then
+                    Stats.Collected = Stats.Collected + n
+                    Stats.Items[d.id] = (Stats.Items[d.id] or 0) + n
+                    Farm.stats.picked = Farm.stats.picked + n
+                    if Clear.on then Clear.stats.picked = Clear.stats.picked + n end
+                    if Farmer.on then Farmer.stats.picked = Farmer.stats.picked + n end
+                    if DF.on then DF.stats.picked = DF.stats.picked + n end
+                end
+            end
+            Drops.seen = seen
+            return
+        end
+
+        -- Mode "Remote": ambil langsung via world.takeDrop
+        if #list == 0 then return end
+        local ptx, pty = math.floor(cx), math.floor(cy)
+        local radius = (tonumber(Config.collectRadius) or 3) + 0.25
+        local dropZone = Pabrik.Zone
+        if dropZone and dropZone.world ~= CurrentWorldName() then dropZone = nil end
+
+        for i = #list, 1, -1 do
+            local d = list[i]
+            if canTryDrop(d, tnow) and not (dropZone and math.abs(d.x - dropZone.x) <= 2.5 and math.abs(d.y - dropZone.y) <= 2.5) then
+                local hit = nearArea and math.abs(d.x - cx) <= radius and math.abs(d.y - cy) <= radius
+                if not hit and farmArea then
+                    for key, on in pairs(activeGrid) do
+                        if on then
+                            local dx, dy = tostring(key):match("^(-?%d+),(-?%d+)$")
+                            if dx and dy then
+                                local tx, ty = ptx + tonumber(dx), pty + tonumber(dy)
+                                if inTile({ x = tx, y = ty }, d.x, d.y) then
+                                    hit = true
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+                if hit then task.spawn(takeSingleDrop, d) end
+            end
+        end
+    end))
+end)() end
+
+----------------------------------------------------------------------
+-- 1. AUTO FARM (MULTI-TARGET + RAYMAN'S FIST + OVERRIDE PABRIK)
+----------------------------------------------------------------------
+local StartFarm, StopFarm, RunFarmLoopDirect
+
+do (function()
+    local RAY_DIRS = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 }, { 1, 1 }, { 1, -1 }, { -1, 1 }, { -1, -1 } }
+
+    local function raymanOn()
+        local w = FindWorld()
+        local f = w and rawget(w, "raymanOn")
+        if type(f) ~= "function" then return false end
+        local ok, on = pcall(f)
+        return ok and on == true
+    end
+
+    local function raymanLine(px, py, active)
+        local byKey = {}
+        for _, a in ipairs(active) do byKey[a.x .. "," .. a.y] = a end
+        local best, bestDir = nil, nil
+        for _, d in ipairs(RAY_DIRS) do
+            local line = {}
+            for i = 1, 3 do
+                local a = byKey[(px + d[1] * i) .. "," .. (py + d[2] * i)]
+                if a then line[#line + 1] = a end
+            end
+            if #line >= 2 and #line > (best and #best or 0) then
+                best, bestDir = line, d
+            end
+        end
+        return best, bestDir
+    end
+
+    local function raymanAct(dir)
+        local s = PlayerPhysicsState()
+        if not s or not s.x then return end
+        if NetOk and type(Net) == "table" and Net.act then
+            pcall(Net.act.send, { kind = 4, x = s.x + dir[1], y = s.y - 0.475 + dir[2] })
+        end
+    end
+
+    local function activeOffsets()
+        local grid = (Farm.Override and Farm.Override.offsets) or Config.farmGrid
+        local list = {}
+        for key, on in pairs(grid) do
+            if on then
+                local dx, dy = tostring(key):match("^(-?%d+),(-?%d+)$")
+                dx, dy = tonumber(dx), tonumber(dy)
+                if dx and dy and not (dx == 0 and dy == 0) then
+                    table.insert(list, { dx = dx, dy = dy })
+                end
+            end
+        end
+        table.sort(list, function(a, b)
+            if a.dy ~= b.dy then return a.dy < b.dy end
+            return a.dx < b.dx
+        end)
+        return list
+    end
+
+    local function breakableAt(w, x, y)
+        local fg = TileValue(w, "fg", x, y)
+        if fg == nil then return false end
+        if fg ~= 0 then return CanBreakId(fg) end
+        local bg = TileValue(w, "bg", x, y)
+        return Config.farmBreakBg and bg ~= nil and bg ~= 0 and CanBreakId(bg)
+    end
+
+    local function FarmLoop(token, anchor)
+        while Farm.on and Farm.token == token and alive() do
+            local w = FindWorld()
+            if not w or CurrentWorldName() ~= anchor.world then
+                Farm.stats.status = "World berubah, berhenti"
+                break
+            end
+
+            local mode = (Farm.Override and Farm.Override.mode) or Config.farmMode
+            local doPlace = mode ~= "Break saja"
+            local doBreak = mode ~= "Place saja"
+            local id = (Farm.Override and Farm.Override.block) or Config.farmPlaceId
+            -- Fitur Auto Save / Drop Seed pada Auto Farm ketika Seed >= 200
+            if not Farm.Override and Config.farmAutoDropSeed then
+                local seedId = IsSeedId(id) and id or SeedOfBlock(id)
+                local threshold = tonumber(Config.farmSeedDropAt) or 200
+                if seedId and CountItem(seedId) >= threshold then
+                    local keep = tonumber(Config.farmSeedKeep) or 0
+                    local dropAmt = CountItem(seedId) - keep
+                    if dropAmt > 0 and Pabrik and type(Pabrik.ExternalDropSeed) == "function" then
+                        Farm.stats.status = string.format("Auto Drop Seed %s x%d...", ItemName(seedId), dropAmt)
+                        Pabrik.ExternalDropSeed(
+                            seedId,
+                            dropAmt,
+                            Config.farmDropWorld,
+                            Config.farmDropX,
+                            Config.farmDropY,
+                            anchor.world,
+                            anchor.x,
+                            anchor.y,
+                            function() return Farm.on and Farm.token == token and alive() end
+                        )
+                        w = FindWorld()
+                    end
+                end
+            end
+            local offsets = activeOffsets()
+            if #offsets == 0 then
+                Farm.stats.status = "Pilih kotak di Grid 5x5 dulu"
+                if not Farm.Quiet then Notify("Auto Farm: pilih minimal 1 kotak di Grid 5x5.") end
+                break
+            end
+
+            local px, py = GetTile()
+            if not px then break end
+            if not Farm.Override and (px ~= anchor.x or py ~= anchor.y) then
+                if py == anchor.y and math.abs(px - anchor.x) <= 4 and Drops.walkToX then
+                    local wasA = AutoInput.active
+                    AutoInput.active = true
+                    Drops.collecting = true
+                    Drops.walkToX(anchor.x + 0.5, 2.0)
+                    Drops.collecting = false
+                    AutoInput.active = wasA
+                else
+                    Nav.To(anchor.x, anchor.y, function() return Farm.token ~= token end, 0.2, false)
+                end
+                px, py = anchor.x, anchor.y
+            end
+
+            local tiles = {}
+            for _, o in ipairs(offsets) do
+                local tx, ty = anchor.x + o.dx, anchor.y + o.dy
+                if InBounds(w, tx, ty) then
+                    table.insert(tiles, { x = tx, y = ty })
+                end
+            end
+
+            local acted, outOfBlock = false, false
+
+            if doPlace then
+                Farm.stats.status = "Place " .. ItemName(id)
+                local layer = LayerOf(id)
+                for _, t in ipairs(tiles) do
+                    if not Farm.on or Farm.token ~= token then break end
+                    local fg = TileValue(w, "fg", t.x, t.y)
+                    local cur = TileValue(w, layer, t.x, t.y)
+                    if cur == 0 and (layer == "bg" or fg == 0) then
+                        if CountItem(id) <= 0 then
+                            outOfBlock = true
+                            break
+                        end
+                        if PlaceCell(id, t, anchor.facing) then
+                            Farm.stats.placed = Farm.stats.placed + (1)
+                            acted = true
+                            task.wait(math.max(0.05, Config.farmPlaceMs / 1000))
+                        end
+                    end
+                end
+            end
+
+            if not Farm.on or Farm.token ~= token then break end
+
+            local brokenTiles = {}
+            local brokenSeen = {}
+
+            if doBreak then
+                Farm.stats.status = "Break (" .. (raymanOn() and "Rayman" or ("Multi " .. Config.farmMultiTarget)) .. ")"
+                local K = math.clamp(math.floor(Config.farmMultiTarget or 1), 1, 5)
+                local nextI, active = 1, {}
+                while Farm.on and Farm.token == token and alive() do
+                    while #active < K and nextI <= #tiles do
+                        local t = tiles[nextI]
+                        nextI = nextI + (1)
+                        if breakableAt(w, t.x, t.y) then
+                            active[#active + 1] = { x = t.x, y = t.y, n = 0 }
+                            local bKey = t.x .. "," .. t.y
+                            if not brokenSeen[bKey] then
+                                brokenSeen[bKey] = true
+                                table.insert(brokenTiles, { x = t.x, y = t.y })
+                            end
+                        end
+                    end
+                    if #active == 0 then break end
+
+                    local hits, rayDir = nil, nil
+                    if K > 1 and raymanOn() then
+                        hits, rayDir = raymanLine(anchor.x, anchor.y, active)
+                    end
+                    if not rayDir then
+                        hits = { active[1] }
+                    end
+
+                    local t0 = os.clock()
+                    if rayDir then raymanAct(rayDir) end
+                    local hitAny, brokeAny = false, false
+
+                    for i, a in ipairs(hits) do
+                        if not Farm.on or Farm.token ~= token then break end
+                        if i > 1 then task.wait(0.05) end
+                        local r = TryBreakOnce(a.x, a.y, Config.farmBreakBg)
+                        a.n = a.n + (1)
+                        if r then hitAny, acted = true, true end
+                        if r == "broke" then
+                            Farm.stats.broken = Farm.stats.broken + (1)
+                            brokeAny = true
+                        end
+                        if r == nil or a.n > 80 or not breakableAt(w, a.x, a.y) then
+                            a.done = true
+                        end
+                        a.used = true
+                    end
+
+                    local nextActive = {}
+                    for _, a in ipairs(active) do
+                        if not a.done and not a.used then nextActive[#nextActive + 1] = a end
+                    end
+                    for _, a in ipairs(hits) do
+                        a.used = nil
+                        if not a.done then nextActive[#nextActive + 1] = a end
+                    end
+                    active = nextActive
+
+                    if hitAny then
+                        local gap = math.max(0.04, Config.farmDelay)
+                        if rayDir then gap = math.max(gap, 0.35) end
+                        local rest = gap - (os.clock() - t0)
+                        if rest > 0.005 then task.wait(rest) end
+                    end
+                    if brokeAny and #active > 0 and Config.farmAfterBreakMs > 0 then
+                        task.wait(Config.farmAfterBreakMs / 1000)
+                    end
+                end
+            end
+
+            -- Begitu semua tile selesai di-break, tunggu 0.18 detik agar drop keluar lalu jalan ke brokenTiles!
+            if #brokenTiles > 0 and (Config.farmTake or Farm.Override) and Config.collectMode == "Sentuhan" then
+                Farm.stats.status = "Bergerak ambil drop..."
+                task.wait(0.18)
+                if Drops.touchAll then
+                    Drops.touchAll(brokenTiles, anchor.x, anchor.y)
+                end
+            end
+
+            if not acted then
+                if outOfBlock then
+                    Farm.stats.status = "Item " .. ItemName(id) .. " habis"
+                    if not Farm.Quiet then
+                        Notify("Auto Farm berhenti: " .. ItemName(id) .. " habis di inventori.")
+                        Webhook.Send("stop", "Auto Farm berhenti: " .. ItemName(id) .. " habis")
+                    end
+                    break
+                end
+                task.wait(math.max(0.1, Config.farmDelay))
+            end
+
+            Farm.stats.cycles = Farm.stats.cycles + (1)
+        end
+    end
+
+    RunFarmLoopDirect = FarmLoop
+
+    StopFarm = function()
+        if not Farm.on then return false end
+        Farm.token = Farm.token + 1
+        Farm.on = false
+        ReleaseInput()
+        AutoInput.active = false
+        Farm.stats.status = "Mati"
+        if UpdateGridVisuals then pcall(UpdateGridVisuals) end
+        return true
+    end
+
+    StartFarm = function()
+        if Farm.on then return true end
+        if Clear.on then Clear.Stop() end
+        if Farmer.on then Farmer.Stop() end
+        if DF.on then DF.Stop() end
+        if SpliceBot.on then SpliceBot.Stop() end
+        if Pabrik.on then Pabrik.Stop() end
+
+        local doPlace = Config.farmMode ~= "Break saja"
+        if doPlace and (type(Config.farmPlaceId) ~= "number" or Config.farmPlaceId <= 0) then
+            Notify("Pilih block dulu di tab Auto Farm.")
+            return false
+        end
+        local x, y, facing = GetGridState()
+        if not x then
+            Notify("Posisi karakter belum terdeteksi.")
+            return false
+        end
+        local anchor = {
+            x = math.floor(x),
+            y = math.floor(y - 0.475),
+            facing = facing,
+            world = CurrentWorldName(),
+        }
+        Farm.Override = nil
+        Farm.Quiet = false
+        Farm.token = Farm.token + (1)
+        local token = Farm.token
+        Farm.on = true
+        Farm.stats.status = "Berjalan"
+        if UpdateGridVisuals then pcall(UpdateGridVisuals) end
+
+        task.spawn(function()
+            local ok, err = pcall(FarmLoop, token, anchor)
+            ReleaseInput()
+            AutoInput.active = false
+            if not ok then warn("[ANCHHub] Auto Farm error: " .. tostring(err)) end
+            if Farm.token == token then
+                Farm.on = false
+                if Farm.stats.status == "Berjalan" then Farm.stats.status = "Mati" end
+                if UpdateGridVisuals then pcall(UpdateGridVisuals) end
+                if RefreshHub then RefreshHub() end
+            end
+        end)
+        return true
+    end
+end)() end
+
+----------------------------------------------------------------------
+-- 2. AUTO CLEAR WORLD (MODFLY SELALU NYALA + BERDIRI DI ATAS BLOCK TARGET)
+----------------------------------------------------------------------
+do (function()
+    local BREAK_TIMEOUT = 5.0
+
+    local function ClearLayerAt(w, x, y)
+        if typeof(w.spawn) == "Vector2" and x == math.floor(w.spawn.X) and y == math.floor(w.spawn.Y) then
+            return nil
+        end
+        local fg = TileValue(w, "fg", x, y)
+        if fg == nil then return nil end
+        if fg ~= 0 then
+            if CanBreakId(fg) then return "fg", fg end
+            return nil
+        end
+        if Config.clearIncludeBg then
+            local bg = TileValue(w, "bg", x, y)
+            if bg and bg ~= 0 and CanBreakId(bg) then return "bg", bg end
+        end
+        return nil
+    end
+
+    local function CollectTargets(w, skippedSet)
+        local list = {}
+        local dir = 1
+        for y = 0, w.h - 1 do
+            local rowTargets = {}
+            for x = 0, w.w - 1 do
+                local layer, id = ClearLayerAt(w, x, y)
+                if layer then
+                    local key = x .. "," .. y
+                    if not skippedSet[key] then
+                        table.insert(rowTargets, { x = x, y = y, id = id, layer = layer, key = key })
+                    end
+                end
+            end
+            if #rowTargets > 0 then
+                if Config.clearSweep == "Zig-zag" and dir == -1 then
+                    table.sort(rowTargets, function(a, b) return a.x > b.x end)
+                else
+                    table.sort(rowTargets, function(a, b) return a.x < b.x end)
+                end
+                for _, t in ipairs(rowTargets) do
+                    table.insert(list, t)
+                end
+                if Config.clearSweep == "Zig-zag" then
+                    dir = -dir
+                end
+            end
+        end
+        return list
+    end
+
+    local function ClearLoop(token, home)
+        -- ModFly SELALU NYALA selama Auto Clear berjalan
+        SetAutoFly("autoclear", true)
+        ReleaseInput()
+        AutoInput.active = false
+
+        local skippedSet = {}
+        local pass = 0
+
+        while Clear.on and Clear.token == token and alive() do
+            pass = pass + (1)
+            local w = FindWorld()
+            if not w or CurrentWorldName() ~= home.world then
+                Clear.status = "World berubah, berhenti"
+                break
+            end
+            w.ghost = true
+
+            Clear.status = "Scan objek di world..."
+            Clear.stats.pass = pass
+            local targets = CollectTargets(w, skippedSet)
+            Clear.stats.scanned = #targets
+            Clear.stats.left = #targets
+
+            if #targets == 0 then
+                break
+            end
+
+            if pass == 1 then
+                local first = targets[1]
+                Notify(string.format("Auto Clear (ModFly): %d blok ditemukan. Mulai dari (%d, %d).", #targets, first.x, first.y))
+            end
+
+            local brokeAny = false
+
+            for idx, target in ipairs(targets) do
+                if not Clear.on or Clear.token ~= token or not alive() then return end
+                w = FindWorld()
+                if not w or CurrentWorldName() ~= home.world then return end
+
+                local curLayer, curId = ClearLayerAt(w, target.x, target.y)
+                if curLayer then
+                    Clear.stats.row = target.y
+                    -- Karakter SELALU berdiri tepat di atas block yang akan di-break (x, y - 1)
+                    local standX = target.x
+                    local standY = math.max(0, target.y - 1)
+
+                    SetAutoFly("autoclear", true)
+                    w.ghost = true
+
+                    local px, py = GetTile()
+                    if px ~= standX or py ~= standY then
+                        Clear.status = string.format("Terbang ke atas blok (%d,%d) [%d/%d]", standX, standY, idx, #targets)
+                        Nav.FlyTo(standX, standY, function()
+                            return not Clear.on or Clear.token ~= token or not alive()
+                        end, Config.clearTpDelay)
+                    end
+
+                    -- Pastikan karakter tepat di (standX, standY) dengan ModFly aktif
+                    w.ghost = true
+                    pcall(w.goTo, standX, standY)
+                    task.wait(0.05)
+
+                    local started = os.clock()
+                    local timedOut = false
+                    Clear.status = string.format("Break %s di bawah (%d,%d) [%d/%d]", ItemName(curId), target.x, target.y, idx, #targets)
+
+                    -- Pukul terus blok di bawah kaki sampai fg & bg habis sebelum pindah ke blok selanjutnya
+                    while Clear.on and Clear.token == token and alive() do
+                        w.ghost = true
+                        local lNow, idNow = ClearLayerAt(w, target.x, target.y)
+                        if not lNow then break end
+                        if os.clock() - started >= BREAK_TIMEOUT then
+                            timedOut = true
+                            break
+                        end
+                        Clear.status = string.format("Break %s (%d,%d) [%d/%d]", ItemName(idNow), target.x, target.y, idx, #targets)
+                        local r = TryBreakOnce(target.x, target.y, Config.clearIncludeBg)
+                        if r == "broke" then
+                            brokeAny = true
+                            Clear.stats.broken = Clear.stats.broken + (1)
+                            started = os.clock()
+                        end
+                        task.wait(math.max(0.04, Config.clearBreakDelay))
+                    end
+
+                    if not ClearLayerAt(w, target.x, target.y) then
+                        Clear.stats.left = math.max(0, Clear.stats.left - 1)
+                    elseif timedOut then
+                        skippedSet[target.key] = true
+                        Clear.stats.skipped = Clear.stats.skipped + (1)
+                        Clear.stats.left = math.max(0, Clear.stats.left - 1)
+                        Clear.status = string.format("Skip (%d,%d) > 5 dtk", target.x, target.y)
+                    end
+                else
+                    Clear.stats.left = math.max(0, Clear.stats.left - 1)
+                end
+            end
+
+            if not brokeAny then break end
+        end
+
+        SetAutoFly("autoclear", false)
+        ReleaseInput()
+        AutoInput.active = false
+        Clear.status = "Selesai"
+        local msg = string.format("Auto Clear selesai! Hancur: %d | Diambil: %d | Skip: %d", Clear.stats.broken, Clear.stats.picked, Clear.stats.skipped)
+        Notify(msg)
+        Webhook.Send("stop", msg)
+    end
+
+    function Clear.Stop()
+        if not Clear.on then return false end
+        Clear.token = Clear.token + (1)
+        Clear.on = false
+        SetAutoFly("autoclear", false)
+        ReleaseInput()
+        AutoInput.active = false
+        Clear.status = "Mati"
+        return true
+    end
+
+    function Clear.Start()
+        if Clear.on then return true end
+        if Farm.on then StopFarm() end
+        if Farmer.on then Farmer.Stop() end
+        if DF.on then DF.Stop() end
+        if SpliceBot.on then SpliceBot.Stop() end
+        if Pabrik.on then Pabrik.Stop() end
+
+        local x, y = GetGridState()
+        if not x then Notify("Posisi belum terdeteksi."); return false end
+        local home = { x = math.floor(x), y = math.floor(y - 0.475), world = CurrentWorldName() }
+        Clear.token = Clear.token + (1)
+        local token = Clear.token
+        Clear.on = true
+        Clear.status = "Mulai"
+        Clear.stats = { scanned = 0, broken = 0, picked = 0, skipped = 0, left = 0, pass = 0, row = -1 }
+
+        task.spawn(function()
+            local ok, err = pcall(ClearLoop, token, home)
+            if not ok then warn("[ANCHHub] Auto Clear error: " .. tostring(err)) end
+            SetAutoFly("autoclear", false)
+            ReleaseInput()
+            AutoInput.active = false
+            if Clear.token == token then
+                Clear.on = false
+                if Clear.status ~= "Selesai" then Clear.status = "Mati" end
+                if RefreshHub then RefreshHub() end
+            end
+        end)
+        return true
+    end
+end)() end
+
+----------------------------------------------------------------------
+-- 3. FARMER: AUTO HARVEST + AUTO PLANT (BERSIH PIJAKAN)
+----------------------------------------------------------------------
+do (function()
+    local function FarmerLoop(token, home)
+        if Config.harvestModFly then
+            SetAutoFly("autoharvest", true)
+        end
+
+        local failedSet = {}
+        local pass = 0
+
+        while Farmer.on and Farmer.token == token and alive() do
+            pass = pass + (1)
+            local w = FindWorld()
+            if not w or CurrentWorldName() ~= home.world then
+                Farmer.status = "World berubah, berhenti"
+                break
+            end
+
+            Farmer.status = "Scan pohon & lahan tanam..."
+            local readyTrees = {}
+            local plantSpots = {}
+            local totalTrees = 0
+            local skippedNotReady = 0
+            local doPlant = Config.harvestDoPlant and Config.harvestSeedId and CountItem(Config.harvestSeedId) > 0
+
+            local rowDir = 1
+            for y = 0, w.h - 1 do
+                local rowTrees, rowSpots = {}, {}
+                for x = 0, w.w - 1 do
+                    local id = TileValue(w, "fg", x, y) or 0
+                    if id ~= 0 and IsSeedId(id) then
+                        totalTrees = totalTrees + 1
+                        if Config.harvestDoHarvest and not failedSet[x .. "," .. y] then
+                            if IsTreeReady(w, x, y, id) then
+                                table.insert(rowTrees, { x = x, y = y, id = id })
+                            else
+                                skippedNotReady = skippedNotReady + 1
+                            end
+                        end
+                    elseif doPlant and id == 0 and CanPlantAt(w, x, y, Config.harvestSeedId) then
+                        table.insert(rowSpots, { x = x, y = y })
+                    end
+                end
+                if #rowTrees > 0 or #rowSpots > 0 then
+                    if rowDir == -1 then
+                        table.sort(rowTrees, function(a, b) return a.x > b.x end)
+                        table.sort(rowSpots, function(a, b) return a.x > b.x end)
+                    else
+                        table.sort(rowTrees, function(a, b) return a.x < b.x end)
+                        table.sort(rowSpots, function(a, b) return a.x < b.x end)
+                    end
+                    for _, tr in ipairs(rowTrees) do table.insert(readyTrees, tr) end
+                    for _, sp in ipairs(rowSpots) do table.insert(plantSpots, sp) end
+                    rowDir = -rowDir
+                end
+            end
+
+            Farmer.stats.totalTrees = totalTrees
+            Farmer.stats.ready = #readyTrees
+            if pass == 1 then
+                Farmer.stats.skipped = skippedNotReady
+                Notify(string.format("Farmer Scan: %d pohon (%d siap panen, %d belum siap) | %d lahan kosong.", totalTrees, #readyTrees, skippedNotReady, #plantSpots))
+            end
+
+            if #readyTrees == 0 and #plantSpots == 0 then
+                break
+            end
+
+            local actedInPass = false
+            local R = math.min(PunchReach(), BuildReach()) - 0.15
+
+            for idx, tree in ipairs(readyTrees) do
+                if not Farmer.on or Farmer.token ~= token or not alive() then return end
+                w = FindWorld()
+                if not w or CurrentWorldName() ~= home.world then return end
+
+                if TileValue(w, "fg", tree.x, tree.y) == tree.id then
+                    local s = PlayerPhysicsState()
+                    if not (s and Nav.StateReaches(s, tree.x, tree.y, R)) then
+                        Farmer.status = string.format("Jalan Zig-Zag ke pohon (%d,%d) [%d/%d]", tree.x, tree.y, idx, #readyTrees)
+                        local moved = Nav.To(tree.x, tree.y, function() return Farmer.token ~= token or not Farmer.on end, R, Config.harvestUseBlock)
+                        if not moved then
+                            failedSet[tree.x .. "," .. tree.y] = true
+                            Farmer.stats.skipped = Farmer.stats.skipped + 1
+                        end
+                        task.wait(math.max(0.10, Config.harvestTpDelay))
+                    end
+
+                    local sCheck = PlayerPhysicsState()
+                    if sCheck and Nav.StateReaches(sCheck, tree.x, tree.y, R + 0.5) then
+                        Farmer.status = string.format("Panen %s (%d,%d) [%d/%d]", ItemName(tree.id), tree.x, tree.y, idx, #readyTrees)
+                        local t0 = os.clock()
+                        while Farmer.on and Farmer.token == token and TileValue(w, "fg", tree.x, tree.y) == tree.id and os.clock() - t0 < 3.5 do
+                            TryBreakOnce(tree.x, tree.y, false)
+                            task.wait(math.max(0.05, Config.harvestDelay))
+                        end
+
+                        if TileValue(w, "fg", tree.x, tree.y) ~= tree.id then
+                            actedInPass = true
+                            Farmer.stats.harvested = Farmer.stats.harvested + 1
+                            Stats.Harvested = Stats.Harvested + 1
+                            Farmer.stats.ready = math.max(0, Farmer.stats.ready - 1)
+                            if Config.harvestDoPlant and Config.harvestSeedId and CountItem(Config.harvestSeedId) > 0 and CanPlantAt(w, tree.x, tree.y, Config.harvestSeedId) then
+                                task.wait(0.08)
+                                if PlaceCell(Config.harvestSeedId, { x = tree.x, y = tree.y }, 1) then
+                                    Farmer.stats.planted = Farmer.stats.planted + 1
+                                    Stats.Planted = Stats.Planted + 1
+                                    task.wait(math.max(0.05, Config.harvestPlantDelay))
+                                end
+                            end
+                        else
+                            failedSet[tree.x .. "," .. tree.y] = true
+                            Farmer.stats.skipped = Farmer.stats.skipped + 1
+                        end
+                    end
+                end
+            end
+
+            if Config.harvestDoPlant and Config.harvestSeedId and CountItem(Config.harvestSeedId) > 0 then
+                for idx, spot in ipairs(plantSpots) do
+                    if not Farmer.on or Farmer.token ~= token or not alive() then return end
+                    if CountItem(Config.harvestSeedId) <= 0 then break end
+                    w = FindWorld()
+                    if not w or CurrentWorldName() ~= home.world then return end
+
+                    if CanPlantAt(w, spot.x, spot.y, Config.harvestSeedId) then
+                        local s = PlayerPhysicsState()
+                        if not (s and Nav.StateReaches(s, spot.x, spot.y, R)) then
+                            Farmer.status = string.format("Jalan Zig-Zag ke tanam (%d,%d) [%d/%d]", spot.x, spot.y, idx, #plantSpots)
+                            Nav.To(spot.x, spot.y, function() return Farmer.token ~= token or not Farmer.on end, R, Config.harvestUseBlock)
+                            task.wait(math.max(0.10, Config.harvestTpDelay))
+                        end
+
+                        local sCheck = PlayerPhysicsState()
+                        if sCheck and Nav.StateReaches(sCheck, spot.x, spot.y, R + 0.5) and CanPlantAt(w, spot.x, spot.y, Config.harvestSeedId) then
+                            if PlaceCell(Config.harvestSeedId, spot, 1) then
+                                actedInPass = true
+                                Farmer.stats.planted = Farmer.stats.planted + 1
+                                Stats.Planted = Stats.Planted + 1
+                                Farmer.status = string.format("Tanam %s (%d,%d)", ItemName(Config.harvestSeedId), spot.x, spot.y)
+                                task.wait(math.max(0.05, Config.harvestPlantDelay))
+                            end
+                        end
+                    end
+                end
+            end
+
+            if not actedInPass then break end
+        end
+
+        SetAutoFly("autoharvest", false)
+        ReleaseInput()
+        AutoInput.active = false
+        Farmer.status = "Selesai"
+        local msg = string.format("Farmer selesai! Panen: %d | Tanam: %d | Drop: %d", Farmer.stats.harvested, Farmer.stats.planted, Farmer.stats.picked)
+        Notify(msg)
+        Webhook.Send("stop", msg)
+    end
+
+    function Farmer.Stop()
+        if not Farmer.on then return false end
+        Farmer.token = Farmer.token + (1)
+        Farmer.on = false
+        SetAutoFly("autoharvest", false)
+        ReleaseInput()
+        AutoInput.active = false
+        Farmer.status = "Mati"
+        return true
+    end
+
+    function Farmer.Start()
+        if Farmer.on then return true end
+        if Farm.on then StopFarm() end
+        if Clear.on then Clear.Stop() end
+        if DF.on then DF.Stop() end
+        if SpliceBot.on then SpliceBot.Stop() end
+        if Pabrik.on then Pabrik.Stop() end
+
+        local x, y = GetGridState()
+        if not x then Notify("Posisi belum terdeteksi."); return false end
+        local home = { x = math.floor(x), y = math.floor(y - 0.475), world = CurrentWorldName() }
+        Farmer.token = Farmer.token + (1)
+        local token = Farmer.token
+        Farmer.on = true
+        Farmer.status = "Mulai"
+        Farmer.stats = { totalTrees = 0, ready = 0, harvested = 0, planted = 0, skipped = 0, picked = 0 }
+
+        task.spawn(function()
+            local ok, err = pcall(FarmerLoop, token, home)
+            if not ok then warn("[ANCHHub] Farmer error: " .. tostring(err)) end
+            SetAutoFly("autoharvest", false)
+            ReleaseInput()
+            AutoInput.active = false
+            if Farmer.token == token then
+                Farmer.on = false
+                if Farmer.status ~= "Selesai" then Farmer.status = "Mati" end
+                if RefreshHub then RefreshHub() end
+            end
+        end)
+        return true
+    end
+end)() end
+
+----------------------------------------------------------------------
+-- 4. AUTO DIRT FARM (FULL WORLD: BAWAH + ATAS + SMART SUPPLY + NO MODFLY)
+----------------------------------------------------------------------
+do (function()
+    local DF_BREAK_TIMEOUT = 5.0
+
+    local function IsBedrockId(id)
+        local it = ItemDB and ItemDB[id]
+        return type(it) == "table" and type(it.name) == "string" and it.name:lower():find("bedrock", 1, true) ~= nil
+    end
+
+    local function DetectWorldLayers(w)
+        local dirtId = GetDirtId()
+        local topDirtY, bedrockY = nil, nil
+        for y = 0, w.h - 1 do
+            local groundCount, bedrockCount = 0, 0
+            for x = 0, w.w - 1 do
+                local fg = TileValue(w, "fg", x, y) or 0
+                if fg ~= 0 then
+                    if IsBedrockId(fg) then
+                        bedrockCount = bedrockCount + (1)
+                    elseif fg == dirtId or CanBreakId(fg) then
+                        groundCount = groundCount + (1)
+                    end
+                end
+            end
+            if not topDirtY and groundCount >= math.floor(w.w * 0.25) then topDirtY = y end
+            if topDirtY and y > topDirtY and bedrockCount >= math.floor(w.w * 0.4) then
+                bedrockY = y
+                break
+            end
+        end
+        if not topDirtY then
+            topDirtY = (typeof(w.spawn) == "Vector2") and (math.floor(w.spawn.Y) + 1) or 37
+        end
+        if not bedrockY then bedrockY = w.h - 6 end
+        return topDirtY, bedrockY
+    end
+
+    local function WalkOrClimbTo(standX, standY, token)
+        local cancelFn = function() return DF.token ~= token or not DF.on or not alive() end
+        local px, py = GetTile()
+        if not px or (px == standX and py == standY) then return true end
+
+        if Config.moveMethod == "Teleport Mode" then
+            return Nav.FlyTo(standX, standY, cancelFn, Config.dfTpDelay, false)
+        end
+
+        if py == standY and math.abs(px - standX) <= 2 then
+            if Nav.ExecWalk(standX, standY, cancelFn) then return true end
+        elseif py and standY < py and math.abs(px - standX) <= 1 then
+            if Nav.ClimbUpWithDirt(standX, standY, cancelFn, true, Config.dfTpDelay, true) then return true end
+        end
+
+        if Nav.To(standX, standY, cancelFn, 0.3, true) then
+            return true
+        end
+        return Nav.FlyTo(standX, standY, cancelFn, Config.dfTpDelay, false)
+    end
+
+    local function BreakTotalAt(w, tx, ty, standX, standY, token)
+        if not InBounds(w, tx, ty) then return false end
+        local fg = TileValue(w, "fg", tx, ty) or 0
+        local bg = TileValue(w, "bg", tx, ty) or 0
+        if (fg == 0 or not CanBreakId(fg)) and (bg == 0 or not CanBreakId(bg)) then
+            return true
+        end
+
+        WalkOrClimbTo(standX, standY, token)
+
+        local startT = os.clock()
+        while DF.on and DF.token == token and alive() do
+            local cFg = TileValue(w, "fg", tx, ty) or 0
+            local cBg = TileValue(w, "bg", tx, ty) or 0
+            local hasFg = cFg ~= 0 and CanBreakId(cFg)
+            local hasBg = cBg ~= 0 and CanBreakId(cBg)
+            if Config.dfModFly then w.ghost = true end
+            if not hasFg and not hasBg then break end
+            if os.clock() - startT >= DF_BREAK_TIMEOUT then break end
+
+            local r = TryBreakOnce(tx, ty, true)
+            if r == "broke" then
+                DF.stats.broken = DF.stats.broken + (1)
+                startT = os.clock()
+            end
+            task.wait(math.max(0.04, Config.dfBreakDelay))
+        end
+        return true
+    end
+
+    local function FindWorldDirtDrop(dirtId, seedId)
+        local list = Drops.list
+        if not list then Refs.Scan(); list = Drops.list end
+        if type(list) ~= "table" then return nil end
+        local px, py = GetTile()
+        px, py = px or 50, py or 30
+        local best, bestDist = nil, math.huge
+        for _, d in ipairs(list) do
+            if type(d) == "table" and (d.id == dirtId or d.id == seedId) and (d.n or 0) > 0 and type(d.x) == "number" then
+                local dist = math.abs(d.x - px) + math.abs(d.y - py)
+                if dist < bestDist then
+                    best, bestDist = d, dist
+                end
+            end
+        end
+        return best
+    end
+
+    local function PlantAndHarvestDirtSeeds(w, platformY, token, maxPlant)
+        local dirtId = GetDirtId()
+        local seedId = GetDirtSeedId()
+        local plantY = platformY - 1
+        if plantY < 0 then return false end
+
+        local plantedSpots = {}
+        local count = 0
+        for x = 3, w.w - 4 do
+            if not DF.on or DF.token ~= token then break end
+            if CountItem(seedId) <= 0 or count >= (maxPlant or 20) then break end
+            if (TileValue(w, "fg", x, platformY) or 0) == dirtId and (TileValue(w, "fg", x, plantY) or 0) == 0 then
+                WalkOrClimbTo(x, plantY, token)
+                if PlaceCell(seedId, { x = x, y = plantY }, 1) then
+                    Stats.Planted = Stats.Planted + (1)
+                    table.insert(plantedSpots, { x = x, y = plantY, plantedTime = os.clock() })
+                    count = count + (1)
+                    task.wait(0.18)
+                end
+            end
+        end
+
+        for x = 2, w.w - 3 do
+            if (TileValue(w, "fg", x, plantY) or 0) == seedId then
+                local exists = false
+                for _, p in ipairs(plantedSpots) do
+                    if p.x == x and p.y == plantY then exists = true; break end
+                end
+                if not exists then
+                    table.insert(plantedSpots, { x = x, y = plantY, plantedTime = os.clock() - 25 })
+                end
+            end
+        end
+
+        if #plantedSpots == 0 then return false end
+
+        local it = ItemDB[seedId]
+        local growTime = (it and (tonumber(it.grow) or tonumber(it.baseGrow))) or 31
+
+        for idx, spot in ipairs(plantedSpots) do
+            if not DF.on or DF.token ~= token then return false end
+            while DF.on and DF.token == token and alive() do
+                if (TileValue(w, "fg", spot.x, spot.y) or 0) ~= seedId then break end
+                local elapsed = os.clock() - spot.plantedTime
+                if IsTreeReady(w, spot.x, spot.y, seedId) or elapsed >= (growTime + 1.5) then
+                    break
+                end
+                local left = math.max(0, math.ceil(growTime - elapsed))
+                DF.status = string.format("Menunggu Dirt Tree matang (%ds) [%d/%d]...", left, idx, #plantedSpots)
+                task.wait(0.5)
+            end
+
+            if (TileValue(w, "fg", spot.x, spot.y) or 0) == seedId then
+                DF.status = string.format("Harvest Dirt Tree (%d,%d) [%d/%d]", spot.x, spot.y, idx, #plantedSpots)
+                WalkOrClimbTo(spot.x, spot.y, token)
+                local t0 = os.clock()
+                while DF.on and DF.token == token and (TileValue(w, "fg", spot.x, spot.y) or 0) == seedId and os.clock() - t0 < 3.5 do
+                    local r = TryBreakOnce(spot.x, spot.y, false)
+                    if r == "broke" then Stats.Harvested = Stats.Harvested + (1) end
+                    task.wait(math.max(0.05, Config.dfBreakDelay))
+                end
+                task.wait(0.25)
+            end
+        end
+        return true
+    end
+
+    local function FindFarmablePlatformRow(w, topDirtY, bedrockY)
+        local dirtId = GetDirtId()
+        for y = topDirtY, bedrockY - 1, 2 do
+            local dirtCount = 0
+            for x = 3, w.w - 4 do
+                if (TileValue(w, "fg", x, y) or 0) == dirtId and (TileValue(w, "fg", x, y - 1) or 0) == 0 then
+                    dirtCount = dirtCount + (1)
+                    if dirtCount >= 12 then return y end
+                end
+            end
+        end
+        return topDirtY
+    end
+
+    local function EnsureDirtSupply(w, returnX, returnY, refPlatformY, topDirtY, bedrockY, token)
+        local dirtId = GetDirtId()
+        local seedId = GetDirtSeedId()
+
+        if CountItem(dirtId) > 0 then
+            return true
+        end
+
+        DF.stats.step = "Restock Dirt"
+        local workPlatformY = FindFarmablePlatformRow(w, topDirtY, bedrockY)
+
+        while DF.on and DF.token == token and alive() and CountItem(dirtId) < 15 do
+            if CountItem(seedId) > 0 then
+                DF.status = "Stok Dirt habis! Menanam & memanen Dirt Seed..."
+                PlantAndHarvestDirtSeeds(w, workPlatformY, token, 20)
+                if CountItem(dirtId) >= 15 then break end
+            end
+
+            local drop = FindWorldDirtDrop(dirtId, seedId)
+            if drop then
+                local dx, dy = math.floor(drop.x), math.floor(drop.y)
+                DF.status = string.format("Mengambil drop Dirt/Seed di (%d, %d)...", dx, dy)
+                WalkOrClimbTo(dx, dy, token)
+                task.wait(0.5)
+                if CountItem(dirtId) >= 15 then break end
+                if CountItem(seedId) > 0 then
+                    PlantAndHarvestDirtSeeds(w, workPlatformY, token, 20)
+                    if CountItem(dirtId) >= 15 then break end
+                end
+            end
+
+            if CountItem(dirtId) == 0 and CountItem(seedId) == 0 then
+                DF.status = "Break Dirt di world untuk mencari Seed..."
+                local brokenList = {}
+                for x = 4, w.w - 5 do
+                    if not DF.on or DF.token ~= token then break end
+                    if #brokenList >= 14 or CountItem(seedId) >= 6 then break end
+                    if (TileValue(w, "fg", x, workPlatformY) or 0) == dirtId
+                        and (TileValue(w, "fg", x - 1, workPlatformY) or 0) == dirtId then
+                        local standX, standY = x - 1, workPlatformY - 1
+                        WalkOrClimbTo(standX, standY, token)
+                        BreakTotalAt(w, x, workPlatformY, standX, standY, token)
+                        if (TileValue(w, "fg", x, workPlatformY) or 0) == 0 then
+                            table.insert(brokenList, { x = x, y = workPlatformY, standX = standX, standY = standY })
+                        end
+                        task.wait(0.2)
+                    end
+                end
+
+                if CountItem(seedId) > 0 then
+                    PlantAndHarvestDirtSeeds(w, workPlatformY, token, 20)
+                end
+
+                for _, item in ipairs(brokenList) do
+                    if not DF.on or DF.token ~= token then break end
+                    while DF.on and DF.token == token and CountItem(dirtId) == 0 and CountItem(seedId) > 0 do
+                        PlantAndHarvestDirtSeeds(w, workPlatformY, token, 15)
+                    end
+                    if (TileValue(w, "fg", item.x, item.y) or 0) == 0 and CountItem(dirtId) > 0 then
+                        WalkOrClimbTo(item.standX, item.standY, token)
+                        if PlaceCell(dirtId, { x = item.x, y = item.y }, 1) then
+                            DF.stats.placed = DF.stats.placed + (1)
+                            task.wait(0.14)
+                        end
+                    end
+                end
+            elseif CountItem(dirtId) > 0 and CountItem(dirtId) < 15 and CountItem(seedId) == 0 then
+                local testX = 5
+                local standX, standY = 4, workPlatformY - 1
+                WalkOrClimbTo(standX, standY, token)
+                while DF.on and DF.token == token and CountItem(seedId) < 4 and CountItem(dirtId) > 0 do
+                    if (TileValue(w, "fg", testX, standY) or 0) == 0 then
+                        PlaceCell(dirtId, { x = testX, y = standY }, 1)
+                        task.wait(PLACE_GUARD)
+                    end
+                    BreakTotalAt(w, testX, standY, standX, standY, token)
+                    task.wait(0.2)
+                end
+            else
+                break
+            end
+        end
+
+        if returnX and returnY then
+            WalkOrClimbTo(returnX, returnY, token)
+        end
+        return CountItem(dirtId) > 0
+    end
+
+    local function EnsurePlatformDirtAt(w, tx, ty, standX, standY, topDirtY, bedrockY, token)
+        if not InBounds(w, tx, ty) then return end
+        local dirtId = GetDirtId()
+        local fg = TileValue(w, "fg", tx, ty) or 0
+        if fg == dirtId then return end
+        if fg ~= 0 and not CanBreakId(fg) then return end
+
+        WalkOrClimbTo(standX, standY, token)
+
+        if fg ~= 0 and fg ~= dirtId then
+            local t0 = os.clock()
+            while DF.on and DF.token == token and (TileValue(w, "fg", tx, ty) or 0) ~= 0 and os.clock() - t0 < DF_BREAK_TIMEOUT do
+                local r = TryBreakOnce(tx, ty, false)
+                if r == "broke" then DF.stats.broken = DF.stats.broken + (1) end
+                task.wait(math.max(0.04, Config.dfBreakDelay))
+            end
+        end
+
+        if DF.on and DF.token == token and (TileValue(w, "fg", tx, ty) or 0) == 0 then
+            if CountItem(dirtId) <= 0 then
+                EnsureDirtSupply(w, standX, standY, ty, topDirtY, bedrockY, token)
+            end
+            if CountItem(dirtId) > 0 then
+                if PlaceCell(dirtId, { x = tx, y = ty }, (tx >= standX) and 1 or -1) then
+                    DF.stats.placed = DF.stats.placed + (1)
+                    task.wait(0.14)
+                end
+            end
+        end
+    end
+
+    -- Cek apakah kolom vertikal ujung (kiri/kanan) sudah bersih
+    local function FirstUncleanVerticalY(w, colA, colB, topDirtY, bedrockY)
+        for y = topDirtY, bedrockY - 1 do
+            local fgA, bgA = TileValue(w, "fg", colA, y) or 0, TileValue(w, "bg", colA, y) or 0
+            local fgB, bgB = TileValue(w, "fg", colB, y) or 0, TileValue(w, "bg", colB, y) or 0
+            if IsBedrockId(fgA) and IsBedrockId(fgB) then break end
+            if (fgA ~= 0 and CanBreakId(fgA)) or (bgA ~= 0 and CanBreakId(bgA))
+                or (fgB ~= 0 and CanBreakId(fgB)) or (bgB ~= 0 and CanBreakId(bgB)) then
+                return y
+            end
+        end
+        return nil
+    end
+
+    local function ClearVerticalEdge(w, colA, colB, topDirtY, bedrockY, label, token)
+        local firstY = FirstUncleanVerticalY(w, colA, colB, topDirtY, bedrockY)
+        if not firstY then
+            DF.status = "Kolom vertikal " .. label .. " sudah bersih, lanjut..."
+            return true
+        end
+
+        DF.stats.step = "Clear Vertikal " .. label
+        local startY = math.max(0, firstY - 1)
+        DF.status = string.format("Lanjut vertikal %s dari Y=%d...", label, firstY)
+
+        WalkOrClimbTo(colB, startY, token)
+        task.wait(math.max(0.20, Config.dfTpDelay))
+
+        local lastY = startY
+        for y = firstY, bedrockY - 1 do
+            if not DF.on or DF.token ~= token or not alive() then return false end
+            w = FindWorld()
+            if not w then return false end
+            if IsBedrockId(TileValue(w, "fg", colA, y)) and IsBedrockId(TileValue(w, "fg", colB, y)) then
+                break
+            end
+            local standY = math.max(0, y - 1)
+            DF.status = string.format("Vertikal %s: Break Y=%d", label, y)
+            BreakTotalAt(w, colA, y, colB, standY, token)
+            if not DF.on or DF.token ~= token then return false end
+            BreakTotalAt(w, colB, y, colB, standY, token)
+            lastY = standY
+        end
+
+        if DF.on and DF.token == token and lastY > math.max(0, topDirtY - 1) then
+            DF.status = string.format("Naik kembali dari ujung %s...", label)
+            Nav.ClimbUpWithDirt(colB, math.max(0, topDirtY - 1), function() return DF.token ~= token end, true, Config.dfTpDelay, true)
+        end
+        return true
+    end
+
+    -- Cek apakah 1 baris kosong bagian bawah (emptyY) sudah selesai dikerjakan
+    local function IsBottomRowComplete(w, emptyY, topDirtY, bedrockY)
+        local dirtId = GetDirtId()
+        local platformAboveY = emptyY - 1
+        local platformBelowY = emptyY + 1
+        for x = 2, w.w - 3 do
+            local fg = TileValue(w, "fg", x, emptyY) or 0
+            local bg = TileValue(w, "bg", x, emptyY) or 0
+            if (fg ~= 0 and CanBreakId(fg)) or (bg ~= 0 and CanBreakId(bg)) then
+                return false
+            end
+            if Config.dfReplacePlatform then
+                if platformAboveY >= topDirtY and (TileValue(w, "fg", x, platformAboveY) or 0) ~= dirtId then
+                    return false
+                end
+                if platformBelowY < bedrockY and (TileValue(w, "fg", x, platformBelowY) or 0) ~= dirtId then
+                    return false
+                end
+            end
+        end
+        return true
+    end
+
+    -- Cek apakah 1 baris platform bagian atas (platformY) sudah terisi penuh
+    local function IsUpperRowComplete(w, platformY)
+        local dirtId = GetDirtId()
+        local walkY = platformY - 1
+        for x = 2, w.w - 3 do
+            if (TileValue(w, "fg", x, platformY) or 0) ~= dirtId then
+                return false
+            end
+            if (TileValue(w, "fg", x, walkY) or 0) ~= 0 then
+                return false
+            end
+        end
+        return true
+    end
+
+    local function DFLoop(token, home)
+        local wasGod = godOn
+        if not wasGod and StartGod then pcall(StartGod) end
+        SetAutoFly("autodf", Config.dfModFly)
+
+        local w = FindWorld()
+        if not w then return end
+
+        local topDirtY, bedrockY = DetectWorldLayers(w)
+        DF.stats.topDirtY = topDirtY
+        DF.stats.bedrockY = bedrockY
+        Notify(string.format("Auto DF Scan: Melanjutkan progres Dirt Farm (Dirt Y=%d, Bedrock Y=%d).", topDirtY, bedrockY))
+
+        local W = w.w
+        if not ClearVerticalEdge(w, 0, 1, topDirtY, bedrockY, "Kiri (1-2)", token) then return end
+        if not DF.on or DF.token ~= token then return end
+        if not ClearVerticalEdge(w, W - 2, W - 1, topDirtY, bedrockY, "Kanan (99-100)", token) then return end
+        if not DF.on or DF.token ~= token then return end
+
+        local leftToRight = false
+        for emptyY = topDirtY + 1, bedrockY - 1, 2 do
+            if not DF.on or DF.token ~= token or not alive() then return end
+            w = FindWorld()
+            if not w or CurrentWorldName() ~= home.world then return end
+
+            -- Scan Baris: Jika baris emptyY ini sudah selesai dibuat sebelumnya, langsung skip!
+            if IsBottomRowComplete(w, emptyY, topDirtY, bedrockY) then
+                DF.status = string.format("Baris Y=%d sudah selesai, lanjut ke baris berikutnya...", emptyY)
+            else
+                local platformAboveY = emptyY - 1
+                local platformBelowY = emptyY + 1
+                DF.stats.step = string.format("Bawah: Baris Y=%d", emptyY)
+
+                local startX = leftToRight and 2 or (W - 3)
+                local endX   = leftToRight and (W - 3) or 2
+                local stepX  = leftToRight and 1 or -1
+                local entryStandX = leftToRight and 1 or (W - 2)
+
+                WalkOrClimbTo(entryStandX, emptyY, token)
+
+                for x = startX, endX, stepX do
+                    if not DF.on or DF.token ~= token or not alive() then return end
+                    w = FindWorld()
+                    if not w or CurrentWorldName() ~= home.world then return end
+
+                    local standX = x - stepX
+                    local standY = emptyY
+
+                    if Config.dfReplacePlatform and platformBelowY < bedrockY then
+                        EnsurePlatformDirtAt(w, standX, platformBelowY, standX, standY, topDirtY, bedrockY, token)
+                    end
+                    if Config.dfReplacePlatform and platformAboveY >= topDirtY then
+                        EnsurePlatformDirtAt(w, standX, platformAboveY, standX, standY, topDirtY, bedrockY, token)
+                    end
+
+                    DF.status = string.format("Bawah Y=%d | Break (%d,%d)", emptyY, x, emptyY)
+                    BreakTotalAt(w, x, emptyY, standX, standY, token)
+
+                    if Config.dfReplacePlatform then
+                        if platformAboveY >= topDirtY then
+                            EnsurePlatformDirtAt(w, x, platformAboveY, standX, standY, topDirtY, bedrockY, token)
+                        end
+                        if platformBelowY < bedrockY then
+                            EnsurePlatformDirtAt(w, x, platformBelowY, standX, standY, topDirtY, bedrockY, token)
+                        end
+                    end
+
+                    WalkOrClimbTo(x, emptyY, token)
+                end
+
+                leftToRight = not leftToRight
+            end
+        end
+
+        for x = 2, W - 3 do
+            if not DF.on or DF.token ~= token then return end
+            if (TileValue(w, "fg", x, topDirtY) or 0) ~= GetDirtId() then
+                EnsurePlatformDirtAt(w, x, topDirtY, x, topDirtY - 1, topDirtY, bedrockY, token)
+            end
+        end
+
+        local upperLeftToRight = true
+        for platformY = topDirtY - 2, 2, -2 do
+            if not DF.on or DF.token ~= token or not alive() then return end
+            w = FindWorld()
+            if not w or CurrentWorldName() ~= home.world then return end
+
+            -- Scan Baris Atas: Jika baris platformY ini sudah penuh Dirt, langsung skip!
+            if IsUpperRowComplete(w, platformY) then
+                DF.status = string.format("Platform Atas Y=%d sudah selesai, skip...", platformY)
+            else
+                local walkY = platformY - 1
+                DF.stats.step = string.format("Atas: Platform Y=%d", platformY)
+
+                local startX = upperLeftToRight and 2 or (W - 3)
+                local endX   = upperLeftToRight and (W - 3) or 2
+                local stepX  = upperLeftToRight and 1 or -1
+
+                local prevWalkY = platformY + 1
+                WalkOrClimbTo(startX, prevWalkY, token)
+                EnsurePlatformDirtAt(w, startX, platformY, startX, prevWalkY, topDirtY, bedrockY, token)
+
+                local climbCol = upperLeftToRight and 1 or (W - 2)
+                Nav.ClimbUpWithDirt(climbCol, walkY, function() return DF.token ~= token end, true, Config.dfTpDelay, true)
+                WalkOrClimbTo(startX, walkY, token)
+
+                for x = startX + stepX, endX, stepX do
+                    if not DF.on or DF.token ~= token or not alive() then return end
+                    w = FindWorld()
+                    if not w or CurrentWorldName() ~= home.world then return end
+
+                    local standX = x - stepX
+                    if (TileValue(w, "fg", x, walkY) or 0) ~= 0 or (TileValue(w, "bg", x, walkY) or 0) ~= 0 then
+                        BreakTotalAt(w, x, walkY, standX, walkY, token)
+                    end
+
+                    DF.status = string.format("Atas Y=%d | Pasang Dirt (%d,%d)", platformY, x, platformY)
+                    EnsurePlatformDirtAt(w, x, platformY, standX, walkY, topDirtY, bedrockY, token)
+
+                    WalkOrClimbTo(x, walkY, token)
+                end
+
+                upperLeftToRight = not upperLeftToRight
+            end
+        end
+
+        if not wasGod and StopGod then pcall(StopGod) end
+        SetAutoFly("autodf", false)
+        ReleaseInput()
+        AutoInput.active = false
+        DF.stats.step = "Selesai"
+        DF.status = "Selesai"
+        local msg = string.format("Full World Dirt Farm selesai! Hancur: %d | Dirt dipasang: %d | Drop: %d", DF.stats.broken, DF.stats.placed, DF.stats.picked)
+        Notify(msg)
+        Webhook.Send("pabrik", msg)
+    end
+
+    function DF.Stop()
+        if not DF.on then return false end
+        DF.token = DF.token + (1)
+        DF.on = false
+        SetAutoFly("autodf", false)
+        ReleaseInput()
+        AutoInput.active = false
+        DF.status = "Mati"
+        DF.stats.step = "-"
+        return true
+    end
+
+    function DF.Start()
+        if DF.on then return true end
+        if Farm.on then StopFarm() end
+        if Clear.on then Clear.Stop() end
+        if Farmer.on then Farmer.Stop() end
+        if SpliceBot.on then SpliceBot.Stop() end
+        if Pabrik.on then Pabrik.Stop() end
+
+        local x, y = GetGridState()
+        if not x then Notify("Posisi belum terdeteksi."); return false end
+        local home = { x = math.floor(x), y = math.floor(y - 0.475), world = CurrentWorldName() }
+        DF.token = DF.token + (1)
+        local token = DF.token
+        DF.on = true
+        DF.status = "Mulai"
+        DF.stats = { topDirtY = 0, bedrockY = 0, broken = 0, placed = 0, picked = 0, step = "Inisialisasi" }
+
+        task.spawn(function()
+            local ok, err = pcall(DFLoop, token, home)
+            if not ok then warn("[ANCHHub] Auto DF error: " .. tostring(err)) end
+            SetAutoFly("autodf", false)
+            ReleaseInput()
+            AutoInput.active = false
+            if DF.token == token then
+                DF.on = false
+                if DF.status ~= "Selesai" then DF.status = "Mati" end
+                if RefreshHub then RefreshHub() end
+            end
+        end)
+        return true
+    end
+end)() end
+
+----------------------------------------------------------------------
+-- 5. AUTO SPLICE (TANAM SEED A + SPLICE SEED B | ROAM A* / GRID 5X5)
+----------------------------------------------------------------------
+do (function()
+    function SpliceBot.Result(seedA, seedB)
+        if not (SpliceOk and type(SpliceModule) == "table" and type(SpliceModule.result) == "function") then
+            return nil
+        end
+        if not (seedA and seedB) then return nil end
+        local ok, res = pcall(SpliceModule.result, seedA, seedB)
+        return ok and res or nil
+    end
+
+    function SpliceBot.ResultText()
+        local a, b = Config.spliceA, Config.spliceB
+        if not (a and b) then return "Pilih Seed A dan Seed B" end
+        local r = SpliceBot.Result(a, b)
+        if not r then return "Hasil: Kombinasi ini tidak bisa di-splice" end
+        return "Hasil Splice: " .. ItemName(r) .. " [" .. tostring(r) .. "]"
+    end
+
+    local function IsSplicedTree(w, x, y)
+        if not Refs.Trees then Refs.Scan() end
+        local entry = Refs.Trees and Refs.Trees[y * w.w + x]
+        return type(entry) == "table" and entry.s == true
+    end
+
+    local function DoSpliceAt(w, x, y, seedB)
+        local fn = w and rawget(w, "spliceSeed")
+        if type(fn) ~= "function" then return false, "fungsi spliceSeed tidak ditemukan" end
+        local ok, newId = pcall(fn, x, y, seedB)
+        if ok and newId and ItemDB[newId] then
+            if Refs.Inv and type(Refs.Inv.remove) == "function" then
+                pcall(function() Refs.Inv:remove(seedB, 1) end)
+            end
+            if Refs.SetTile then
+                pcall(Refs.SetTile, "fg", x, y, newId, true)
+            end
+            SpliceBot.made = SpliceBot.made + (1)
+            SpliceBot.status = string.format("Splice jadi %s (%d,%d)", ItemName(newId), x, y)
+            return true
+        end
+        return false, "ditolak server"
+    end
+
+    local function SpliceLoop(token, home)
+        local R = math.min(PunchReach(), BuildReach()) - 0.15
+        while SpliceBot.on and SpliceBot.token == token and alive() do
+            local w = FindWorld()
+            if not w or CurrentWorldName() ~= home.world then
+                SpliceBot.status = "World berubah, berhenti"
+                break
+            end
+
+            local seedA, seedB = Config.spliceA, Config.spliceB
+            local countA, countB = CountItem(seedA), CountItem(seedB)
+            if countB <= 0 then
+                SpliceBot.status = "Seed B habis!"
+                Notify("Auto Splice berhenti: " .. ItemName(seedB) .. " habis.")
+                break
+            end
+
+            local acted = false
+            if Config.spliceRoam then
+                -- Mode Keliling World (A*)
+                local targets = {}
+                local now = os.clock()
+                for y = 0, w.h - 1 do
+                    for x = 0, w.w - 1 do
+                        local key = x .. "," .. y
+                        if not (SpliceBot.skip[key] and SpliceBot.skip[key] > now) then
+                            local fg = TileValue(w, "fg", x, y) or 0
+                            if fg == 0 and countA > 0 and CanPlantAt(w, x, y, seedA) then
+                                table.insert(targets, { x = x, y = y, key = key })
+                            elseif fg == seedA and not IsSplicedTree(w, x, y) and not IsTreeReady(w, x, y, seedA) then
+                                table.insert(targets, { x = x, y = y, key = key })
+                            end
+                        end
+                    end
+                end
+
+                if #targets == 0 then
+                    SpliceBot.status = (countA <= 0) and "Seed A habis & tidak ada pohon A" or "Tidak ada lahan kosong untuk tanam/splice"
+                    break
+                end
+
+                for idx, t in ipairs(targets) do
+                    if not SpliceBot.on or SpliceBot.token ~= token or not alive() then break end
+                    if CountItem(seedB) <= 0 then break end
+                    local s = PlayerPhysicsState()
+                    local px, py = GetTile()
+                    if not (s and Nav.StateReaches(s, t.x, t.y, R)) then
+                        SpliceBot.status = string.format("Menuju (%d,%d) [%d/%d]", t.x, t.y, idx, #targets)
+                        if py and t.y < py then
+                            Nav.ClimbUpWithDirt(px, t.y, function() return SpliceBot.token ~= token end, true, Config.moveStepDelay)
+                        end
+                        Nav.To(t.x, t.y, function() return SpliceBot.token ~= token end, R, true)
+                        task.wait(0.2)
+                    end
+
+                    if (TileValue(w, "fg", t.x, t.y) or 0) == 0 and CountItem(seedA) > 0 then
+                        if PlaceCell(seedA, { x = t.x, y = t.y }, 1) then
+                            SpliceBot.planted = SpliceBot.planted + (1)
+                            Stats.Planted = Stats.Planted + (1)
+                            acted = true
+                            task.wait(math.max(0.14, Config.spliceMs / 1000))
+                        end
+                    end
+
+                    if (TileValue(w, "fg", t.x, t.y) or 0) == seedA and CountItem(seedB) > 0 and not IsSplicedTree(w, t.x, t.y) then
+                        local okS, msg = DoSpliceAt(w, t.x, t.y, seedB)
+                        if not okS then
+                            SpliceBot.skip[t.key] = os.clock() + 45
+                            SpliceBot.status = string.format("Gagal splice (%d,%d): %s", t.x, t.y, tostring(msg))
+                        else
+                            acted = true
+                        end
+                        task.wait(math.max(0.14, Config.spliceMs / 1000))
+                    end
+                end
+            else
+                -- Mode Grid 5x5
+                local px, py = GetTile()
+                if not px then break end
+                local now = os.clock()
+                for key, on in pairs(Config.farmGrid) do
+                    if on then
+                        local dx, dy = tostring(key):match("^(-?%d+),(-?%d+)$")
+                        if dx and dy then
+                            local tx, ty = px + tonumber(dx), py + tonumber(dy)
+                            local k = tx .. "," .. ty
+                            if InBounds(w, tx, ty) and not (SpliceBot.fail[k] and SpliceBot.fail[k] > now) then
+                                local fg = TileValue(w, "fg", tx, ty) or 0
+                                if fg == 0 and CountItem(seedA) > 0 and CountItem(seedB) > 0 and CanPlantAt(w, tx, ty, seedA) then
+                                    if PlaceCell(seedA, { x = tx, y = ty }, 1) then
+                                        SpliceBot.planted = SpliceBot.planted + (1)
+                                        Stats.Planted = Stats.Planted + (1)
+                                        acted = true
+                                        task.wait(math.max(0.14, Config.spliceMs / 1000))
+                                    end
+                                end
+                                if (TileValue(w, "fg", tx, ty) or 0) == seedA and CountItem(seedB) > 0 and not IsSplicedTree(w, tx, ty) then
+                                    local okS, msg = DoSpliceAt(w, tx, ty, seedB)
+                                    if not okS then
+                                        SpliceBot.fail[k] = os.clock() + 30
+                                        SpliceBot.status = string.format("Gagal splice (%d,%d): %s", tx, ty, tostring(msg))
+                                    end
+                                    acted = true
+                                    task.wait(math.max(0.14, Config.spliceMs / 1000))
+                                end
+                            end
+                        end
+                    end
+                end
+                if not acted then
+                    if CountItem(seedA) <= 0 or CountItem(seedB) <= 0 then
+                        SpliceBot.status = "Seed habis"
+                        break
+                    end
+                    SpliceBot.status = "Menunggu tile Grid kosong..."
+                    task.wait(1)
+                end
+            end
+
+            if not acted and Config.spliceRoam then break end
+            task.wait(0.2)
+        end
+    end
+
+    function SpliceBot.Stop()
+        if not SpliceBot.on then return false end
+        SpliceBot.token = SpliceBot.token + (1)
+        SpliceBot.on = false
+        SpliceBot.roaming = false
+        ReleaseInput()
+        AutoInput.active = false
+        SpliceBot.status = "Mati"
+        return true
+    end
+
+    function SpliceBot.Start()
+        if SpliceBot.on then return true end
+        if not (Config.spliceA and Config.spliceB) or Config.spliceA == Config.spliceB then
+            Notify("Auto Splice: Pilih Seed A dan Seed B yang berbeda!")
+            return false
+        end
+        if SpliceOk and type(SpliceModule) == "table" and not SpliceBot.Result(Config.spliceA, Config.spliceB) then
+            Notify("Kombinasi Seed A & Seed B ini tidak bisa di-splice!")
+            return false
+        end
+        if Farm.on then StopFarm() end
+        if Clear.on then Clear.Stop() end
+        if Farmer.on then Farmer.Stop() end
+        if DF.on then DF.Stop() end
+        if Pabrik.on then Pabrik.Stop() end
+
+        local x, y = GetGridState()
+        if not x then Notify("Posisi belum terdeteksi."); return false end
+        local home = { x = math.floor(x), y = math.floor(y - 0.475), world = CurrentWorldName() }
+        table.clear(SpliceBot.fail)
+        table.clear(SpliceBot.skip)
+        SpliceBot.token = SpliceBot.token + (1)
+        local token = SpliceBot.token
+        SpliceBot.on = true
+        SpliceBot.roaming = Config.spliceRoam
+        SpliceBot.status = "Mulai..."
+
+        task.spawn(function()
+            local ok, err = pcall(SpliceLoop, token, home)
+            if not ok then warn("[ANCHHub] Auto Splice error: " .. tostring(err)) end
+            ReleaseInput()
+            AutoInput.active = false
+            if SpliceBot.token == token then
+                SpliceBot.on = false
+                SpliceBot.roaming = false
+                if SpliceBot.status == "Mulai..." then SpliceBot.status = "Mati" end
+                if RefreshHub then RefreshHub() end
+            end
+        end)
+        return true
+    end
+end)() end
+
+----------------------------------------------------------------------
+-- 6. PABRIK / FACTORY (11 LANGKAH LENGKAP + RESUME SAAT PINDAH WORLD)
+----------------------------------------------------------------------
+do (function()
+    local function SavePabrikState(stateTbl)
+        if writefile then
+            stateTbl.updatedAt = os.time()
+            pcall(writefile, PABRIK_STATE_FILE, HttpService:JSONEncode(stateTbl))
+        end
+    end
+
+    local function ClearPabrikState()
+        if isfile and delfile and isfile(PABRIK_STATE_FILE) then
+            pcall(delfile, PABRIK_STATE_FILE)
+        end
+    end
+
+    function Pabrik.ParseDropTarget()
+        local raw = tostring(Config.pabrikDropWorld or ""):gsub("%s", "")
+        local wName, doorId = string.match(raw, "^([^:]*):(.+)$")
+        if not wName then wName = raw end
+        wName = string.upper(wName):gsub("[^A-Z0-9]", "")
+        if doorId == "" then doorId = nil end
+        return wName, doorId
+    end
+
+    local function LeaveCurrentWorld()
+        local m = Refs.Menu
+        if m and type(rawget(m, "openPicker")) == "function" and pcall(m.openPicker) then
+            return true
+        end
+        local w = FindWorld()
+        if w and type(rawget(w, "call")) == "function" then
+            return pcall(w.call, "LeaveWorld")
+        end
+        return false
+    end
+
+    local function EnterTargetWorld(name, doorId)
+        name = Trim(name):upper()
+        if name == "" then return false, "nama world kosong" end
+        if CurrentWorldName():upper() == name then return true end
+
+        if QueueReload then pcall(QueueReload) end
+
+        local w = FindWorld()
+        if CurrentWorldName() ~= "" then
+            LeaveCurrentWorld()
+            task.wait(1.8)
+        end
+        w = FindWorld()
+        if doorId and w then
+            rawset(w, "arriveDoor", doorId)
+        end
+        local oldFg = w and rawget(w, "fg")
+        local m = Refs.Menu
+        if m and type(rawget(m, "enter")) == "function" then
+            pcall(m.enter, name)
+        elseif w and type(rawget(w, "enter")) == "function" then
+            pcall(w.enter, name)
+        else
+            return false, "fungsi enter tidak ditemukan"
+        end
+
+        local t0 = os.clock()
+        while alive() and os.clock() - t0 < 10 do
+            local cw = FindWorld()
+            if cw and rawget(cw, "fg") ~= oldFg and CurrentWorldName():upper() == name then
+                Refs.Scan()
+                task.wait(1.2)
+                return true
+            end
+            task.wait(0.25)
+        end
+        return false, "sedang teleport / terkunci"
+    end
+
+    -- Cek apakah masih ada dropped block/seed di world (di luar zona drop seed)
+    local function FindDroppedItemInWorld(targetId)
+        local list = Drops.list
+        if not list then Refs.Scan(); list = Drops.list end
+        if type(list) ~= "table" then return nil end
+        local px, py = GetTile()
+        px, py = px or 50, py or 30
+        local dropZone = Pabrik.Zone
+        if dropZone and dropZone.world ~= CurrentWorldName() then
+            dropZone = nil
+        end
+        local best, bestDist = nil, math.huge
+        for _, d in ipairs(list) do
+            if type(d) == "table" and d.id == targetId and (d.n or 0) > 0 and type(d.x) == "number" then
+                if not (dropZone and math.abs(d.x - dropZone.x) <= 2.5 and math.abs(d.y - dropZone.y) <= 2.5) then
+                    local dist = math.abs(d.x - px) + math.abs(d.y - py)
+                    if dist < bestDist then
+                        best, bestDist = d, dist
+                    end
+                end
+            end
+        end
+        return best
+    end
+
+    -- Ambil semua dropped block yang tersisa di world sampai habis atau tas penuh (200)
+    local function CollectAllDroppedBlocks(blockId, liveFn)
+        local collectedAny = false
+        while liveFn() and CountItem(blockId) < 200 do
+            local drop = FindDroppedItemInWorld(blockId)
+            if not drop then break end
+            local dx, dy = math.floor(drop.x), math.floor(drop.y)
+            Pabrik.phase = "COLLECT BLOCK"
+            Pabrik.status = string.format("Mengambil drop %s di (%d,%d)...", ItemName(blockId), dx, dy)
+            -- Jalan murni via A* mengikuti tangga tanpa merusak/menaruh blok
+            Nav.To(dx, dy, function() return not liveFn() end, 0.5, false)
+            collectedAny = true
+            task.wait(0.45)
+        end
+        return collectedAny
+    end
+
+    local function DropSeedItem(seedId, amount, liveFn)
+        local hud = Refs.Hud or FindInventory()
+        local onDrop = hud and rawget(hud, "onDrop")
+        local rem = amount
+        local nudged = false
+        while rem > 0 and liveFn() and CountItem(seedId) > 0 do
+            local before = CountItem(seedId)
+            local dropNow = math.min(rem, before, 200)
+            if type(onDrop) == "function" then
+                pcall(onDrop, seedId, dropNow)
+            elseif DropEvent then
+                pcall(function() DropEvent:FireServer(seedId, dropNow) end)
+            end
+            task.wait(0.8)
+            local diff = before - CountItem(seedId)
+            if diff > 0 then
+                rem = rem - diff
+                Pabrik.dropped = Pabrik.dropped + diff
+            elseif not nudged then
+                nudged = true
+                local s = PlayerPhysicsState()
+                local faceLeft = s and (s.facing or 1) < 0
+                AutoInput.active = true
+                AutoInput.right, AutoInput.left = faceLeft, not faceLeft
+                task.wait(0.08)
+                ReleaseInput()
+                AutoInput.active = false
+                task.wait(0.35)
+            else
+                return amount - rem, "tile drop penuh"
+            end
+        end
+        return amount - rem, nil
+    end
+
+    -- Langkah 9: Jika seed mencapai >= 180, tuju world penyimpanan & drop 100 seed
+    local function ExecuteDropCycle(seedId, dropAmount, liveFn)
+        local targetW, doorId = Pabrik.ParseDropTarget()
+        local homeW = Pabrik.home ~= "" and Pabrik.home or CurrentWorldName()
+        if targetW == "" then targetW = homeW end
+
+        if Config.pabrikDropX < 0 and not doorId and targetW == homeW then
+            Pabrik.status = "Posisi drop belum diatur (drop dilewati)"
+            Pabrik.dropOffUntil = os.clock() + 60
+            return
+        end
+
+        Pabrik.traveling = true
+        local diffWorld = targetW:upper() ~= CurrentWorldName():upper()
+
+        -- Simpan state sebelum pindah world agar jika script ke-reload, otomatis lanjut drop & balik!
+        SavePabrikState({
+            active = true,
+            stage = "dropping",
+            homeWorld = homeW,
+            targetWorld = targetW,
+            doorId = doorId,
+            seedId = seedId,
+            dropAmount = dropAmount,
+        })
+
+        local okTravel, errMsg = true, nil
+        if diffWorld or doorId then
+            Pabrik.status = "Menuju world penyimpanan " .. targetW .. (doorId and (":" .. doorId) or "") .. "..."
+            local okE, why = EnterTargetWorld(targetW, doorId)
+            if not okE then
+                okTravel, errMsg = false, "Gagal masuk " .. targetW .. " (" .. tostring(why) .. ")"
+            end
+        end
+
+        if okTravel and liveFn() and Config.pabrikDropX >= 0 and Config.pabrikDropY >= 0 then
+            Pabrik.status = string.format("Jalan A* ke posisi drop (%d,%d)...", Config.pabrikDropX, Config.pabrikDropY)
+            -- Gunakan allowScaffold = false & R = 0.5 agar murni berjalan kaki lewat tangga tanpa Noclip!
+            local reached = false
+            for try = 1, 3 do
+                if not liveFn() then break end
+                if Nav.To(Config.pabrikDropX, Config.pabrikDropY, function() return not liveFn() end, 0.5, false) then
+                    reached = true
+                    break
+                end
+                task.wait(0.3)
+            end
+            if not reached then
+                okTravel, errMsg = false, "Tidak bisa jalan ke posisi drop (pastikan tidak terhalang tembok)"
+            end
+        end
+
+        if okTravel and liveFn() then
+            local s = PlayerPhysicsState()
+            if s then
+                Pabrik.Zone = { world = CurrentWorldName(), x = s.x, y = s.y - 0.475 }
+            end
+            local droppedN, dropErr = DropSeedItem(seedId, dropAmount, liveFn)
+            if droppedN > 0 then
+                local msg = string.format("Berhasil Drop %s x%d di %s", ItemName(seedId), droppedN, CurrentWorldName())
+                Pabrik.status = msg
+                Notify(msg, "Pabrik ANCH")
+                Webhook.Send("pabrik", msg)
+            end
+            if dropErr then okTravel, errMsg = false, dropErr end
+        end
+
+        if not okTravel then
+            Pabrik.dropOffUntil = os.clock() + 90
+            Pabrik.status = "Drop gagal: " .. tostring(errMsg)
+        end
+
+        -- Ubah state ke returning sebelum pulang ke world pabrik
+        SavePabrikState({
+            active = true,
+            stage = "farming",
+            homeWorld = homeW,
+            targetWorld = targetW,
+            seedId = seedId,
+        })
+
+        if homeW ~= "" and CurrentWorldName():upper() ~= homeW:upper() and liveFn() then
+            Pabrik.status = "Kembali ke world pabrik " .. homeW .. "..."
+            if not EnterTargetWorld(homeW, nil) and liveFn() then
+                task.wait(4)
+                EnterTargetWorld(homeW, nil)
+            end
+        end
+
+        Pabrik.traveling = false
+    end
+
+    -- Fungsi Drop Seed Eksternal untuk dipakai oleh Auto Farm
+    function Pabrik.ExternalDropSeed(seedId, dropAmt, dropWorldRaw, dropX, dropY, returnWorld, returnX, returnY, liveFn)
+        local origDropW, origX, origY, origHome = Config.pabrikDropWorld, Config.pabrikDropX, Config.pabrikDropY, Pabrik.home
+        Config.pabrikDropWorld = dropWorldRaw or ""
+        Config.pabrikDropX = dropX or -1
+        Config.pabrikDropY = dropY or -1
+        Pabrik.home = returnWorld or CurrentWorldName()
+        ExecuteDropCycle(seedId, dropAmt, liveFn)
+        Config.pabrikDropWorld, Config.pabrikDropX, Config.pabrikDropY, Pabrik.home = origDropW, origX, origY, origHome
+        if returnX and returnY and liveFn() then
+            Nav.To(returnX, returnY, function() return not liveFn() end, 0.3, false)
+        end
+    end
+
+    -- Sistem Max Seed: Jika seed di tas > Max Seed (misal > 100), drop kelebihannya dan sisakan tepat Max Seed!
+    local function CheckAndDropSeedIfReady(seedId, liveFn)
+        if not Config.pabrikDrop then return false end
+        local sCount = CountItem(seedId)
+        local maxSeed = math.max(1, tonumber(Config.pabrikMaxSeed) or 100)
+        if sCount > maxSeed and os.clock() >= (Pabrik.dropOffUntil or 0) then
+            local dropAmt = sCount - maxSeed
+            if dropAmt > 0 then
+                Pabrik.phase = "DROP KELEBIHAN SEED"
+                Pabrik.status = string.format("Seed %d > Max (%d)! Drop %d seed...", sCount, maxSeed, dropAmt)
+                ExecuteDropCycle(seedId, dropAmt, liveFn)
+                return true
+            end
+        end
+        return false
+    end
+
+    -- Langkah 2, 6, 7: Menuju ke Posisi Break dan lakukan break hingga blok habis
+    local function RunBreakUntilEmpty(seedId, blockId, liveFn)
+        if Config.pabrikBreakX < 0 or Config.pabrikBreakY < 0 then
+            Pabrik.status = "Posisi Break belum diatur! Tekan tombol SetPos Break dulu."
+            Notify("Pabrik: Tekan tombol 'SetPos Break' di tab Pabrik terlebih dahulu!")
+            task.wait(2.5)
+            return false
+        end
+        if next(Config.pabrikTiles) == nil then
+            Config.pabrikTiles = { ["1,0"] = true }
+        end
+
+        -- Ulangi selama ada blok di tas ATAU masih ada dropped blok di world (Langkah 7)
+        while liveFn() do
+            CheckAndDropSeedIfReady(seedId, liveFn)
+            if not liveFn() then break end
+
+            if CountItem(blockId) <= 0 then
+                -- Langkah 7: Cek apakah masih ada dropped blok di world, ambil dulu lalu ulangi break
+                if not CollectAllDroppedBlocks(blockId, liveFn) or CountItem(blockId) <= 0 then
+                    break
+                end
+            end
+
+            Pabrik.phase = "BREAK BLOCK"
+            local px, py = GetTile()
+            if px ~= Config.pabrikBreakX or py ~= Config.pabrikBreakY then
+                Pabrik.status = string.format("Menuju Posisi Break (%d,%d)...", Config.pabrikBreakX, Config.pabrikBreakY)
+                if not Nav.To(Config.pabrikBreakX, Config.pabrikBreakY, function() return not liveFn() end, 0.5, false) then
+                    Pabrik.status = "Gagal jalan ke Posisi Break, mencoba ulang..."
+                    task.wait(2)
+                    break
+                end
+            end
+            if not liveFn() then break end
+
+            local x, y, facing = GetGridState()
+            if not x then break end
+            local anchor = {
+                x = Config.pabrikBreakX,
+                y = Config.pabrikBreakY,
+                facing = facing,
+                world = CurrentWorldName(),
+            }
+
+            Farm.Override = { offsets = Config.pabrikTiles, block = blockId, mode = "Place + Break" }
+            Farm.Quiet = true
+            Farm.token = Farm.token + 1
+            local fToken = Farm.token
+            Farm.on = true
+
+            local lastActs = Stats.Placed + Stats.Broken
+            local lastActAt = os.clock()
+            task.spawn(function()
+                while Farm.on and Farm.token == fToken do
+                    task.wait(0.4)
+                    local acts = Stats.Placed + Stats.Broken
+                    if acts ~= lastActs then lastActs, lastActAt = acts, os.clock() end
+                    local sCount = CountItem(seedId)
+                    local bCount = CountItem(blockId)
+                    local maxSeed = math.max(1, tonumber(Config.pabrikMaxSeed) or 100)
+                    if not liveFn()
+                        or bCount <= 0
+                        or (Config.pabrikDrop and sCount > maxSeed and sCount >= 180)
+                        or (os.clock() - lastActAt > 8) then
+                        Farm.on = false
+                    end
+                end
+            end)
+
+            Pabrik.status = string.format("Break %s di (%d,%d) [Sisa: %d]...", ItemName(blockId), anchor.x, anchor.y, CountItem(blockId))
+            pcall(RunFarmLoopDirect, fToken, anchor)
+            Farm.on = false
+            Farm.Override = nil
+            Farm.Quiet = false
+            task.wait(0.3)
+        end
+        return true
+    end
+
+    -- Cek apakah koordinat (x,y) adalah titik break atau tile target break pabrik
+    local function IsReservedBreakSpot(x, y)
+        if Config.pabrikBreakX < 0 or Config.pabrikBreakY < 0 then return false end
+        if x == Config.pabrikBreakX and y == Config.pabrikBreakY then return true end
+        for key, on in pairs(Config.pabrikTiles) do
+            if on then
+                local dx, dy = tostring(key):match("^(-?%d+),(-?%d+)$")
+                if dx and dy then
+                    if x == (Config.pabrikBreakX + tonumber(dx)) and y == (Config.pabrikBreakY + tonumber(dy)) then
+                        return true
+                    end
+                end
+            end
+        end
+        return false
+    end
+
+    -- Pindai pohon di world dengan urutan ZIG-ZAG per baris agar jalan mengikuti lorong Dirt Farm
+    local function ScanWorldTrees(w, seedId)
+        local readyTrees = {}
+        local growingCount = 0
+        local soonestWait = nil
+        local nowSrv = workspace:GetServerTimeNow()
+        local it = ItemDB[seedId]
+        local defaultGrow = (it and (tonumber(it.grow) or tonumber(it.baseGrow))) or 31
+        local rowDir = 1
+
+        for y = 0, w.h - 1 do
+            local rowReady = {}
+            for x = 0, w.w - 1 do
+                local fg = TileValue(w, "fg", x, y) or 0
+                if fg == seedId then
+                    local rAt = TreeReadyAt(w, x, y, fg)
+                    if rAt then
+                        if nowSrv >= rAt then
+                            table.insert(rowReady, { x = x, y = y })
+                        else
+                            growingCount = growingCount + 1
+                            local rem = rAt - nowSrv
+                            if not soonestWait or rem < soonestWait then
+                                soonestWait = rem
+                            end
+                        end
+                    else
+                        growingCount = growingCount + 1
+                        if not soonestWait or defaultGrow < soonestWait then
+                            soonestWait = defaultGrow
+                        end
+                    end
+                end
+            end
+            if #rowReady > 0 then
+                if rowDir == -1 then
+                    table.sort(rowReady, function(a, b) return a.x > b.x end)
+                else
+                    table.sort(rowReady, function(a, b) return a.x < b.x end)
+                end
+                for _, tr in ipairs(rowReady) do table.insert(readyTrees, tr) end
+                rowDir = -rowDir
+            end
+        end
+        return readyTrees, growingCount, soonestWait
+    end
+
+    local function PabrikLoop(token, blockId)
+        local function liveFn()
+            return Pabrik.on and Pabrik.token == token and alive()
+        end
+        local R = math.min(PunchReach(), BuildReach()) - 0.15
+
+        while liveFn() do
+            local w = FindWorld()
+            while not w and liveFn() do
+                task.wait(1)
+                w = FindWorld()
+            end
+            if not liveFn() then break end
+
+            local seedId = Config.pabrikSeedId
+            local maxSeed = math.max(1, tonumber(Config.pabrikMaxSeed) or 100)
+
+            -- 1. Cek ketersediaan blok di tas atau dropped di world; jika ada, break dulu hingga habis!
+            if CountItem(blockId) > 0 or FindDroppedItemInWorld(blockId) ~= nil then
+                RunBreakUntilEmpty(seedId, blockId, liveFn)
+                if not liveFn() then break end
+                w = FindWorld()
+            end
+
+            -- 2. Setelah selesai break, jika jumlah seed > Max Seed, drop kelebihannya dan sisakan tepat Max Seed!
+            CheckAndDropSeedIfReady(seedId, liveFn)
+            if not liveFn() then break end
+            w = FindWorld()
+
+            -- 3. Fase TANAM SEED (Zig-Zag & dibatasi maksimal sejumlah Max Seed!)
+            local existingReady, existingGrowing = ScanWorldTrees(w, seedId)
+            local totalPlantedInWorld = #existingReady + existingGrowing
+            local canPlantMore = math.max(0, maxSeed - totalPlantedInWorld)
+
+            if CountItem(seedId) > 0 and canPlantMore > 0 then
+                Pabrik.phase = "TANAM SEED"
+                local spots = {}
+                local rowDir = 1
+                for y = 0, w.h - 1 do
+                    local rowSpots = {}
+                    for x = 0, w.w - 1 do
+                        if (TileValue(w, "fg", x, y) or 0) == 0 and CanPlantAt(w, x, y, seedId) and not IsReservedBreakSpot(x, y) then
+                            table.insert(rowSpots, { x = x, y = y })
+                        end
+                    end
+                    if #rowSpots > 0 then
+                        if rowDir == -1 then
+                            table.sort(rowSpots, function(a, b) return a.x > b.x end)
+                        else
+                            table.sort(rowSpots, function(a, b) return a.x < b.x end)
+                        end
+                        for _, sp in ipairs(rowSpots) do table.insert(spots, sp) end
+                        rowDir = -rowDir
+                    end
+                end
+
+                local plantedNow = 0
+                for idx, sp in ipairs(spots) do
+                    if not liveFn() or CountItem(seedId) <= 0 or plantedNow >= canPlantMore then break end
+                    if CanPlantAt(w, sp.x, sp.y, seedId) then
+                        local s = PlayerPhysicsState()
+                        if not (s and Nav.StateReaches(s, sp.x, sp.y, R)) then
+                            Pabrik.status = string.format("Jalan Zig-Zag tanam (%d,%d) [%d/%d]", sp.x, sp.y, plantedNow + 1, canPlantMore)
+                            -- allowScaffold = false agar TIDAK menaruh/merusak blok Dirt Farm!
+                            Nav.To(sp.x, sp.y, function() return not liveFn() end, R, false)
+                        end
+                        local sNow = PlayerPhysicsState()
+                        if sNow and Nav.StateReaches(sNow, sp.x, sp.y, R + 0.5) and CanPlantAt(w, sp.x, sp.y, seedId) and PlaceCell(seedId, sp, 1) then
+                            plantedNow = plantedNow + 1
+                            Pabrik.planted = Pabrik.planted + 1
+                            Stats.Planted = Stats.Planted + 1
+                            Pabrik.status = string.format("Menanam %s (%d/%d Max Seed)", ItemName(seedId), totalPlantedInWorld + plantedNow, maxSeed)
+                            task.wait(math.max(0.05, Config.harvestPlantDelay))
+                        end
+                    end
+                end
+            end
+
+            if not liveFn() then break end
+            w = FindWorld()
+
+            -- 4. Cek Pohon: Tunggu tumbuh jika belum ada yang matang
+            local readyTrees, growingCount, soonestWait = ScanWorldTrees(w, seedId)
+
+            if #readyTrees == 0 and growingCount > 0 then
+                Pabrik.phase = "TUNGGU TUMBUH"
+                while liveFn() do
+                    w = FindWorld()
+                    if not w then break end
+                    readyTrees, growingCount, soonestWait = ScanWorldTrees(w, seedId)
+                    if #readyTrees > 0 or growingCount == 0 then
+                        break
+                    end
+                    local waitSec = math.max(1, math.ceil(soonestWait or 15))
+                    Pabrik.status = string.format("Menunggu %d pohon siap panen (±%ds)...", growingCount, waitSec)
+                    task.wait(1)
+                end
+            end
+
+            if not liveFn() then break end
+
+            -- 5. Panen pohon secara Zig-Zag (Tanpa menghancurkan Dirt Farm!)
+            if #readyTrees > 0 then
+                Pabrik.phase = "PANEN ZIG-ZAG"
+                for idx, t in ipairs(readyTrees) do
+                    if not liveFn() then break end
+
+                    -- Jika blok di tas mencapai 200, menuju Posisi Break & break hingga habis!
+                    if CountItem(blockId) >= 200 then
+                        Pabrik.status = "Blok mencapai 200! Menuju Posisi Break..."
+                        RunBreakUntilEmpty(seedId, blockId, liveFn)
+                        if not liveFn() then break end
+                        CheckAndDropSeedIfReady(seedId, liveFn)
+                        if not liveFn() then break end
+                    end
+
+                    w = FindWorld()
+                    if w and (TileValue(w, "fg", t.x, t.y) or 0) == seedId then
+                        local s = PlayerPhysicsState()
+                        if not (s and Nav.StateReaches(s, t.x, t.y, R)) then
+                            Pabrik.status = string.format("Panen Zig-Zag (%d,%d) [%d/%d]", t.x, t.y, idx, #readyTrees)
+                            -- allowScaffold = false agar karakter murni berjalan zig-zag mengikuti lorong DF tanpa merusak blok!
+                            Nav.To(t.x, t.y, function() return not liveFn() end, R, false)
+                        end
+                        local sNow = PlayerPhysicsState()
+                        if sNow and Nav.StateReaches(sNow, t.x, t.y, R + 0.5) then
+                            local t0 = os.clock()
+                            while liveFn() and (TileValue(w, "fg", t.x, t.y) or 0) == seedId and os.clock() - t0 < 3.5 do
+                                local r = TryBreakOnce(t.x, t.y, false)
+                                if r == "broke" then
+                                    Pabrik.harvested = Pabrik.harvested + 1
+                                    Stats.Harvested = Stats.Harvested + 1
+                                end
+                                task.wait(math.max(0.05, Config.harvestDelay))
+                            end
+                            task.wait(0.20)
+                        end
+                    end
+                end
+
+                CollectAllDroppedBlocks(blockId, liveFn)
+                if CountItem(blockId) > 0 then
+                    RunBreakUntilEmpty(seedId, blockId, liveFn)
+                end
+                CheckAndDropSeedIfReady(seedId, liveFn)
+            else
+                if CountItem(seedId) <= 0 and CountItem(blockId) <= 0 and FindDroppedItemInWorld(blockId) == nil then
+                    Pabrik.status = "Selesai: Seed, blok, dan pohon sudah habis."
+                    ClearPabrikState()
+                    break
+                end
+            end
+
+            task.wait(0.3)
+        end
+    end
+
+    function Pabrik.Stop()
+        ClearPabrikState()
+        if not Pabrik.on then return false end
+        Pabrik.token = Pabrik.token + 1
+        Pabrik.on = false
+        Pabrik.traveling = false
+        if Farm.Override then
+            Farm.on = false
+            Farm.Override = nil
+            Farm.Quiet = false
+        end
+        ReleaseInput()
+        AutoInput.active = false
+        Pabrik.phase = "-"
+        Pabrik.status = "Mati"
+        if UpdateGridVisuals then pcall(UpdateGridVisuals) end
+        return true
+    end
+
+    function Pabrik.Start(resumeHomeWorld)
+        if Pabrik.on then return true end
+        local seedId = Config.pabrikSeedId
+        local blockId = BlockOfSeed(seedId)
+        if not seedId or not blockId then
+            Notify("Pabrik: Pilih seed pabrik yang valid terlebih dahulu!")
+            return false
+        end
+        if Farm.on then StopFarm() end
+        if Clear.on then Clear.Stop() end
+        if Farmer.on then Farmer.Stop() end
+        if DF.on then DF.Stop() end
+        if SpliceBot.on then SpliceBot.Stop() end
+
+        Pabrik.home = resumeHomeWorld or CurrentWorldName()
+        Pabrik.dropOffUntil = 0
+        Pabrik.token = Pabrik.token + 1
+        local token = Pabrik.token
+        Pabrik.on = true
+        Pabrik.phase = "MULAI"
+        Pabrik.status = "Inisialisasi Pabrik..."
+
+        SavePabrikState({
+            active = true,
+            stage = "farming",
+            homeWorld = Pabrik.home,
+            seedId = seedId,
+        })
+
+        if UpdateGridVisuals then pcall(UpdateGridVisuals) end
+        if RefreshHub then RefreshHub() end
+
+        task.spawn(function()
+            local ok, err = pcall(PabrikLoop, token, blockId)
+            if not ok then warn("[ANCHHub] Pabrik error: " .. tostring(err)) end
+            ReleaseInput()
+            AutoInput.active = false
+            if Pabrik.token == token then
+                Pabrik.on = false
+                Pabrik.traveling = false
+                Pabrik.phase = "-"
+                if Pabrik.status == "Inisialisasi Pabrik..." then Pabrik.status = "Mati" end
+                if UpdateGridVisuals then pcall(UpdateGridVisuals) end
+                if RefreshHub then RefreshHub() end
+            end
+        end)
+        return true
+    end
+
+    -- Pemulihan Otomatis Pabrik Saat Pindah World / Reload Script
+    function Pabrik.CheckStartup()
+        pcall(function()
+            if not (isfile and readfile and isfile(PABRIK_STATE_FILE)) then return end
+            local raw = readfile(PABRIK_STATE_FILE)
+            local st = HttpService:JSONDecode(raw)
+            if type(st) ~= "table" or not st.active then return end
+            if os.time() - (tonumber(st.updatedAt) or 0) > 1800 then
+                ClearPabrikState()
+                return
+            end
+
+            -- Tunggu sampai world dan karakter selesai dimuat
+            local t0 = os.clock()
+            while alive() and os.clock() - t0 < 30 do
+                if CurrentWorldName() ~= "" and GetTile() then break end
+                task.wait(1)
+            end
+            if not alive() or CurrentWorldName() == "" then return end
+
+            Refs.Scan()
+            task.wait(1.2)
+            local curW = CurrentWorldName():upper()
+            local homeW = tostring(st.homeWorld or ""):upper()
+            local targetW = tostring(st.targetWorld or ""):upper()
+
+            if st.stage == "dropping" and targetW ~= "" and curW == targetW then
+                Notify("Melanjutkan proses Drop Seed Pabrik di " .. curW .. "...", "Pabrik ANCH")
+                Pabrik.home = st.homeWorld
+                Pabrik.on = true
+                Pabrik.token = Pabrik.token + 1
+                local tk = Pabrik.token
+                ExecuteDropCycle(st.seedId or Config.pabrikSeedId, st.dropAmount or Config.pabrikDropAmount or 100, function()
+                    return Pabrik.on and Pabrik.token == tk and alive()
+                end)
+                Pabrik.on = false
+                if CurrentWorldName():upper() == homeW then
+                    Pabrik.Start(st.homeWorld)
+                end
+            elseif homeW ~= "" and curW == homeW then
+                Notify("Melanjutkan siklus Pabrik otomatis di " .. curW .. "!", "Pabrik ANCH")
+                Pabrik.Start(st.homeWorld)
+            elseif homeW ~= "" and curW ~= homeW then
+                Notify("Kembali ke world Pabrik: " .. homeW .. "...", "Pabrik ANCH")
+                if EnterTargetWorld(homeW, nil) then
+                    Pabrik.Start(st.homeWorld)
+                end
+            end
+        end)
+    end
+end)() end
+
+----------------------------------------------------------------------
+-- 7. MANAJEMEN TAS: AUTO RECYCLE & AUTO CONVERT LOCK (WL -> DL -> BGL)
+----------------------------------------------------------------------
+do (function()
+    local LOCK_IDS = { [242] = true, [1796] = true, [7188] = true }
+    local LOCK_CONVERSIONS = {
+        { from = 242,  to = 1796, name = "Diamond Lock" },
+        { from = 1796, to = 7188, name = "Blue Gem Lock" },
+    }
+
+    local function worldCall(...)
+        local w = FindWorld()
+        local fn = w and rawget(w, "call")
+        if type(fn) ~= "function" then return false end
+        return pcall(fn, ...)
+    end
+
+    local function canRecycleItem(id)
+        local it = ItemDB[id]
+        return it ~= nil and it.kind ~= "tool" and not it.lock and not LOCK_IDS[id]
+    end
+
+    function Bag.Recycle(id, count)
+        if not Refs.Inv or count <= 0 or not canRecycleItem(id) then return false end
+        count = math.min(count, CountItem(id))
+        if count <= 0 then return false end
+        pcall(function() Refs.Inv:remove(id, count) end)
+        local ok = worldCall("Recycle", id, count)
+        if ok then
+            Bag.recycled = Bag.recycled + (count)
+            Bag.status = string.format("Recycle %s x%d", ItemName(id), count)
+        end
+        return ok
+    end
+
+    local function convertLockStep(rule)
+        local inv = Refs.Inv
+        if not inv or CountItem(rule.from) < 100 then return false end
+        if CountItem(rule.to) + 1 > 200 then return false end
+        pcall(function()
+            inv:remove(rule.from, 100)
+            inv:add(rule.to, 1)
+        end)
+        local ok = worldCall("ConvertLock", rule.from, rule.to)
+        if ok then
+            Bag.converted = Bag.converted + (1)
+            Bag.status = "Convert ke " .. rule.name
+        end
+        return ok
+    end
+
+    task.spawn(function()
+        while alive() do
+            pcall(function()
+                if Config.trashOn and type(Config.trashList) == "table" then
+                    for _, id in ipairs(Config.trashList) do
+                        local have = CountItem(id)
+                        if have >= Config.trashAt and have > Config.trashKeep then
+                            Bag.Recycle(id, have - Config.trashKeep)
+                            task.wait(0.5)
+                        end
+                    end
+                end
+                if Config.convertLockOn then
+                    for _, rule in ipairs(LOCK_CONVERSIONS) do
+                        if convertLockStep(rule) then
+                            task.wait(0.5)
+                        end
+                    end
+                end
+            end)
+            task.wait(2.5)
+        end
+    end)
+end)() end
+
+----------------------------------------------------------------------
+-- 7B. VENDING MACHINE BOT (ISI STOCK DARI DROP & KOSONGKAN VENDING)
+----------------------------------------------------------------------
+local Vend = { on = false, token = 0, status = "Mati", stocked = 0, taken = 0, dropped = 0, picked = {}, carry = {} }
+
+do (function()
+    function Vend.ParsePoint()
+        local raw = tostring(Config.vendPoint or ""):gsub("%s", "")
+        local name, door = string.match(raw, "^([^:|]*)[:|](.+)$")
+        if not name then name = raw end
+        name = string.upper(name):gsub("[^A-Z0-9]", "")
+        if door == "" then door = nil end
+        return name, door
+    end
+
+    function Vend.Sellable(id)
+        if type(id) ~= "number" or id == 112 then return false end
+        local it = ItemDB[id]
+        if not it or it.kind == "tool" then return false end
+        if it.lock or it.area or it.guildLock or it.untradeable or it.vend or it.hub then return false end
+        return true
+    end
+
+    function Vend.Allow(id)
+        if not Vend.Sellable(id) then return false end
+        if type(Config.vendItems) == "table" and #Config.vendItems > 0 and not table.find(Config.vendItems, id) then
+            return false
+        end
+        return true
+    end
+
+    function Vend.Machines()
+        local w = FindWorld()
+        local out = {}
+        if not w then return out end
+        local vends = rawget(w, "vends")
+        local owner = rawget(w, "vendOwner")
+        for y = 0, w.h - 1 do
+            local row = w.fg[y]
+            if row then
+                for x = 0, w.w - 1 do
+                    local id = row[x] or 0
+                    local it = id ~= 0 and ItemDB[id]
+                    if it and it.vend then
+                        local okO, mine = true, true
+                        if type(owner) == "function" then okO, mine = pcall(owner, x, y) end
+                        if okO and mine then
+                            local d = nil
+                            if type(vends) == "table" and type(vends.get) == "function" then
+                                local okD, v = pcall(vends.get, x, y)
+                                if okD and type(v) == "table" then d = v end
+                            end
+                            d = d or {}
+                            if not d.shop then
+                                table.insert(out, {
+                                    x = x, y = y, fg = id, id = d.id,
+                                    stock = tonumber(d.stock) or 0,
+                                    cap = (id == 9268) and 10398 or 5199,
+                                })
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        return out
+    end
+
+    function Vend.Call(...)
+        local w = FindWorld()
+        local f = w and rawget(w, "vendCall")
+        if type(f) ~= "function" then return false end
+        local ok, res = pcall(f, ...)
+        return ok and res == true
+    end
+
+    local function VendLoop(token, homeWorld)
+        local function liveFn() return Vend.on and Vend.token == token and alive() end
+        while liveFn() do
+            local machines = Vend.Machines()
+            if #machines == 0 then
+                Vend.status = "Tidak ada Vending milikmu di world ini!"
+                break
+            end
+            if Config.vendMode == "Kosongkan sampai habis" then
+                local emptiedAny = false
+                for _, m in ipairs(machines) do
+                    if not liveFn() then break end
+                    if m.id and m.stock > 0 and Vend.Allow(m.id) then
+                        Vend.status = string.format("Mengambil %s dari Vending (%d,%d)...", ItemName(m.id), m.x, m.y)
+                        Nav.To(m.x, m.y, function() return not liveFn() end, 0.4, false)
+                        local before = CountItem(m.id)
+                        Vend.Call("empty", m.x, m.y)
+                        task.wait(0.45)
+                        local got = CountItem(m.id) - before
+                        if got > 0 then
+                            Vend.taken = Vend.taken + got
+                            emptiedAny = true
+                        end
+                        if CountItem(m.id) >= 190 and Pabrik and Pabrik.ExternalDropSeed then
+                            Pabrik.ExternalDropSeed(m.id, CountItem(m.id), Config.vendPoint, Config.vendDropX, Config.vendDropY, homeWorld, m.x, m.y, liveFn)
+                        end
+                    end
+                end
+                if not emptiedAny then
+                    Vend.status = "Semua Vending sudah kosong!"
+                    break
+                end
+            else
+                -- Mode Isi Stock dari Drop / Tas
+                local stockedAny = false
+                for _, m in ipairs(machines) do
+                    if not liveFn() then break end
+                    local id = (m.id and m.stock > 0) and m.id or nil
+                    if id and Vend.Allow(id) then
+                        local n = math.min(CountItem(id), m.cap - m.stock)
+                        if n > 0 then
+                            Vend.status = string.format("Mengisi %s +%d ke Vending (%d,%d)...", ItemName(id), n, m.x, m.y)
+                            Nav.To(m.x, m.y, function() return not liveFn() end, 0.4, false)
+                            if Vend.Call("stock", m.x, m.y, id, n) then
+                                Vend.stocked = Vend.stocked + n
+                                stockedAny = true
+                                task.wait(0.35)
+                            end
+                        end
+                    end
+                end
+                if not stockedAny then
+                    Vend.status = "Menunggu item di tas / drop untuk dimasukkan ke Vending..."
+                    task.wait(2)
+                end
+            end
+            task.wait(0.5)
+        end
+    end
+
+    function Vend.Stop()
+        if not Vend.on then return false end
+        Vend.token = Vend.token + 1
+        Vend.on = false
+        Vend.status = "Mati"
+        return true
+    end
+
+    function Vend.Start()
+        if Vend.on then return true end
+        Vend.token = Vend.token + 1
+        local token = Vend.token
+        Vend.on = true
+        Vend.status = "Mulai..."
+        local home = CurrentWorldName()
+        task.spawn(function()
+            pcall(VendLoop, token, home)
+            if Vend.token == token then
+                Vend.on = false
+                if RefreshHub then RefreshHub() end
+            end
+        end)
+        return true
+    end
+end)() end
+
+----------------------------------------------------------------------
+-- 8. PENJAGA (ANTI-MOD) & AUTO RECONNECT LINTAS WORLD/SERVER
+----------------------------------------------------------------------
+do (function()
+    local function strip(s) return (tostring(s or ""):gsub("`.", "")) end
+
+    local function roleOf(uid)
+        if not (RolesOk and type(RolesModule) == "table") then return nil end
+        local okD, dev = pcall(RolesModule.isDeveloper, uid)
+        if okD and dev then return "Developer" end
+        local okM, mod = pcall(RolesModule.isModerator, uid)
+        if okM and mod then return "Moderator" end
+        return nil
+    end
+
+    local function playersHere()
+        local out = {}
+        local o = Refs.Others
+        if not o or type(rawget(o, "list")) ~= "function" then return out end
+        local ok, list = pcall(o.list)
+        if not ok or type(list) ~= "table" then return out end
+        for _, e in ipairs(list) do
+            local uid = type(e) == "table" and tonumber(e[1] or e.userId)
+            if uid and uid ~= Player.UserId then
+                out[#out + 1] = { id = uid, name = strip(e[2] or e.name or uid), role = roleOf(uid) }
+            end
+        end
+        return out
+    end
+
+    local function threatsOf(list)
+        local out = {}
+        for _, p in ipairs(list) do
+            if p.role or (Config.guardWho == "Semua pemain" and not Guard.allow[p.id]) then
+                out[#out + 1] = p
+            end
+        end
+        return out
+    end
+
+    local function formatPlayer(p)
+        local under = false
+        if p.role and RolesOk and type(RolesModule.isUndercover) == "function" then
+            local ok, u = pcall(RolesModule.isUndercover, p.id)
+            under = ok and u == true
+        end
+        return p.name .. " (" .. (p.role or "Pemain") .. (under and ", undercover" or "") .. ")"
+    end
+
+    local function namesList(list)
+        local t = {}
+        for i, p in ipairs(list) do
+            if i > 5 then
+                t[#t + 1] = "+" .. (#list - i + 1) .. " lagi"
+                break
+            end
+            t[#t + 1] = formatPlayer(p)
+        end
+        return #t > 0 and table.concat(t, ", ") or "tidak ada"
+    end
+
+    local function anyBotRunning()
+        return (Farm.on and not Farm.Override) or Clear.on or Farmer.on or DF.on or SpliceBot.on or Pabrik.on or Spam.on
+    end
+
+    local function snapshot()
+        local tx, ty = GetTile()
+        return {
+            farm = Farm.on and not Farm.Override,
+            clear = Clear.on,
+            farmer = Farmer.on,
+            df = DF.on,
+            splice = SpliceBot.on,
+            pabrik = Pabrik.on,
+            spam = Spam.on,
+            world = CurrentWorldName(),
+            tx = tx,
+            ty = ty,
+        }
+    end
+
+    local function stopAllBots()
+        if Pabrik.on then Pabrik.Stop() end
+        if SpliceBot.on then SpliceBot.Stop() end
+        if Farm.on then StopFarm() end
+        if Clear.on then Clear.Stop(); Clear.status = "Dijeda Penjaga" end
+        if Farmer.on then Farmer.Stop(); Farmer.status = "Dijeda Penjaga" end
+        if DF.on then DF.Stop(); DF.status = "Dijeda Penjaga" end
+        if Spam.on then Spam.on = false end
+        ReleaseInput()
+        if RefreshHub then RefreshHub() end
+    end
+
+    local function leaveWorld()
+        local m = Refs.Menu
+        if m and type(rawget(m, "openPicker")) == "function" and pcall(m.openPicker) then
+            return true
+        end
+        local w = FindWorld()
+        if w and type(rawget(w, "call")) == "function" then
+            return pcall(w.call, "LeaveWorld")
+        end
+        return false
+    end
+
+    local function enterWorld(name)
+        local w = FindWorld()
+        if not w or name == "" then return false end
+        local oldFg = rawget(w, "fg")
+        local m = Refs.Menu
+        if m and type(rawget(m, "enter")) == "function" then
+            pcall(m.enter, name)
+        elseif type(rawget(w, "enter")) == "function" then
+            pcall(w.enter, name)
+        else
+            return false
+        end
+        local t0 = os.clock()
+        while alive() and os.clock() - t0 < 8 do
+            local cw = FindWorld()
+            if cw and rawget(cw, "fg") ~= oldFg then return true end
+            task.wait(0.25)
+        end
+        return false
+    end
+
+    local function resumeSaved(saved, token)
+        if not saved then return end
+        if saved.world ~= "" and CurrentWorldName() ~= saved.world then return end
+        if saved.spam then Spam.on = true end
+        if saved.tx and saved.ty then
+            local cx, cy = GetTile()
+            if cx and (cx ~= saved.tx or cy ~= saved.ty) then
+                Guard.status = string.format("Jalan balik ke (%d,%d)...", saved.tx, saved.ty)
+                Nav.To(saved.tx, saved.ty, function() return (token and Guard.token ~= token) or not alive() end, 0.3, true)
+            end
+        end
+        if token and Guard.token ~= token then return end
+        if saved.farm then StartFarm()
+        elseif saved.clear then Clear.Start()
+        elseif saved.farmer then Farmer.Start()
+        elseif saved.df then DF.Start()
+        elseif saved.splice then SpliceBot.Start()
+        elseif saved.pabrik then Pabrik.Start() end
+        if RefreshHub then RefreshHub() end
+    end
+
+    Guard.Snapshot = snapshot
+    Guard.StopAllBots = stopAllBots
+    Guard.LeaveWorld = leaveWorld
+    Guard.EnterWorld = enterWorld
+    Guard.ResumeSaved = resumeSaved
+    Guard.AnyRunning = anyBotRunning
+
+    function Guard.AllowCurrentPlayers()
+        local n = 0
+        for _, p in ipairs(playersHere()) do
+            if not p.role then
+                Guard.allow[p.id] = true
+                n = n + (1)
+            end
+        end
+        return n
+    end
+
+    function Guard.Set(on)
+        Guard.on = on
+        Guard.token = Guard.token + (1)
+        Guard.mode, Guard.saved, Guard.calmAt = "idle", nil, nil
+        table.clear(Guard.alerted)
+        table.clear(Guard.allow)
+        if on then
+            Guard.AllowCurrentPlayers()
+            Guard.status = "Aman (Memantau)"
+        else
+            Guard.status = "Mati"
+        end
+    end
+
+    task.spawn(function()
+        while alive() do
+            pcall(function()
+                local stList = {}
+                for _, plr in ipairs(Players:GetPlayers()) do
+                    if plr ~= Player then
+                        local r = roleOf(plr.UserId)
+                        if r then table.insert(stList, (plr.DisplayName or plr.Name) .. " (" .. r .. ")") end
+                    end
+                end
+                Guard.staffServerText = #stList > 0 and table.concat(stList, ", ") or "tidak ada"
+
+                local here = (Guard.mode ~= "away" and Guard.mode ~= "out") and playersHere() or {}
+                Guard.hereText = namesList(here)
+
+                if not Guard.on then
+                    Guard.status = "Mati"
+                    return
+                end
+
+                local now = os.clock()
+                if Guard.mode == "away" or Guard.mode == "out" then
+                    local name = Guard.saved and Guard.saved.world or ""
+                    if Guard.mode == "out" or name == "" then
+                        Guard.status = "Sudah keluar world"
+                        return
+                    end
+                    local left = Guard.backAt - now
+                    if left > 0 then
+                        Guard.status = string.format("Di luar world. Masuk %s dlm %ds", name, math.ceil(left))
+                        return
+                    end
+                    Guard.status = "Masuk kembali ke " .. name .. "..."
+                    if enterWorld(name) then
+                        Refs.Scan()
+                        task.wait(1.5)
+                        local th = threatsOf(playersHere())
+                        if #th > 0 then
+                            Notify("Masih ada " .. namesList(th) .. "! Keluar lagi.", "Penjaga ANCH")
+                            leaveWorld()
+                            Guard.backAt = os.clock() + Config.guardBackSec
+                        else
+                            Notify("World sudah aman, melanjutkan aktivitas!", "Penjaga ANCH")
+                            Webhook.Send("penjaga", "World " .. name .. " aman, lanjut aktivitas")
+                            local sv = Guard.saved
+                            Guard.mode, Guard.saved = "idle", nil
+                            Guard.token = Guard.token + (1)
+                            local tk = Guard.token
+                            task.spawn(resumeSaved, sv, tk)
+                        end
+                    else
+                        Guard.backAt = os.clock() + math.max(15, Config.guardBackSec)
+                    end
+                    return
+                end
+
+                local present = {}
+                for _, p in ipairs(here) do present[p.id] = true end
+                for id in pairs(Guard.alerted) do
+                    if not present[id] then Guard.alerted[id] = nil end
+                end
+
+                local threats = threatsOf(here)
+                local fresh = {}
+                for _, p in ipairs(threats) do
+                    if not Guard.alerted[p.id] then
+                        Guard.alerted[p.id] = true
+                        fresh[#fresh + 1] = p
+                    end
+                end
+
+                if #fresh > 0 then
+                    Guard.detected = Guard.detected + (#fresh)
+                    local alertMsg = "Terdeteksi masuk world " .. CurrentWorldName() .. ": " .. namesList(fresh)
+                    Notify(alertMsg, "PERINGATAN PENJAGA", 6)
+                    Webhook.Send("penjaga", alertMsg)
+                    if Config.guardStopAll or Config.guardLeave then
+                        if not Guard.saved then Guard.saved = snapshot() end
+                        Guard.token = Guard.token + (1)
+                        stopAllBots()
+                        Guard.calmAt = nil
+                        if Config.guardLeave then
+                            if leaveWorld() then
+                                Guard.backAt = os.clock() + Config.guardBackSec
+                                Guard.mode = Config.guardAutoBack and "away" or "out"
+                                Guard.status = "Keluar world"
+                                return
+                            end
+                        end
+                        Guard.mode = "pause"
+                    end
+                end
+
+                if #threats > 0 then
+                    Guard.calmAt = nil
+                    Guard.status = (Guard.mode == "pause" and "Dijeda! Ada: " or "Waspada! Ada: ") .. namesList(threats)
+                elseif Guard.mode == "pause" then
+                    Guard.calmAt = Guard.calmAt or now
+                    local rem = Config.guardCalmSec - (now - Guard.calmAt)
+                    if rem > 0 then
+                        Guard.status = string.format("Sudah sepi. Lanjut dlm %ds...", math.ceil(rem))
+                    else
+                        Guard.calmAt = nil
+                        local sv = Guard.saved
+                        Guard.mode, Guard.saved = "idle", nil
+                        if Config.guardAutoBack and sv then
+                            Notify("World aman, melanjutkan aktivitas!", "Penjaga ANCH")
+                            Guard.token = Guard.token + (1)
+                            local tk = Guard.token
+                            task.spawn(resumeSaved, sv, tk)
+                        end
+                    end
+                else
+                    Guard.status = "Aman (Memantau)"
+                end
+            end)
+            task.wait(0.5)
+        end
+    end)
+
+    -- AUTO RECONNECT (WORLD CLOSED & SERVER DISCONNECT)
+    function Reconnect.TargetWorld()
+        local t = tostring(Config.targetWorld or ""):upper():gsub("[^A-Z0-9]", "")
+        if t ~= "" then return t end
+        return Config.lastWorld or ""
+    end
+
+    task.spawn(function()
+        while alive() do
+            local wName = CurrentWorldName()
+            if wName ~= "" and not Pabrik.traveling then
+                Config.lastWorld = wName
+            end
+            if anyBotRunning() and Guard.mode == "idle" then
+                Reconnect.last = snapshot()
+                Reconnect.lastAt = os.clock()
+            end
+            task.wait(1)
+        end
+    end)
+
+    local function onWorldKicked(reason)
+        if not (Config.reconnectOn and Config.reconnectWorld) or Reconnect.busy or Pabrik.traveling then return end
+        if Guard.mode == "away" or Guard.mode == "out" then return end
+        local snap = Reconnect.last
+        if not snap or snap.world == "" or os.clock() - Reconnect.lastAt > 15 then return end
+        Reconnect.busy = true
+        task.spawn(function()
+            stopAllBots()
+            Reconnect.status = "Terlempar dari " .. snap.world .. ". Masuk lagi..."
+            Webhook.Send("rejoin", "Terlempar dari world " .. snap.world .. " (" .. strip(reason) .. ")")
+            task.wait(Config.reconnectDelay + 1.5)
+            for attempt = 1, 3 do
+                if not alive() or not Config.reconnectOn then break end
+                if enterWorld(snap.world) then
+                    Refs.Scan()
+                    task.wait(1.5)
+                    Reconnect.count = Reconnect.count + (1)
+                    Reconnect.status = "Berhasil masuk lagi ke " .. snap.world
+                    Webhook.Send("rejoin", "Berhasil masuk kembali ke " .. snap.world)
+                    resumeSaved(snap, nil)
+                    Reconnect.busy = false
+                    return
+                end
+                Reconnect.status = string.format("Gagal masuk (%d/3), coba lagi...", attempt)
+                task.wait(8)
+            end
+            Reconnect.busy = false
+        end)
+    end
+
+    if WorldClosedRemote and WorldClosedRemote:IsA("RemoteEvent") then
+        trackConn(WorldClosedRemote.OnClientEvent:Connect(function(reason)
+            if alive() then onWorldKicked(reason) end
+        end))
+    end
+
+    -- Pantau jika karakter berada di luar world & Keep in World aktif
+    task.spawn(function()
+        local outsideSince = nil
+        while alive() do
+            task.wait(2)
+            local outside = CurrentWorldName() == ""
+            local canKeep = Config.reconnectOn and Config.reconnectKeep and not Reconnect.busy and not Reconnect.leaving and not Pabrik.traveling and Guard.mode == "idle"
+            if not (outside and canKeep) then
+                outsideSince = nil
+            else
+                outsideSince = outsideSince or os.clock()
+                local target = Reconnect.TargetWorld()
+                if target ~= "" and os.clock() - outsideSince >= Config.reconnectDelay then
+                    outsideSince = nil
+                    Reconnect.busy = true
+                    Reconnect.status = "Di luar world, masuk ke " .. target .. "..."
+                    if enterWorld(target) then
+                        Refs.Scan()
+                        task.wait(1.5)
+                        Reconnect.count = Reconnect.count + (1)
+                        Reconnect.status = "Kembali otomatis ke " .. target
+                        if Reconnect.last and Reconnect.last.world == target then
+                            resumeSaved(Reconnect.last, nil)
+                        end
+                    end
+                    Reconnect.busy = false
+                end
+            end
+        end
+    end)
+
+    -- Server Disconnect Handler
+    pcall(function()
+        trackConn(GuiService.ErrorMessageChanged:Connect(function(msg)
+            if not alive() or type(msg) ~= "string" or msg == "" then return end
+            if not (Config.reconnectOn and Config.reconnectServer) or Reconnect.leaving then return end
+            Reconnect.leaving = true
+            local snap = Reconnect.last or (anyBotRunning() and snapshot()) or nil
+            local targetW = (snap and snap.world) or CurrentWorldName()
+            if writefile and snap then
+                snap.at = os.time()
+                pcall(writefile, REJOIN_FILE, HttpService:JSONEncode(snap))
+            end
+            if QueueReload then pcall(QueueReload) end
+            Webhook.Send("rejoin", "Disconnect dari server (" .. msg .. "). Rejoin otomatis...")
+            task.spawn(function()
+                task.wait(Config.reconnectDelay)
+                while alive() do
+                    pcall(function()
+                        TeleportService:Teleport(game.PlaceId, Player, (targetW ~= "") and { world = targetW } or nil)
+                    end)
+                    task.wait(12)
+                end
+            end)
+        end))
+    end)
+
+    function Reconnect.CheckStartup()
+        pcall(function()
+            if not (isfile and readfile and isfile(REJOIN_FILE)) then return end
+            local raw = readfile(REJOIN_FILE)
+            if delfile then pcall(delfile, REJOIN_FILE) end
+            local snap = HttpService:JSONDecode(raw)
+            if type(snap) ~= "table" or type(snap.world) ~= "string" or snap.world == "" then return end
+            if os.time() - (tonumber(snap.at) or 0) > 900 then return end
+            Reconnect.busy = true
+            Reconnect.status = "Pulihkan sesi setelah Rejoin Server: " .. snap.world
+            local t0 = os.clock()
+            local triedEnter = false
+            while alive() and os.clock() - t0 < 50 do
+                if CurrentWorldName() == snap.world and GetTile() then break end
+                if CurrentWorldName() == "" and not triedEnter and os.clock() - t0 > 8 then
+                    triedEnter = true
+                    enterWorld(snap.world)
+                end
+                task.wait(2)
+            end
+            if alive() and CurrentWorldName() == snap.world then
+                Refs.Scan()
+                task.wait(1.5)
+                Reconnect.count = Reconnect.count + (1)
+                Webhook.Send("rejoin", "Berhasil rejoin server ke world " .. snap.world .. ", melanjutkan bot!")
+                resumeSaved(snap, nil)
+            end
+            Reconnect.busy = false
+        end)
+    end
+end)() end
+
+----------------------------------------------------------------------
+-- 9. STATISTIK SESI, AUTO CHAT (1 PESAN), BONUS, LITE MODE, WATERMARK
+----------------------------------------------------------------------
+local Bonus = {
+    claimed = 0,
+    redeemed = 0,
+    tried = {},
+    questFail = {},
+    questText = "-",
+    codeText = "-",
+    nextQuest = 0,
+    nextCode = 0,
+}
+
+local LiteMode = { saved = {} }
+
+do (function()
+    local function formatNum(n)
+        local s = tostring(math.floor(tonumber(n) or 0))
+        local neg = s:sub(1, 1) == "-"
+        if neg then s = s:sub(2) end
+        local rev = s:reverse():gsub("(%d%d%d)", "%1."):reverse():gsub("^%.", "")
+        return (neg and "-" or "") .. rev
+    end
+
+    local function formatDuration(sec)
+        sec = math.max(0, math.floor(sec or 0))
+        return string.format("%dj %dm %dd", math.floor(sec / 3600), math.floor((sec % 3600) / 60), sec % 60)
+    end
+
+    function Stats.GemsNow()
+        local g = Refs.Gems
+        local fn = g and rawget(g, "addGems")
+        if type(fn) ~= "function" then return nil end
+        for _, v in pairs(GetUpvalues(fn)) do
+            if type(v) == "number" then return v end
+        end
+        return nil
+    end
+
+    function Stats.Reset()
+        Stats.T0 = os.clock()
+        Stats.Gems0 = Stats.GemsNow()
+        Stats.Placed = 0
+        Stats.Broken = 0
+        Stats.Collected = 0
+        Stats.Harvested = 0
+        Stats.Planted = 0
+        table.clear(Stats.Items)
+    end
+
+    function Stats.Text()
+        local hours = math.max((os.clock() - Stats.T0) / 3600, 1 / 3600)
+        local function rateLine(label, val)
+            return string.format("%s: %s (%s/jam)", label, formatNum(val), formatNum(val / hours))
+        end
+        local gNow = Stats.GemsNow()
+        if gNow and not Stats.Gems0 then Stats.Gems0 = gNow end
+        local gemLine = "Gems: -"
+        if gNow and Stats.Gems0 then
+            local diff = gNow - Stats.Gems0
+            gemLine = string.format("Gems: %s (%s%s, %s/jam)", formatNum(gNow), diff >= 0 and "+" or "", formatNum(diff), formatNum(diff / hours))
+        end
+        local topArr = {}
+        for id, n in pairs(Stats.Items) do table.insert(topArr, { id = id, n = n }) end
+        table.sort(topArr, function(a, b) return a.n > b.n end)
+        local topStr = {}
+        for i = 1, math.min(5, #topArr) do
+            topStr[i] = ItemName(topArr[i].id) .. " x" .. formatNum(topArr[i].n)
+        end
+        return table.concat({
+            "Lama Sesi: " .. formatDuration(os.clock() - Stats.T0),
+            gemLine,
+            rateLine("Block Pecah", Stats.Broken),
+            rateLine("Block Dipasang", Stats.Placed),
+            rateLine("Drop Diambil", Stats.Collected),
+            rateLine("Pohon Dipanen", Stats.Harvested),
+            rateLine("Seed Ditanam", Stats.Planted),
+            "Item Terbanyak: " .. (#topStr > 0 and table.concat(topStr, ", ") or "-"),
+        }, "\n")
+    end
+
+    task.spawn(function()
+        local lastReport = os.clock()
+        while alive() do
+            if Config.webhookReportMin > 0 and (os.clock() - lastReport) >= Config.webhookReportMin * 60 then
+                lastReport = os.clock()
+                local ok, txt = pcall(Stats.Text)
+                if ok then
+                    Webhook.Send("report", "Laporan Statistik Sesi\n```\n" .. txt .. "\n```")
+                end
+            elseif Config.webhookReportMin <= 0 then
+                lastReport = os.clock()
+            end
+            task.wait(2)
+        end
+    end)
+
+    -- Auto Chat (Hanya mengirim 1 pesan tunggal yang diatur)
+    local function getWorldChannel()
+        local folder = TextChatService:FindFirstChild("WorldChannels")
+        if not folder then return nil end
+        local wName = CurrentWorldName()
+        if wName ~= "" and folder:FindFirstChild(wName) then
+            return folder:FindFirstChild(wName)
+        end
+        for _, ch in ipairs(folder:GetChildren()) do
+            if ch:IsA("TextChannel") then
+                for _, src in ipairs(ch:GetChildren()) do
+                    if src:IsA("TextSource") and src.UserId == Player.UserId then return ch end
+                end
+            end
+        end
+        return nil
+    end
+
+    function Spam.SendNext()
+        local msg = Trim(Config.chatText)
+        if msg == "" then
+            Spam.last = "Pesan chat belum diisi"
+            return false
+        end
+        local ch = getWorldChannel()
+        if not ch then
+            Spam.last = "Channel chat belum ada"
+            return false
+        end
+        local ok, err = pcall(ch.SendAsync, ch, msg)
+        if ok then
+            Spam.sent = Spam.sent + (1)
+            Spam.last = msg
+        else
+            Spam.last = "Gagal: " .. tostring(err)
+        end
+        return ok
+    end
+
+    task.spawn(function()
+        while alive() do
+            if Spam.on and os.clock() >= Spam.nextAt then
+                Spam.SendNext()
+                Spam.nextAt = os.clock() + math.max(3, Config.chatInterval)
+            end
+            task.wait(0.3)
+        end
+    end)
+
+    local function stripColor(s) return (tostring(s or ""):gsub("`.", "")) end
+    local function netCall(...)
+        if NetOk and type(Net) == "table" and type(Net.call) == "function" then
+            return pcall(Net.call, ...)
+        end
+        return false, "Net.call tidak tersedia"
+    end
+
+    function Bonus.CheckQuests()
+        local ok, good, data = netCall("Quests", "list")
+        if not ok or not good or type(data) ~= "table" or type(data.quests) ~= "table" then
+            Bonus.questText = "Quest belum terbaca dari server"
+            return
+        end
+        local total, done = 0, 0
+        local now = os.clock()
+        for _, q in ipairs(data.quests) do
+            total = total + (1)
+            local have, need = tonumber(q.have) or 0, tonumber(q.need) or math.huge
+            if q.claimed then
+                done = done + (1)
+            elseif have >= need and not ((Bonus.questFail[q.id] or 0) > now) then
+                local okC, success, _, _, gems = netCall("Quests", "claim", q.id)
+                if okC and success then
+                    done = done + (1)
+                    Bonus.claimed = Bonus.claimed + (1)
+                    local qName = stripColor(q.text or q.id)
+                    Notify("Quest diklaim: " .. qName, "Bonus ANCH")
+                    Webhook.Send("bonus", "Quest diklaim: " .. qName)
+                    if type(gems) == "number" and Refs.Gems and type(Refs.Gems.setGems) == "function" then
+                        pcall(Refs.Gems.setGems, gems)
+                    end
+                else
+                    Bonus.questFail[q.id] = now + 120
+                end
+                task.wait(0.5)
+            end
+        end
+        Bonus.questText = string.format("Selesai: %d/%d | Diklaim script: %d", done, total, Bonus.claimed)
+    end
+
+    function Bonus.RedeemSingle(code)
+        local ok, res = netCall("ModCommand", "redeemcode", code)
+        if not ok then return nil, "Gagal menghubungi server" end
+        local lines = type(res) == "table" and type(res.lines) == "table" and res.lines or nil
+        if not lines then return false, "Balasan kosong" end
+        local first = tostring(lines[1] or "")
+        local parts = {}
+        for _, l in ipairs(lines) do table.insert(parts, stripColor(l)) end
+        return string.sub(first, 1, 2) == "`2", table.concat(parts, " ")
+    end
+
+    function Bonus.CheckCodes()
+        local ok, list = netCall("ActiveCodes")
+        if not ok or type(list) ~= "table" then
+            Bonus.codeText = "Gagal mengambil ActiveCodes"
+            return
+        end
+        if list.note ~= nil then
+            Bonus.codeText = "Redeem ditutup: " .. stripColor(list.note)
+            return
+        end
+        local total, have = 0, 0
+        for _, c in ipairs(list) do
+            total = total + (1)
+            local code = c.code and tostring(c.code)
+            if c.done then
+                have = have + (1)
+            elseif code and not Bonus.tried[code] and not (type(c.uses) == "number" and c.uses == 0) then
+                local success, msg = Bonus.RedeemSingle(code)
+                if success ~= nil then Bonus.tried[code] = true end
+                if success then
+                    have = have + (1)
+                    Bonus.redeemed = Bonus.redeemed + (1)
+                    Notify(code .. " -> " .. tostring(msg), "Redeem Berhasil!")
+                    Webhook.Send("bonus", "Redeem berhasil " .. code .. ": " .. tostring(msg))
+                end
+                task.wait(0.8)
+            end
+        end
+        Bonus.codeText = string.format("Code aktif: %d | Sudah ditukar: %d | Baru: %d", total, have, Bonus.redeemed)
+    end
+
+    task.spawn(function()
+        while alive() do
+            local now = os.clock()
+            if Config.bonusAutoQuest and now >= Bonus.nextQuest then
+                Bonus.nextQuest = now + 30
+                pcall(Bonus.CheckQuests)
+            end
+            if Config.bonusAutoRedeem and now >= Bonus.nextCode then
+                Bonus.nextCode = now + 300
+                pcall(Bonus.CheckCodes)
+            end
+            task.wait(1)
+        end
+    end)
+
+    local DummyLabel = setmetatable({}, { __index = function() return 0 end, __newindex = function() end })
+    local DummyParticle = setmetatable({ l = DummyLabel, k = {} }, { __index = function() return 0 end, __newindex = function() end })
+    local NullSound
+    NullSound = setmetatable({}, {
+        __index = function() return NullSound end,
+        __newindex = function() end,
+        __call = function() return NullSound end,
+    })
+
+    local function overrideFn(tbl, key, repl)
+        if type(tbl) == "table" and type(rawget(tbl, key)) == "function" then
+            table.insert(LiteMode.saved, { tbl, key, rawget(tbl, key) })
+            tbl[key] = repl
+        end
+    end
+
+    function LiteMode.Set(on)
+        Config.liteMode = on
+        if on then
+            if #LiteMode.saved == 0 then
+                if ParticlesOk and ParticlesModule then overrideFn(ParticlesModule, "spawn", function() return DummyParticle end) end
+                if SfxOk and SfxModule then
+                    overrideFn(SfxModule, "play", function() return NullSound end)
+                    overrideFn(SfxModule, "playAt", function() return NullSound end)
+                end
+            end
+            for _, p in ipairs(Refs.Particles) do
+                pcall(function()
+                    for _, e in ipairs(p.live) do
+                        if typeof(e.l) == "Instance" then e.l.Visible = false end
+                    end
+                end)
+            end
+        else
+            for _, s in ipairs(LiteMode.saved) do
+                pcall(function() s[1][s[2]] = s[3] end)
+            end
+            table.clear(LiteMode.saved)
+        end
+    end
+
+    local NameFx = { t0 = os.clock(), tag = nil, panel = nil }
+    local NAME_COLORS = ColorSequence.new({
+        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(48, 255, 106)),
+        ColorSequenceKeypoint.new(0.25, Color3.fromRGB(60, 205, 255)),
+        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(231, 255, 47)),
+        ColorSequenceKeypoint.new(0.75, Color3.fromRGB(60, 205, 255)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(48, 255, 106)),
+    })
+    local NAME_FONT = Enum.Font.FredokaOne
+
+    local function nameHolders()
+        local gg = PlayerGui:FindFirstChild("GameGui")
+        local world = gg and gg:FindFirstChild("World")
+        local cam = world and world:FindFirstChild("Camera")
+        local chat = PlayerGui:FindFirstChild("ChatGui")
+        local hud = chat and chat:FindFirstChild("HUD")
+        local panel = hud and hud:FindFirstChild("PlayerPanel")
+        return cam and cam:FindFirstChild("NameTag"), panel and panel:FindFirstChild("Name")
+    end
+
+    local function textWidth(text, size)
+        local ok, v = pcall(TextService.GetTextSize, TextService, text, size, NAME_FONT, Vector2.new(2000, 200))
+        return (ok and v.X or #text * size * 0.55) + 6
+    end
+
+    local function makeLabel(holder, size, isTag)
+        local lb = Instance.new("TextLabel")
+        lb.Name = "ANCHWatermark"
+        lb.BackgroundTransparency = 1
+        lb.Font = NAME_FONT
+        lb.TextSize = size
+        lb.TextColor3 = Color3.new(1, 1, 1)
+        lb.Text = Config.watermarkText
+        lb.ZIndex = isTag and 1017 or 10
+        if isTag then
+            lb.AnchorPoint = Vector2.new(0.5, 0.5)
+            lb.Position = UDim2.fromScale(0.5, 0.5)
+        else
+            lb.AnchorPoint = Vector2.new(0, 0.5)
+            lb.Position = UDim2.new(0, 3, 0.5, 0)
+            lb.TextXAlignment = Enum.TextXAlignment.Left
+        end
+        local st = Instance.new("UIStroke", lb)
+        st.Thickness = 2
+        st.Color = Color3.fromRGB(18, 28, 20)
+        local gr = Instance.new("UIGradient", lb)
+        gr.Color = NAME_COLORS
+        gr.Rotation = 12
+        local sc = Instance.new("UIScale", lb)
+        lb.Parent = holder
+        return { holder = holder, bitmap = holder:FindFirstChild("BitmapText"), label = lb, gr = gr, sc = sc, size = size, isTag = isTag, text = nil, w = 0 }
+    end
+
+    local function dropEntry(e)
+        if not e then return end
+        pcall(function() e.label:Destroy() end)
+        if e.bitmap then pcall(function() e.bitmap.Visible = true end) end
+    end
+
+    function Session.RestoreWatermark()
+        dropEntry(NameFx.tag)
+        dropEntry(NameFx.panel)
+        NameFx.tag, NameFx.panel = nil, nil
+    end
+
+    local function keepLabel(e, holder, size, isTag)
+        if not holder then dropEntry(e); return nil end
+        if not e or e.holder ~= holder or not e.label.Parent then
+            dropEntry(e)
+            e = makeLabel(holder, size, isTag)
+        end
+        if e.text ~= Config.watermarkText then
+            e.text = Config.watermarkText
+            e.label.Text = Config.watermarkText
+            e.w = textWidth(Config.watermarkText, size)
+        end
+        if e.bitmap and e.bitmap.Visible then e.bitmap.Visible = false end
+        if isTag then
+            local h = math.max(holder.Size.Y.Offset, size + 6)
+            e.label.Size = UDim2.fromOffset(e.w, h)
+            holder.Size = UDim2.fromOffset(e.w, holder.Size.Y.Offset)
+        else
+            e.label.Size = UDim2.new(1, -6, 1, 0)
+        end
+        return e
+    end
+
+    trackConn(RunService.RenderStepped:Connect(function()
+        if not alive() then return end
+        if not Config.customWatermark then
+            if NameFx.tag or NameFx.panel then Session.RestoreWatermark() end
+            return
+        end
+        local tag, panelName = nameHolders()
+        NameFx.tag = keepLabel(NameFx.tag, tag, 22, true)
+        NameFx.panel = keepLabel(NameFx.panel, panelName, 21, false)
+        local t = os.clock() - NameFx.t0
+        local offset = Vector2.new(((t * 0.45) % 2) - 1, 0)
+        local pulse = 1 + 0.045 * math.sin(t * 3.2)
+        if NameFx.tag then NameFx.tag.gr.Offset = offset; NameFx.tag.sc.Scale = pulse end
+        if NameFx.panel then NameFx.panel.gr.Offset = offset; NameFx.panel.sc.Scale = pulse end
+    end))
+end)() end
+
+----------------------------------------------------------------------
+-- FITUR TAMBAHAN: BLINK, LONGHAND, UJUMP, GOD, VISUAL, GROWSCAN, ROLE
+----------------------------------------------------------------------
+local blinkOn, longhandOn, ujumpOn, antiAfkOn, arjOn, godOn, questOn = false, false, false, false, false, false, false
+local StartBlink, StopBlink, ApplyLonghand, StopLonghand, StartUjump, StopUjump
+local StartAntiAfk, StopAntiAfk, StartAutoRejoin, StopAutoRejoin, StartGod, StopGod
+local StartQuest, StopQuest, QuestReport, OpenNativeGrowScan, ScanWorld, SearchItems
+local IsVisualWorn, ToggleVisual, ResetVisuals, GetWearables, GetOwnedRoles, ApplyRole
+
+do (function()
+    local blinkOriginal = {}
+    local function collectSkinParts()
+        local list = {}
+        local rigs = FindRigs()
+        if not rigs then return list end
+        for _, key in ipairs({ 1, -1, 0 }) do
+            local rig = rawget(rigs, key)
+            if type(rig) == "table" then
+                for _, field in ipairs({ "body", "head", "eyelids", "blink", "forearm", "fist" }) do
+                    local part = rig[field]
+                    if typeof(part) == "Instance" then table.insert(list, { part = part, face = false }) end
+                end
+                for _, field in ipairs({ "armBack", "armFront" }) do
+                    local arm = rig[field]
+                    local sprite = (typeof(arm) == "Instance" and arm:FindFirstChild("Sprite")) or (type(arm) == "table" and arm.Sprite)
+                    if typeof(sprite) == "Instance" then table.insert(list, { part = sprite, face = false }) end
+                end
+                if typeof(rig.face) == "Instance" then table.insert(list, { part = rig.face, face = true }) end
+            end
+        end
+        return list
+    end
+
+    function StopBlink()
+        if not blinkOn then return false end
+        blinkOn = false
+        for part, color in pairs(blinkOriginal) do pcall(function() part.ImageColor3 = color end) end
+        table.clear(blinkOriginal)
+        return true
+    end
+
+    function StartBlink()
+        if blinkOn then return true end
+        if not FindRigs() then Notify("Rig karakter tidak ditemukan!"); return false end
+        blinkOn = true
+        table.clear(blinkOriginal)
+        for _, e in ipairs(collectSkinParts()) do blinkOriginal[e.part] = e.part.ImageColor3 end
+        task.spawn(function()
+            while blinkOn and alive() do
+                local color = Color3.fromHSV(math.random(), 0.55 + math.random() * 0.4, 1)
+                local dark = Color3.new(color.R * 0.38, color.G * 0.35, color.B * 0.3)
+                for _, e in ipairs(collectSkinParts()) do
+                    if blinkOriginal[e.part] == nil then blinkOriginal[e.part] = e.part.ImageColor3 end
+                    pcall(function() e.part.ImageColor3 = e.face and dark or color end)
+                end
+                local minT = math.min(Config.blinkMin, Config.blinkMax)
+                local maxT = math.max(Config.blinkMin, Config.blinkMax)
+                task.wait(minT + math.random() * (maxT - minT))
+            end
+        end)
+        return true
+    end
+
+    local longhandOriginal = nil
+    function ApplyLonghand()
+        local inv = FindInventory()
+        if not inv then Notify("Inventory belum ditemukan!"); return false end
+        if not longhandOriginal then longhandOriginal = { build = inv.buildRange, punch = inv.punchRange } end
+        local target = 2.5 + Config.longhandRange
+        inv.buildRange = function() return math.max(longhandOriginal.build(), target) end
+        inv.punchRange = function() return math.max(longhandOriginal.punch(), target) end
+        longhandOn = true
+        return true
+    end
+
+    function StopLonghand()
+        if not longhandOn then return false end
+        local inv = FindInventory()
+        if inv and longhandOriginal then
+            inv.buildRange = longhandOriginal.build
+            inv.punchRange = longhandOriginal.punch
+        end
+        longhandOn = false
+        return true
+    end
+
+    local origJammerOn = nil
+    local function jammerWrapper(id, ...)
+        if ujumpOn and id == 4992 and not AutoInput.active then return true end
+        if origJammerOn then return origJammerOn(id, ...) end
+        return false
+    end
+
+    function StartUjump()
+        if ujumpOn then return true end
+        ujumpOn = true
+        local w = FindWorld()
+        if w and type(rawget(w, "jammerOn")) == "function" and rawget(w, "jammerOn") ~= jammerWrapper then
+            origJammerOn = rawget(w, "jammerOn")
+            w.jammerOn = jammerWrapper
+        end
+        return true
+    end
+
+    function StopUjump()
+        if not ujumpOn then return false end
+        ujumpOn = false
+        local w = FindWorld()
+        if w and origJammerOn and rawget(w, "jammerOn") == jammerWrapper then
+            w.jammerOn = origJammerOn
+        end
+        return true
+    end
+
+   -- ANTI-AFK 3 LAPIS (Matikan Koneksi Idle Bawaan Roblox + Simulasi Input Tiap 60 Detik)
+    local afkConn = nil
+    local VirtualInputManager = cloneref and cloneref(game:GetService("VirtualInputManager")) or game:GetService("VirtualInputManager")
+
+    local function DisableRobloxIdleConnections()
+        if getconnections then
+            pcall(function()
+                for _, conn in ipairs(getconnections(Player.Idled)) do
+                    if conn.Function == nil then
+                        if conn.Disable then conn:Disable()
+                        elseif conn.Disconnect then conn:Disconnect() end
+                    end
+                end
+            end)
+        end
+    end
+
+    local function SendAntiAfkPulse()
+        pcall(function()
+            VirtualUser:CaptureController()
+            local cam = workspace.CurrentCamera
+            local cf = cam and cam.CFrame or CFrame.new()
+            VirtualUser:Button2Down(Vector2.new(0, 0), cf)
+            task.wait(0.08)
+            VirtualUser:Button2Up(Vector2.new(0, 0), cf)
+            VirtualUser:ClickButton2(Vector2.new(0, 0))
+        end)
+        pcall(function()
+            if VirtualInputManager and VirtualInputManager.SendKeyEvent then
+                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.RightControl, false, game)
+                task.wait(0.05)
+                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.RightControl, false, game)
+            end
+        end)
+    end
+
+    function StartAntiAfk()
+        if antiAfkOn then return true end
+        antiAfkOn = true
+        DisableRobloxIdleConnections()
+        afkConn = trackConn(Player.Idled:Connect(function()
+            if antiAfkOn and alive() then
+                DisableRobloxIdleConnections()
+                SendAntiAfkPulse()
+            end
+        end))
+        task.spawn(function()
+            while antiAfkOn and alive() do
+                DisableRobloxIdleConnections()
+                SendAntiAfkPulse()
+                task.wait(60)
+            end
+        end)
+        return true
+    end
+
+    function StopAntiAfk()
+        if not antiAfkOn then return false end
+        antiAfkOn = false
+        if afkConn then afkConn:Disconnect(); afkConn = nil end
+        return true
+    end
+
+    -- ====================================================================
+    -- FAST PULL / FAST KICK / FAST BAN (TAHAN RE-EXECUTE & AMAN BAGI UI)
+    -- ====================================================================
+    local lastClickTileX, lastClickTileY = nil, nil
+
+    trackConn(UserInputService.InputBegan:Connect(function(inp)
+        if not alive() then return end
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            local tx, ty = Nav.ScreenToTile(inp.Position)
+            if tx and ty then
+                lastClickTileX, lastClickTileY = tx, ty
+            end
+        end
+    end))
+
+    local function GetActiveFastWrenchCmd()
+        if Config.fastPull then return "pull", "Fast Pull" end
+        if Config.fastKick then return "kick", "Fast Kick" end
+        if Config.fastBan then return "ban", "Fast Ban" end
+        return nil, nil
+    end
+
+    local function ResolveWrenchedTargetUid(arg1)
+        -- 1. Cek jika arg1 langsung berupa UserId atau Nama
+        if arg1 ~= nil then
+            local numId = tonumber(arg1) or (type(arg1) == "string" and tonumber(arg1:match("(%d+)")))
+            if type(arg1) == "table" then
+                numId = tonumber(arg1.userId or arg1.uid or arg1.id or arg1[1])
+            end
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr ~= Player then
+                    if (numId and plr.UserId == numId)
+                        or (type(arg1) == "string" and (plr.Name:lower() == arg1:lower() or plr.DisplayName:lower() == arg1:lower())) then
+                        return plr.UserId, plr.DisplayName or plr.Name
+                    end
+                end
+            end
+            if numId and numId > 1000 and numId ~= Player.UserId then
+                return numId, tostring(numId)
+            end
+        end
+
+        -- 2. Cek melalui Refs.Others (posisi klik tile, indeks slot arg1, dan jarak terdekat)
+        local o = Refs.Others
+        if not o then Refs.Scan(); o = Refs.Others end
+        local candidates = {}
+
+        if o and type(rawget(o, "list")) == "function" then
+            local ok, list = pcall(o.list)
+            if ok and type(list) == "table" then
+                for idx, e in pairs(list) do
+                    if type(e) == "table" then
+                        local uid = tonumber(e[1] or e.userId)
+                        local name = tostring(e[2] or e.name or uid or ""):gsub("`.", "")
+                        if uid and uid ~= Player.UserId then
+                            if arg1 ~= nil and (idx == arg1 or e.id == arg1 or e.pid == arg1 or e.netId == arg1 or e[3] == arg1) then
+                                return uid, name
+                            end
+                            table.insert(candidates, { uid = uid, name = name, idx = idx })
+                        end
+                    end
+                end
+            end
+        end
+
+        if o and lastClickTileX and lastClickTileY then
+            if type(rawget(o, "playerAt")) == "function" then
+                local okP, pAt = pcall(o.playerAt, lastClickTileX, lastClickTileY)
+                if okP and pAt then
+                    local uid = (type(pAt) == "table" and tonumber(pAt[1] or pAt.userId)) or tonumber(pAt)
+                    if uid and uid ~= Player.UserId then
+                        return uid, tostring(uid)
+                    end
+                end
+            end
+            if type(rawget(o, "where")) == "function" and #candidates > 0 then
+                local bestUid, bestName, bestDist = nil, nil, math.huge
+                for _, c in ipairs(candidates) do
+                    local okW, wx, wy = pcall(o.where, c.uid)
+                    if okW and type(wx) == "table" then wx, wy = wx.x or wx[1], wx.y or wx[2] end
+                    if okW and type(wx) == "number" and type(wy) == "number" then
+                        local dist = math.abs(wx - lastClickTileX) + math.abs(wy - lastClickTileY)
+                        if dist < bestDist then
+                            bestUid, bestName, bestDist = c.uid, c.name, dist
+                        end
+                    end
+                end
+                if bestUid and bestDist <= 6 then
+                    return bestUid, bestName
+                end
+            end
+        end
+
+        -- Di GrowBlox, slot 1 adalah LocalPlayer sehingga slot 2 di GetPlayerLevel seringkali adalah candidates[arg1 - 1]
+        if tonumber(arg1) and candidates[tonumber(arg1) - 1] then
+            local c = candidates[tonumber(arg1) - 1]
+            return c.uid, c.name
+        end
+
+        if #candidates >= 1 then
+            return candidates[1].uid, candidates[1].name
+        end
+
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= Player then
+                return plr.UserId, plr.DisplayName or plr.Name
+            end
+        end
+
+        return nil, nil
+    end
+
+    -- Pulihkan fungsi asli Net.call walaupun sudah pernah ter-hook oleh eksekusi script sebelumnya!
+    if not G.__ANCH_TrueOrigNetCall and NetOk and type(Net) == "table" and type(Net.call) == "function" then
+        local curCall = Net.call
+        if isexecutorclosure and pcall(isexecutorclosure, curCall) and isexecutorclosure(curCall) then
+            for _, u in pairs(GetUpvalues(curCall)) do
+                if type(u) == "function" and not (pcall(isexecutorclosure, u) and isexecutorclosure(u)) then
+                    G.__ANCH_TrueOrigNetCall = u
+                    break
+                end
+            end
+        else
+            G.__ANCH_TrueOrigNetCall = curCall
+        end
+    end
+
+    local origNetCall = G.__ANCH_TrueOrigNetCall or (NetOk and type(Net) == "table" and Net.call) or nil
+    local hookedUpvalues = {}
+    local lastFastWrenchClock = 0
+    local wrapperFn
+
+    local function ResetCallerBusyUpvalues()
+        if not (debug and debug.info and getupvalueFn and setupvalueFn) then return end
+        for stackLvl = 2, 7 do
+            local okF, callerFn = pcall(debug.info, stackLvl, "f")
+            if not okF or type(callerFn) ~= "function" then break end
+            if callerFn ~= wrapperFn and not (isexecutorclosure and pcall(isexecutorclosure, callerFn) and isexecutorclosure(callerFn)) then
+                for upIdx = 1, 20 do
+                    local okU, upVal = pcall(getupvalueFn, callerFn, upIdx)
+                    if not okU then break end
+                    if upVal == true then
+                        pcall(setupvalueFn, callerFn, upIdx, false)
+                    end
+                end
+            end
+        end
+    end
+
+    local function ExecuteFastWrenchOn(callFn, fastCmd, fastLabel, targetUid, targetName)
+        lastFastWrenchClock = os.clock()
+        task.spawn(function()
+            pcall(callFn, "WorldCommand", fastCmd, "#" .. tostring(targetUid))
+            pcall(callFn, "SetBusy", 0)
+            Notify(string.format("%s -> %s (#%s)", fastLabel, tostring(targetName or "Player"), tostring(targetUid)), fastLabel, 2)
+        end)
+    end
+
+    local function FastWrenchInterceptor(callFn, cmdName, arg1, ...)
+        local fastCmd, fastLabel = GetActiveFastWrenchCmd()
+        if fastCmd then
+            if cmdName == "GetPlayerLevel" or cmdName == "WrenchPlayer" or cmdName == "PlayerInfo" then
+                local targetUid, targetName = ResolveWrenchedTargetUid(arg1)
+                if targetUid then
+                    if os.clock() - lastFastWrenchClock > 0.15 then
+                        ExecuteFastWrenchOn(callFn, fastCmd, fastLabel, targetUid, targetName)
+                    end
+                    ResetCallerBusyUpvalues()
+                    return coroutine.yield()
+                end
+            elseif cmdName == "SetBusy" and arg1 == 2 then
+                if os.clock() - lastFastWrenchClock < 1.0 then
+                    ResetCallerBusyUpvalues()
+                    return false
+                end
+            end
+        end
+        return callFn(cmdName, arg1, ...)
+    end
+
+    if origNetCall then
+        wrapperFn = function(cmdName, arg1, ...)
+            if not alive() then return origNetCall(cmdName, arg1, ...) end
+            return FastWrenchInterceptor(origNetCall, cmdName, arg1, ...)
+        end
+        Net.call = wrapperFn
+
+        if Refs.World and type(rawget(Refs.World, "call")) == "function" then
+            rawset(Refs.World, "call", wrapperFn)
+        end
+
+        -- Ganti semua upvalue lokal `local call = Net.call` di fungsi game (termasuk yang terlanjur memakai wrapper lama)
+        if getgcFn and getupvalueFn and setupvalueFn then
+            task.spawn(function()
+                for _, fn in ipairs(getgcFn(false)) do
+                    if type(fn) == "function" and fn ~= wrapperFn and fn ~= FastWrenchInterceptor then
+                        if not (isexecutorclosure and pcall(isexecutorclosure, fn) and isexecutorclosure(fn)) then
+                            for i = 1, 30 do
+                                local okU, val = pcall(getupvalueFn, fn, i)
+                                if not okU then break end
+                                if type(val) == "function" then
+                                    local isOldWrapper = false
+                                    if isexecutorclosure and pcall(isexecutorclosure, val) and isexecutorclosure(val) then
+                                        for _, uu in pairs(GetUpvalues(val)) do
+                                            if uu == origNetCall then
+                                                isOldWrapper = true
+                                                break
+                                            end
+                                        end
+                                    end
+                                    if val == origNetCall or isOldWrapper then
+                                        pcall(setupvalueFn, fn, i, wrapperFn)
+                                        table.insert(hookedUpvalues, { fn = fn, idx = i, orig = origNetCall })
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+
+    function Session.RestoreFastWrench()
+        if origNetCall and NetOk and type(Net) == "table" then
+            Net.call = origNetCall
+        end
+        if origNetCall and Refs.World and rawget(Refs.World, "call") == wrapperFn then
+            pcall(rawset, Refs.World, "call", origNetCall)
+        end
+        if setupvalueFn then
+            for _, h in ipairs(hookedUpvalues) do
+                pcall(setupvalueFn, h.fn, h.idx, h.orig)
+            end
+        end
+        table.clear(hookedUpvalues)
+    end
+
+    function StartAutoRejoin()
+        arjOn = true
+        Config.reconnectOn = true
+        SaveConfig()
+        return true
+    end
+
+    function StopAutoRejoin()
+        arjOn = false
+        Config.reconnectOn = false
+        SaveConfig()
+        return true
+    end
+
+    local godSaved, godConns = {}, {}
+    function StartGod()
+        if godOn then return true end
+        godSaved = {}
+        for _, item in pairs(ItemDB) do
+            if type(item) == "table" then
+                for _, k in ipairs({ "hurts", "deadly" }) do
+                    if item[k] then
+                        table.insert(godSaved, { item = item, key = k, value = rawget(item, k) })
+                        pcall(function()
+                            if setreadonly then setreadonly(item, false) end
+                            rawset(item, k, false)
+                        end)
+                    end
+                end
+            end
+        end
+        local burned = WorldRemotes and WorldRemotes:FindFirstChild("Burned")
+        if burned and getconnections then
+            local okC, conns = pcall(getconnections, burned.OnClientEvent)
+            if okC and type(conns) == "table" then
+                for _, conn in ipairs(conns) do
+                    if pcall(function() conn:Disable() end) then table.insert(godConns, conn) end
+                end
+            end
+        end
+        godOn = true
+        return true
+    end
+
+    function StopGod()
+        if not godOn then return false end
+        for _, s in ipairs(godSaved) do pcall(function() rawset(s.item, s.key, s.value) end) end
+        godSaved = {}
+        for _, c in ipairs(godConns) do pcall(function() c:Enable() end) end
+        godConns = {}
+        godOn = false
+        return true
+    end
+
+    local visualBackup = {}
+    local wearableCache = nil
+    local function getWornTable()
+        local inv = FindInventory()
+        if not inv then return nil end
+        local worn = GetUpvalues(inv.isWorn)[1]
+        return type(worn) == "table" and worn or nil
+    end
+
+    function IsVisualWorn(id)
+        local worn = getWornTable()
+        return worn and ItemDB[id] and worn[ItemDB[id].slot] == id or false
+    end
+
+    function ToggleVisual(id)
+        local inv, worn = FindInventory(), getWornTable()
+        if not inv or not worn or not ItemDB[id] then return false end
+        local slot = ItemDB[id].slot
+        if type(slot) ~= "string" then return false end
+        if worn[slot] == id then
+            worn[slot] = visualBackup[slot] or nil
+        else
+            if visualBackup[slot] == nil then visualBackup[slot] = worn[slot] or false end
+            worn[slot] = id
+        end
+        pcall(inv.refresh)
+        return true
+    end
+
+    function ResetVisuals()
+        local inv, worn = FindInventory(), getWornTable()
+        if not inv or not worn then return end
+        for slot, orig in pairs(visualBackup) do worn[slot] = orig or nil end
+        table.clear(visualBackup)
+        pcall(inv.refresh)
+        Notify("Item visual dikembalikan.")
+    end
+
+    function GetWearables()
+        if wearableCache then return wearableCache end
+        local list = {}
+        for id, item in pairs(ItemDB) do
+            if type(id) == "number" and type(item) == "table" and type(item.slot) == "string" and type(item.name) == "string" then
+                local tags = {}
+                local lower = item.name:lower()
+                if item.kuyang then table.insert(tags, "Kuyang") end
+                if item.bot then table.insert(tags, "LegendBot") end
+                if id == 5480 or lower:find("rayman", 1, true) then table.insert(tags, "Rayman") end
+                table.insert(list, { id = id, name = item.name, lower = lower, slot = item.slot, tags = tags })
+            end
+        end
+        table.sort(list, function(a, b) return a.name < b.name end)
+        wearableCache = list
+        return list
+    end
+
+    local blockCache = nil
+    local function getBlocks()
+        if blockCache then return blockCache end
+        local list = {}
+        for id, item in pairs(ItemDB) do
+            if type(id) == "number" and type(item) == "table" and type(item.name) == "string" and type(item.slot) ~= "string" then
+                table.insert(list, { id = id, name = item.name, lower = item.name:lower(), kind = item.kind or "block" })
+            end
+        end
+        table.sort(list, function(a, b) return a.name < b.name end)
+        blockCache = list
+        return list
+    end
+
+    function SearchItems(query, limit)
+        local list = getBlocks()
+        query = Trim(query):lower()
+        if query == "" then return {} end
+        local wantId = tonumber(query)
+        local results = {}
+        for _, e in ipairs(list) do
+            local rank = nil
+            if wantId and e.id == wantId then rank = 0
+            elseif e.lower == query then rank = 1
+            elseif e.lower:sub(1, #query) == query then rank = 2
+            elseif e.lower:find(query, 1, true) then rank = 3 end
+            if rank then table.insert(results, { entry = e, rank = rank }) end
+        end
+        table.sort(results, function(a, b)
+            if a.rank ~= b.rank then return a.rank < b.rank end
+            return a.entry.name < b.entry.name
+        end)
+        local out = {}
+        for i = 1, math.min(limit or 25, #results) do out[i] = results[i].entry end
+        return out
+    end
+
+    function OpenNativeGrowScan()
+        local w = FindWorld()
+        local ui = w and rawget(w, "growScan")
+        if type(ui) ~= "table" or type(ui.open) ~= "function" then return false end
+        local gsId = 0
+        for id, it in pairs(ItemDB) do
+            if type(id) == "number" and type(it) == "table" and it.growscan then gsId = id; break end
+        end
+        local ok = pcall(ui.open, { item = gsId, owner = true, blocksPublic = false, floatingPublic = false }, function() end)
+        return ok
+    end
+
+    function ScanWorld()
+        local w = FindWorld()
+        if not w or type(rawget(w, "w")) ~= "number" then return nil end
+        local result = {
+            fg = {}, bg = {}, drops = {}, trees = {},
+            w = w.w, h = w.h,
+            totalFg = 0, totalBg = 0, totalDrops = 0, piles = 0,
+            readyTrees = 0, growingTrees = 0,
+        }
+        local nowSrv = workspace:GetServerTimeNow()
+        for y = 0, w.h - 1 do
+            local rFg, rBg = w.fg[y], w.bg and w.bg[y]
+            for x = 0, w.w - 1 do
+                local f = rFg and rFg[x] or 0
+                if f ~= 0 then
+                    result.fg[f] = (result.fg[f] or 0) + 1
+                    result.totalFg = result.totalFg + (1)
+                    if IsSeedId(f) then
+                        local rAt = TreeReadyAt(w, x, y, f)
+                        local tEntry = result.trees[f]
+                        if not tEntry then
+                            tEntry = { ready = 0, growing = 0, nextIn = nil }
+                            result.trees[f] = tEntry
+                        end
+                        if rAt and nowSrv >= rAt then
+                            tEntry.ready = tEntry.ready + (1)
+                            result.readyTrees = result.readyTrees + (1)
+                        else
+                            tEntry.growing = tEntry.growing + (1)
+                            result.growingTrees = result.growingTrees + (1)
+                            if rAt then
+                                local rem = rAt - nowSrv
+                                if not tEntry.nextIn or rem < tEntry.nextIn then
+                                    tEntry.nextIn = rem
+                                end
+                            end
+                        end
+                    end
+                end
+                local b = rBg and rBg[x] or 0
+                if b ~= 0 then result.bg[b] = (result.bg[b] or 0) + 1; result.totalBg = result.totalBg + (1) end
+            end
+        end
+        local dList = Drops.list
+        if not dList and type(w.dropList) == "function" then
+            local okD, l = pcall(w.dropList)
+            if okD then dList = l end
+        end
+        if type(dList) == "table" then
+            for _, d in pairs(dList) do
+                if type(d) == "table" and type(d.id) == "number" and (d.n or 0) > 0 then
+                    result.drops[d.id] = (result.drops[d.id] or 0) + (d.n or 1)
+                    result.totalDrops = result.totalDrops + ((d.n or 1))
+                    result.piles = result.piles + (1)
+                end
+            end
+        end
+        return result
+    end
+
+    function GetOwnedRoles()
+        local out, seen = { "none" }, { none = true }
+        if RolesOk and type(RolesModule) == "table" and type(RolesModule.titlesOf) == "function" then
+            local ok, list = pcall(RolesModule.titlesOf, Player.UserId)
+            if ok and type(list) == "table" then
+                for _, r in ipairs(list) do
+                    if type(r) == "string" and not seen[r] then
+                        seen[r] = true
+                        local label = r
+                        if type(RolesModule.titleName) == "function" then
+                            local okN, tName = pcall(RolesModule.titleName, r)
+                            if okN and type(tName) == "string" and tName ~= "" and tName ~= r then
+                                label = tName .. " [" .. r .. "]"
+                            end
+                        end
+                        table.insert(out, label)
+                    end
+                end
+            end
+        end
+        return out
+    end
+
+    function ApplyRole(roleStr)
+        local code = string.match(roleStr or "", "%[(.-)%]$") or roleStr or "none"
+        if code == "" then code = "none" end
+        if NetOk and type(Net) == "table" and type(Net.call) == "function" then
+            task.spawn(function()
+                local ok, err = pcall(Net.call, "PickTitle", code)
+                Notify(ok and ("Role dipasang: " .. code) or ("Gagal pasang role: " .. tostring(err)))
+            end)
+        elseif PickTitleRemote then
+            pcall(function() PickTitleRemote:FireServer(code) end)
+            Notify("Role dikirim: " .. code)
+        else
+            Notify("Fungsi PickTitle tidak ditemukan.")
+        end
+    end
+
+    function QuestReport()
+        Bonus.CheckQuests()
+        Notify(Bonus.questText, "Info Quest")
+    end
+
+    function StartQuest()
+        if questOn then return true end
+        questOn = true
+        Config.bonusAutoQuest = true
+        Bonus.nextQuest = 0
+        return true
+    end
+
+    function StopQuest()
+        if not questOn then return false end
+        questOn = false
+        Config.bonusAutoQuest = false
+        return true
+    end
+end)() end
+
+----------------------------------------------------------------------
+-- DAFTAR FEATURES & SESI AUTO-RELOAD
+----------------------------------------------------------------------
+local Features = {
+    blink = { label = "Blink", get = function() return blinkOn end, set = function(on) return on and StartBlink() or StopBlink() end },
+    longhand = { label = "Longhand", get = function() return longhandOn end, set = function(on) return on and ApplyLonghand() or StopLonghand() end },
+    noclip = { label = "Noclip", get = function() return noclipOn end, set = function(on) return on and StartNoclip() or StopNoclip() end },
+    ujump = { label = "Unlimited Jump", get = function() return ujumpOn end, set = function(on) return on and StartUjump() or StopUjump() end },
+    antiafk = { label = "Anti-AFK", get = function() return antiAfkOn end, set = function(on) return on and StartAntiAfk() or StopAntiAfk() end },
+    autorejoin = { label = "Auto Reconnect", get = function() return Config.reconnectOn end, set = function(on) return on and StartAutoRejoin() or StopAutoRejoin() end },
+    god = { label = "God Mode", get = function() return godOn end, set = function(on) return on and StartGod() or StopGod() end },
+    clicktp = { label = "Click TP", get = function() return Nav.clickOn end, set = function(on) return on and Nav.StartClick() or Nav.StopClick() end },
+    lite = { label = "Mode Lite", get = function() return Config.liteMode end, set = function(on) LiteMode.Set(on); return true end },
+    guard = { label = "Penjaga Anti-Mod", get = function() return Guard.on end, set = function(on) Guard.Set(on); return true end },
+    autochat = { label = "Auto Chat", noSession = true, get = function() return Spam.on end, set = function(on) Spam.on = on; if on then Spam.nextAt = 0 end; return true end },
+    autoclear = { label = "Auto Clear World", noSession = true, get = function() return Clear.on end, set = function(on) return on and Clear.Start() or Clear.Stop() end },
+    autoharvest = { label = "Farmer (Harvest/Plant)", noSession = true, get = function() return Farmer.on end, set = function(on) return on and Farmer.Start() or Farmer.Stop() end },
+    autodf = { label = "Auto Dirt Farm", noSession = true, get = function() return DF.on end, set = function(on) return on and DF.Start() or DF.Stop() end },
+    autosplice = { label = "Auto Splice", noSession = true, get = function() return SpliceBot.on end, set = function(on) return on and SpliceBot.Start() or SpliceBot.Stop() end },
+    pabrik = { label = "Pabrik Seed", noSession = true, get = function() return Pabrik.on end, set = function(on) return on and Pabrik.Start() or Pabrik.Stop() end },
+    autofarm = { label = "Auto Farm", noSession = true, get = function() return Farm.on and not Farm.Override end, set = function(on) return on and StartFarm() or StopFarm() end },
+    autoquest = { label = "Auto Quest", get = function() return questOn end, set = function(on) return on and StartQuest() or StopQuest() end },
+}
+
+local function SetFeature(key, on)
+    local feature = Features[key]
+    if not feature then return end
+    feature.set(on)
+    if feature.get() == on then
+        Notify(feature.label .. (on and " aktif." or " dimatikan."))
+        if not feature.noSession then
+            Config.session[key] = on or nil
+        end
+        SaveConfig()
+    end
+    if RefreshHub then RefreshHub() end
+end
+
+local HasQueuedTeleport = false
+
+local function ReloadSource()
+    if type(G.ANCHHub_ReloadCode) == "string" and G.ANCHHub_ReloadCode ~= "" then
+        return G.ANCHHub_ReloadCode
+    end
+    local url = Config.scriptUrl
+    if type(url) ~= "string" or url == "" then url = G.ANCHHubURL end
+    if type(url) == "string" and url ~= "" then
+        return string.format("loadstring(game:HttpGet(%q))()", url)
+    end
+    local okFile, exists = pcall(function() return isfile and readfile and isfile(SCRIPT_FILE) end)
+    if okFile and exists then
+        return string.format("loadstring(readfile(%q))()", SCRIPT_FILE)
+    end
+    return nil
+end
+
+local function GetQueueFn()
+    return queue_on_teleport
+        or (syn and syn.queue_on_teleport)
+        or (fluxus and fluxus.queue_on_teleport)
+        or (getgenv and getgenv().queue_on_teleport)
+end
+
+QueueReload = function()
+    if not Config.autoReload or HasQueuedTeleport then return false end
+    local qFn, src = GetQueueFn(), ReloadSource()
+    if not qFn or not src then return false end
+    local ok = pcall(qFn, src)
+    if ok then HasQueuedTeleport = true end
+    return ok
+end
+
+local function InstallAutoexec()
+    if not writefile then Notify("Executor tidak punya writefile."); return end
+    local src = ReloadSource()
+    if not src then Notify("Simpan skrip sebagai " .. SCRIPT_FILE .. " di workspace atau isi URL dulu."); return end
+    local loader = "-- ANCH HUB | GrowBlox auto-loader\n" .. src .. "\n"
+    pcall(writefile, "ANCHHub_Loader.lua", loader)
+    for _, path in ipairs({ "../autoexec/ANCHHub_Loader.lua", "../Autoexec/ANCHHub_Loader.lua" }) do
+        local okW = pcall(writefile, path, loader)
+        local okC, ex = pcall(function() return isfile and isfile(path) end)
+        if okW and okC and ex then
+            Notify("Auto-execute berhasil dipasang!")
+            return
+        end
+    end
+    Notify("Salin ANCHHub_Loader.lua dari workspace ke folder autoexec executor.")
+end
+
+----------------------------------------------------------------------
+-- GUI TAMBAHAN: FLOATING GRID 5X5 (DUAL MODE: FARM / PABRIK) & FLYPAD
+----------------------------------------------------------------------
+do (function()
+    local guiParent = (gethui and gethui()) or game:GetService("CoreGui")
+    local function makeScreenGui(name)
+        local sg = Instance.new("ScreenGui")
+        sg.Name = name
+        sg.ResetOnSpawn = false
+        sg.IgnoreGuiInset = true
+        sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        sg.DisplayOrder = 999
+        sg.Enabled = false
+        sg.Parent = guiParent
+        return sg
+    end
+
+    GridGui = makeScreenGui("ANCHGridGui")
+    local CELL, GAP, RAD = 38, 4, 2
+    local side = RAD * 2 + 1
+    local gridSize = side * CELL + (side - 1) * GAP
+
+    local Panel = Instance.new("Frame", GridGui)
+    Panel.Size = UDim2.fromOffset(gridSize + 20, gridSize + 96)
+    Panel.Position = UDim2.fromOffset(24, 90)
+    Panel.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+    Panel.BorderSizePixel = 0
+    Instance.new("UICorner", Panel).CornerRadius = UDim.new(0, 10)
+    local pStroke = Instance.new("UIStroke", Panel)
+    pStroke.Color = Color3.fromRGB(48, 255, 106)
+
+    local Title = Instance.new("TextLabel", Panel)
+    Title.Size = UDim2.new(1, -106, 0, 28)
+    Title.Position = UDim2.fromOffset(10, 4)
+    Title.BackgroundTransparency = 1
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 12
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.TextColor3 = Color3.fromRGB(235, 235, 245)
+    Title.Text = "ANCH Grid (Farm)"
+    Title.Active = true
+
+    local ModeBtn = Instance.new("TextButton", Panel)
+    ModeBtn.Size = UDim2.fromOffset(62, 22)
+    ModeBtn.Position = UDim2.new(1, -98, 0, 7)
+    ModeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 75)
+    ModeBtn.Text = "Farm"
+    ModeBtn.Font = Enum.Font.GothamBold
+    ModeBtn.TextSize = 11
+    ModeBtn.TextColor3 = Color3.new(1, 1, 1)
+    Instance.new("UICorner", ModeBtn).CornerRadius = UDim.new(0, 6)
+
+    local CloseBtn = Instance.new("TextButton", Panel)
+    CloseBtn.Size = UDim2.fromOffset(24, 24)
+    CloseBtn.Position = UDim2.new(1, -30, 0, 6)
+    CloseBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 75)
+    CloseBtn.Text = "X"
+    CloseBtn.Font = Enum.Font.GothamBold
+    CloseBtn.TextSize = 12
+    CloseBtn.TextColor3 = Color3.new(1, 1, 1)
+    Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
+    CloseBtn.MouseButton1Click:Connect(function() GridGui.Enabled = false end)
+
+    local GridHolder = Instance.new("Frame", Panel)
+    GridHolder.Size = UDim2.fromOffset(gridSize, gridSize)
+    GridHolder.Position = UDim2.fromOffset(10, 36)
+    GridHolder.BackgroundTransparency = 1
+
+    local COLOR_OFF = Color3.fromRGB(48, 48, 60)
+    local COLOR_ON = Color3.fromRGB(46, 160, 90)
+    local COLOR_ME = Color3.fromRGB(60, 110, 220)
+    local CellButtons = {}
+
+    local function currentGridTable()
+        return (GridMode == "pabrik") and Config.pabrikTiles or Config.farmGrid
+    end
+
+    local GridStart = Instance.new("TextButton", Panel)
+    GridStart.Size = UDim2.new(1, -20, 0, 30)
+    GridStart.Position = UDim2.new(0, 10, 1, -54)
+    GridStart.BackgroundColor3 = COLOR_ON
+    GridStart.Font = Enum.Font.GothamBold
+    GridStart.TextSize = 13
+    GridStart.TextColor3 = Color3.new(1, 1, 1)
+    GridStart.Text = "START FARM"
+    Instance.new("UICorner", GridStart).CornerRadius = UDim.new(0, 8)
+    GridStart.MouseButton1Click:Connect(function()
+        if GridMode == "pabrik" then
+            SetFeature("pabrik", not Pabrik.on)
+        else
+            SetFeature("autofarm", not (Farm.on and not Farm.Override))
+        end
+    end)
+
+    UpdateGridVisuals = function()
+        local tbl = currentGridTable()
+        local isPabrik = GridMode == "pabrik"
+        ModeBtn.Text = isPabrik and "Pabrik" or "Farm"
+        ModeBtn.BackgroundColor3 = isPabrik and Color3.fromRGB(200, 120, 40) or Color3.fromRGB(60, 60, 75)
+        Title.Text = isPabrik and "Tile Break Pabrik" or "ANCH Grid (Farm)"
+        for key, btn in pairs(CellButtons) do
+            btn.BackgroundColor3 = tbl[key] and COLOR_ON or COLOR_OFF
+        end
+        if isPabrik then
+            GridStart.Text = Pabrik.on and "STOP PABRIK" or "START PABRIK"
+            GridStart.BackgroundColor3 = Pabrik.on and Color3.fromRGB(200, 60, 60) or COLOR_ON
+        else
+            local running = Farm.on and not Farm.Override
+            GridStart.Text = running and "STOP FARM" or "START FARM"
+            GridStart.BackgroundColor3 = running and Color3.fromRGB(200, 60, 60) or COLOR_ON
+        end
+    end
+
+    SetGridMode = function(mode)
+        GridMode = mode
+        UpdateGridVisuals()
+    end
+
+    ModeBtn.MouseButton1Click:Connect(function()
+        SetGridMode(GridMode == "pabrik" and "farm" or "pabrik")
+    end)
+
+    for row = 0, side - 1 do
+        for col = 0, side - 1 do
+            local dx, dy = col - RAD, row - RAD
+            local key = dx .. "," .. dy
+            local btn = Instance.new("TextButton", GridHolder)
+            btn.Size = UDim2.fromOffset(CELL, CELL)
+            btn.Position = UDim2.fromOffset(col * (CELL + GAP), row * (CELL + GAP))
+            btn.Font = Enum.Font.GothamBold
+            btn.TextSize = 11
+            btn.TextColor3 = Color3.new(1, 1, 1)
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+            if dx == 0 and dy == 0 then
+                btn.Text = "ME"
+                btn.BackgroundColor3 = COLOR_ME
+                btn.AutoButtonColor = false
+            else
+                btn.Text = ""
+                btn.BackgroundColor3 = currentGridTable()[key] and COLOR_ON or COLOR_OFF
+                CellButtons[key] = btn
+                btn.MouseButton1Click:Connect(function()
+                    local tbl = currentGridTable()
+                    tbl[key] = (not tbl[key]) or nil
+                    SaveConfig()
+                    UpdateGridVisuals()
+                end)
+            end
+        end
+    end
+
+    local ClearBtn = Instance.new("TextButton", Panel)
+    ClearBtn.Size = UDim2.new(1, -20, 0, 18)
+    ClearBtn.Position = UDim2.new(0, 10, 1, -22)
+    ClearBtn.BackgroundTransparency = 1
+    ClearBtn.Font = Enum.Font.Gotham
+    ClearBtn.TextSize = 12
+    ClearBtn.TextColor3 = Color3.fromRGB(180, 180, 195)
+    ClearBtn.Text = "Bersihkan pilihan"
+    ClearBtn.MouseButton1Click:Connect(function()
+        if GridMode == "pabrik" then
+            Config.pabrikTiles = {}
+        else
+            Config.farmGrid = {}
+        end
+        SaveConfig()
+        UpdateGridVisuals()
+    end)
+
+    local dragging, dragStart, startPos
+    Title.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            dragging, dragStart, startPos = true, inp.Position, Panel.Position
+            inp.Changed:Connect(function()
+                if inp.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    trackConn(UserInputService.InputChanged:Connect(function(inp)
+        if dragging and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+            local d = inp.Position - dragStart
+            Panel.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+        end
+    end))
+
+    FlyPadGui = makeScreenGui("ANCHFlyPad")
+    local function makeFlyBtn(text, yOffset, onHold)
+        local b = Instance.new("TextButton", FlyPadGui)
+        b.Size = UDim2.fromOffset(60, 60)
+        b.AnchorPoint = Vector2.new(1, 0.5)
+        b.Position = UDim2.new(1, -24, 0.5, yOffset)
+        b.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+        b.BackgroundTransparency = 0.2
+        b.Text = text
+        b.Font = Enum.Font.GothamBold
+        b.TextSize = 26
+        b.TextColor3 = Color3.new(1, 1, 1)
+        Instance.new("UICorner", b).CornerRadius = UDim.new(1, 0)
+        local st = Instance.new("UIStroke", b)
+        st.Color = Color3.fromRGB(48, 255, 106)
+        st.Thickness = 2
+        local heldInput = nil
+        b.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+                heldInput = input
+                onHold(true)
+            end
+        end)
+        trackConn(UserInputService.InputEnded:Connect(function(input)
+            if heldInput and (input == heldInput or input.UserInputType == Enum.UserInputType.MouseButton1) then
+                heldInput = nil
+                onHold(false)
+            end
+        end))
+    end
+    makeFlyBtn("▲", -38, function(v) FlyPadState.up = v end)
+    makeFlyBtn("▼", 38, function(v) FlyPadState.down = v end)
+end)() end
+
+----------------------------------------------------------------------
+-- GUI UTAMA (WINDUI - STRUKTUR RILIS PUBLIK + PROTEKSI SAFEUI)
+----------------------------------------------------------------------
+local WindUI
+do
+    local ok, result = pcall(function() return require("./src/Init") end)
+    if ok then
+        WindUI = result
+    else
+        WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+    end
+end
+
+ToastHook = function(message, title, duration)
+    WindUI:Notify({
+        Title = title or "ANCH HUB | GrowBlox",
+        Content = tostring(message),
+        Icon = "solar:bell-bold",
+        Duration = duration or 4,
+    })
+end
+
+local Purple = Color3.fromHex("#7775F2")
+local Yellow = Color3.fromHex("#ECA201")
+local Green  = Color3.fromHex("#10C550")
+local Blue   = Color3.fromHex("#257AF7")
+local Red    = Color3.fromHex("#EF4F1D")
+
+local Window = WindUI:CreateWindow({
+    Title = "ANCH Hub  |  GrowBlox Ultimate",
+    Folder = "ANCHHub_GrowBlox",
+    Icon = "solar:folder-2-bold-duotone",
+    NewElements = true,
+    HideSearchBar = false,
+    Theme = "Indigo",
+    OpenButton = {
+        Title = "ANCH Hub",
+        CornerRadius = UDim.new(1, 0),
+        StrokeThickness = 3,
+        Enabled = Config.launcher,
+        Draggable = true,
+        OnlyMobile = false,
+        Scale = 0.5,
+        Color = ColorSequence.new(
+            Color3.fromHex("#30FF6A"),
+            Color3.fromHex("#e7ff2f")
+        ),
+    },
+})
+
+Window:DisableTopbarButtons({
+    "Fullscreen",
+})
+
+pcall(function()
+    Window:Tag({
+        Title = "v1.2 Beta",
+        Icon = "github",
+        Color = Color3.fromHex("#1c1c1c"),
+        Border = true,
+    })
+end)
+
+local hub = {
+    tabs = {},
+    refreshers = {},
+    syncing = false,
+    active = "features",
+}
+
+RefreshHub = function()
+    hub.syncing = true
+    for _, fn in ipairs(hub.refreshers) do pcall(fn) end
+    hub.syncing = false
+end
+
+local function SafeUI(label, fn)
+    local ok, err = pcall(fn)
+    if not ok then
+        warn("[ANCHHub UI] Error pada " .. tostring(label) .. ": " .. tostring(err))
+    end
+end
+
+local function SetElementText(el, title, desc)
+    if not el then return end
+    pcall(function()
+        if title and el.SetTitle then el:SetTitle(title) end
+        if desc and el.SetDesc then el:SetDesc(desc)
+        elseif desc and el.SetContent then el:SetContent(desc) end
+    end)
+end
+
+local function AddFeatureToggle(tab, title, desc, key)
+    local feature = Features[key]
+    if not feature then return nil end
+    local toggle
+    SafeUI("Toggle:" .. tostring(key), function()
+        toggle = tab:Toggle({
+            Title = title,
+            Desc = desc,
+            Value = feature.get(),
+            Callback = function(state)
+                if hub.syncing then return end
+                if feature.get() ~= state then SetFeature(key, state) end
+            end,
+        })
+        table.insert(hub.refreshers, function()
+            if toggle and toggle.Set then toggle:Set(feature.get()) end
+        end)
+    end)
+    return toggle
+end
+
+-- 5 Kategori Proporsional Standar Publik
+local MainSection     = Window:Section({ Title = "Utama", Opened = true })
+local AutoSection     = Window:Section({ Title = "Farming & Bot", Opened = true })
+local BagWorldSection = Window:Section({ Title = "Tas & World", Opened = true })
+local SecuritySection = Window:Section({ Title = "Keamanan & Sosial", Opened = true })
+local SystemSection   = Window:Section({ Title = "Visual & Sistem", Opened = true })
+
+-- 1A. Tab: Dashboard & Statistik (Utama) -----------------------------
+SafeUI("Tab:Dashboard", function()
+    local Tab = MainSection:Tab({
+        Title = "Dashboard & Statistik",
+        Icon = "solar:home-2-bold",
+        IconColor = Green,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.features = Tab
+
+    local statusPara = Tab:Paragraph({
+        Title = "Status Karakter & Koneksi Game",
+        Desc = "Mendeteksi posisi...",
+    })
+
+    local statsPara = Tab:Paragraph({
+        Title = "Statistik Sesi Real-Time",
+        Desc = "Memuat statistik...",
+    })
+
+    task.spawn(function()
+        while alive() and task.wait(0.5) do
+            pcall(function()
+                local tx, ty = GetTile()
+                local wName = CurrentWorldName()
+                local refLine = string.format(
+                    "World: %s | Inv: %s | State: %s | Punch: %s | Drop: %s | Trees: %s",
+                    Refs.World and "OK" or "-",
+                    Refs.Inv and "OK" or "-",
+                    Refs.State and "OK" or "-",
+                    Refs.Punch and "OK" or "-",
+                    Drops.list and "OK" or "-",
+                    Refs.Trees and "OK" or "-"
+                )
+                if tx then
+                    SetElementText(
+                        statusPara,
+                        string.format("World: %s  |  Posisi Tile: (%d, %d)", wName ~= "" and wName or "-", tx, ty),
+                        refLine
+                    )
+                else
+                    SetElementText(statusPara, "Status Karakter: Di luar world", refLine)
+                end
+                SetElementText(statsPara, "Statistik Sesi Real-Time", Stats.Text())
+            end)
+        end
+    end)
+
+    Tab:Button({
+        Title = "Hubungkan Ulang ke Game (Reconnect Refs)",
+        Color = Color3.fromHex("#305dff"),
+        Justify = "Center",
+        Callback = function()
+            Refs.Scan()
+            Notify("Referensi game berhasil diperbarui!")
+        end,
+    })
+
+    local stGrp = Tab:Group({})
+    stGrp:Button({
+        Title = "Reset Statistik",
+        Justify = "Center",
+        Callback = function() Stats.Reset(); Notify("Statistik sesi direset ke nol.") end,
+    })
+    stGrp:Button({
+        Title = "Kirim Statistik ke Discord",
+        Justify = "Center",
+        Callback = function()
+            if not (Config.webhookOn and Webhook.Valid(Config.webhookUrl)) then
+                Notify("Aktifkan & isi URL Webhook di tab Discord & Pengaturan dulu!")
+            else
+                Webhook.Send("report", "Laporan Statistik Sesi\n```\n" .. Stats.Text() .. "\n```")
+                Notify("Laporan statistik masuk antrian kirim Discord!")
+            end
+        end,
+    })
+
+    Tab:Space()
+    Tab:Section({ Title = "Sakelar Cepat Bot Utama" })
+
+    AddFeatureToggle(Tab, "Auto Farm (Grid 5x5 + Rayman)", "Place & break otomatis di sekitar karakter.", "autofarm")
+    AddFeatureToggle(Tab, "Auto Clear World (ModFly + Stand Above)", "ModFly aktif penuh, berdiri di atas blok target sampai hancur lalu pindah.", "autoclear")
+    AddFeatureToggle(Tab, "Farmer (Auto Harvest + Auto Plant)", "Panen pohon siap & tanam seed otomatis.", "autoharvest")
+    AddFeatureToggle(Tab, "Auto Dirt Farm (Full World + Smart Supply)", "Bangun Dirt Farm bagian bawah & atas otomatis.", "autodf")
+    AddFeatureToggle(Tab, "Auto Splice (Seed A + Seed B)", "Tanam Seed A lalu gabungkan dengan Seed B.", "autosplice")
+    AddFeatureToggle(Tab, "Pabrik Seed (Siklus Panen-Tanam-Break-Drop)", "Produksi seed otomatis & drop lintas world.", "pabrik")
+    AddFeatureToggle(Tab, "Penjaga (Anti-Mod / Staff Detector)", "Jeda / keluar world otomatis saat Mod atau pemain masuk.", "guard")
+end)
+
+-- 1B. Tab: Karakter & Movement (Utama) -------------------------------
+SafeUI("Tab:Character", function()
+    local Tab = MainSection:Tab({
+        Title = "Karakter & Navigasi",
+        Icon = "solar:square-transfer-horizontal-bold",
+        IconColor = Blue,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.nav = Tab
+
+    local navPara = Tab:Paragraph({ Title = "Status Navigasi Universal", Desc = "Terakhir: -" })
+
+    Tab:Dropdown({
+        Title = "Metode Bergerak Seluruh Fitur (DF / Farmer / Pabrik / Clear)",
+        Desc = "Legit Walking = Jalan fisik A* | Teleport Mode = Pindah per-tile dengan cek posisi real-time.",
+        Values = { "Legit Walking", "Teleport Mode" },
+        Value = Config.moveMethod or "Legit Walking",
+        Callback = function(v)
+            Config.moveMethod = v or "Legit Walking"
+            Config.moveMode = (Config.moveMethod == "Teleport Mode") and "fly" or "legit"
+            SaveConfig()
+            Notify("Metode bergerak diubah ke: " .. Config.moveMethod)
+        end,
+    })
+
+    Tab:Dropdown({
+        Title = "Mode Auto Collect (Sentuhan Badan / Remote)",
+        Desc = "Sentuhan = Sapu fisik & lompat kecil (tidak ditolak server). Remote = Ambil jarak jauh.",
+        Values = { "Sentuhan", "Remote" },
+        Value = Config.collectMode or "Sentuhan",
+        Callback = function(v)
+            Config.collectMode = v or "Sentuhan"
+            SaveConfig()
+            Notify("Mode Auto Collect: " .. Config.collectMode)
+        end,
+    })
+
+    Tab:Toggle({
+        Title = "Animasi Ayunan Tangan & Efek Place",
+        Desc = "Tampilkan gerakan tangan saat break/place di layar sendiri.",
+        Value = Config.visualAnim,
+        Callback = function(on) Config.visualAnim = on; SaveConfig() end,
+    })
+
+    Tab:Space()
+    Tab:Section({ Title = "Fast Wrench Action (Bypass Dialog Wrench)" })
+
+    local fpToggle, fkToggle, fbToggle
+
+    fpToggle = Tab:Toggle({
+        Title = "Fast Pull (Wrench = Langsung Pull)",
+        Desc = "Abaikan dialog wrench & langsung kirim paket Pull saat wrench player.",
+        Value = Config.fastPull,
+        Callback = function(on)
+            Config.fastPull = on
+            if on then
+                Config.fastKick, Config.fastBan = false, false
+                if fkToggle and fkToggle.Set then pcall(function() fkToggle:Set(false) end) end
+                if fbToggle and fbToggle.Set then pcall(function() fbToggle:Set(false) end) end
+                Notify("Fast Pull AKTIF! Wrench player untuk langsung Pull.")
+            end
+            SaveConfig()
+        end,
+    })
+
+    fkToggle = Tab:Toggle({
+        Title = "Fast Kick (Wrench = Langsung Kick)",
+        Desc = "Abaikan dialog wrench & langsung kirim paket Kick saat wrench player.",
+        Value = Config.fastKick,
+        Callback = function(on)
+            Config.fastKick = on
+            if on then
+                Config.fastPull, Config.fastBan = false, false
+                if fpToggle and fpToggle.Set then pcall(function() fpToggle:Set(false) end) end
+                if fbToggle and fbToggle.Set then pcall(function() fbToggle:Set(false) end) end
+                Notify("Fast Kick AKTIF! Wrench player untuk langsung Kick.")
+            end
+            SaveConfig()
+        end,
+    })
+
+    fbToggle = Tab:Toggle({
+        Title = "Fast Ban (Wrench = Langsung Ban)",
+        Desc = "Abaikan dialog wrench & langsung kirim paket Ban saat wrench player.",
+        Value = Config.fastBan,
+        Callback = function(on)
+            Config.fastBan = on
+            if on then
+                Config.fastPull, Config.fastKick = false, false
+                if fpToggle and fpToggle.Set then pcall(function() fpToggle:Set(false) end) end
+                if fkToggle and fkToggle.Set then pcall(function() fkToggle:Set(false) end) end
+                Notify("Fast Ban AKTIF! Wrench player untuk langsung Ban.")
+            end
+            SaveConfig()
+        end,
+    })
+
+    task.spawn(function()
+        while alive() and task.wait(0.5) do
+            pcall(function()
+                SetElementText(
+                    navPara,
+                    "Mode Gerak: " .. Config.moveMode:upper(),
+                    "Status Click TP: " .. tostring(Nav.last) .. " | Pijakan Dipasang: " .. Nav.PlacedScaffolds
+                )
+            end)
+        end
+    end)
+
+    AddFeatureToggle(Tab, "Click TP (Legit A* Pathfinding)", "Klik di layar untuk berjalan & memanjat otomatis ke tujuan.", "clicktp")
+    AddFeatureToggle(Tab, "Noclip + FlyPad (▲/▼)", "Terbang menembus blok dan munculkan tombol naik/turun di layar.", "noclip")
+    AddFeatureToggle(Tab, "Unlimited Jump (Jammer)", "Lompat di udara tanpa batas.", "ujump")
+    AddFeatureToggle(Tab, "God Mode (Kebal Hazard)", "Kebal lava, spike, api, dan rintangan tajam.", "god")
+    AddFeatureToggle(Tab, "Longhand (Jangkauan Jauh)", "Perluas jangkauan pukulan & pasang blok.", "longhand")
+    AddFeatureToggle(Tab, "Mode Lite (FPS Boost)", "Matikan partikel & efek suara pukulan agar hemat baterai & FPS tinggi.", "lite")
+    AddFeatureToggle(Tab, "Blink Skin", "Warna karakter berganti otomatis.", "blink")
+    AddFeatureToggle(Tab, "Anti-AFK", "Mencegah disconnect karena diam terlalu lama.", "antiafk")
+
+    Tab:Space()
+    Tab:Section({ Title = "Kecepatan & Radius Collect" })
+
+    Tab:Slider({
+        Title = "Walkspeed Karakter (%)",
+        Desc = "100% = kecepatan normal.",
+        IsTooltip = true,
+        Step = 10,
+        Value = { Min = 50, Max = 400, Default = math.clamp(Config.walkSpeed, 50, 400) },
+        Callback = function(v)
+            Config.walkSpeed = tonumber(v) or 100
+            if Config.walkSpeed == 100 and Refs.World then Refs.World.speedScale = 1 end
+            SaveConfig()
+        end,
+    })
+
+    Tab:Toggle({
+        Title = "Collect Drop di Sekitar Karakter (Kapan Saja)",
+        Value = Config.collectAround,
+        Callback = function(on) Config.collectAround = on; SaveConfig() end,
+    })
+
+    Tab:Slider({
+        Title = "Radius Auto Collect (Tile)",
+        IsTooltip = true,
+        Step = 1,
+        Value = { Min = 1, Max = 8, Default = math.clamp(Config.collectRadius, 1, 8) },
+        Callback = function(v) Config.collectRadius = math.floor(tonumber(v) or 3); SaveConfig() end,
+    })
+
+    Tab:Dropdown({
+        Title = "Mode Pergerakan Universal",
+        Values = { "legit", "walk", "fly", "mix" },
+        Value = Config.moveMode,
+        Callback = function(v)
+            if type(v) == "string" then
+                Config.moveMode = v
+                SaveConfig()
+                Notify("Mode gerak diubah ke: " .. v)
+            end
+        end,
+    })
+
+    Tab:Toggle({
+        Title = "Wajib Tahan Shift untuk Click TP (PC)",
+        Value = Config.clickTpShift,
+        Callback = function(on) Config.clickTpShift = on; SaveConfig() end,
+    })
+end)
+
+-- 2A. Tab: Auto Farm -------------------------------------------------
+SafeUI("Tab:AutoFarm", function()
+    local Tab = AutoSection:Tab({
+        Title = "Auto Farm",
+        Icon = "solar:check-square-bold",
+        IconColor = Yellow,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.farm = Tab
+
+    local farmStatusPara = Tab:Paragraph({ Title = "Status Auto Farm", Desc = "Memuat..." })
+
+    task.spawn(function()
+        while alive() and task.wait(0.4) do
+            pcall(function()
+                local id = Config.farmPlaceId
+                SetElementText(
+                    farmStatusPara,
+                    "Status: " .. Farm.stats.status .. " (" .. Config.farmMode .. ")",
+                    string.format(
+                        "Block: %s [ID %d] (Stok: %d)\nPlace: %d | Break: %d | Collect: %d | Siklus: %d",
+                        ItemName(id), id, CountItem(id),
+                        Farm.stats.placed, Farm.stats.broken, Farm.stats.picked, Farm.stats.cycles
+                    )
+                )
+            end)
+        end
+    end)
+
+    AddFeatureToggle(Tab, "Jalankan Auto Farm", "Place & break otomatis sesuai Grid 5x5.", "autofarm")
+
+    Tab:Button({
+        Title = "Buka Floating Grid 5x5 (Mode Farm)",
+        Color = Color3.fromHex("#305dff"),
+        Justify = "Center",
+        Callback = function()
+            if SetGridMode then SetGridMode("farm") end
+            if GridGui then GridGui.Enabled = not GridGui.Enabled end
+        end,
+    })
+
+    Tab:Space()
+    Tab:Section({ Title = "Mode & Kecepatan Farm" })
+
+    Tab:Dropdown({
+        Title = "Mode Auto Farm",
+        Values = { "Place + Break", "Break saja", "Place saja" },
+        Value = Config.farmMode,
+        Callback = function(v) Config.farmMode = v or "Place + Break"; SaveConfig() end,
+    })
+
+    Tab:Slider({
+        Title = "Multi-Target Break (1 - 5 Tile)",
+        Desc = "Memukul beberapa tile bergantian. Otomatis pakai efek Rayman jika memakai Rayman's Fist!",
+        IsTooltip = true,
+        Step = 1,
+        Value = { Min = 1, Max = 5, Default = math.clamp(Config.farmMultiTarget, 1, 5) },
+        Callback = function(v) Config.farmMultiTarget = math.clamp(math.floor(tonumber(v) or 1), 1, 5); SaveConfig() end,
+    })
+
+    Tab:Input({
+        Title = "ID Block Farm",
+        Value = tostring(Config.farmPlaceId),
+        Placeholder = "Contoh: 2 (Dirt)",
+        Callback = function(text)
+            local v = tonumber(text)
+            if v and v > 0 then
+                Config.farmPlaceId = math.floor(v)
+                SaveConfig()
+                Notify("Block Farm: " .. ItemName(Config.farmPlaceId) .. " [" .. Config.farmPlaceId .. "]")
+            end
+        end,
+    })
+
+    local searchMap = {}
+    local searchDd
+    Tab:Input({
+        Title = "Cari Block di Database",
+        Placeholder = "Ketik nama block...",
+        Callback = function(q)
+            searchMap = {}
+            local vals = {}
+            if Trim(q) ~= "" then
+                for _, e in ipairs(SearchItems(q, 25)) do
+                    local lbl = string.format("%s [%d]", e.name, e.id)
+                    searchMap[lbl] = e.id
+                    table.insert(vals, lbl)
+                end
+            end
+            if #vals == 0 then vals = { "Tidak ada hasil" } end
+            if searchDd and searchDd.Refresh then pcall(function() searchDd:Refresh(vals) end) end
+        end,
+    })
+
+    searchDd = Tab:Dropdown({
+        Title = "Pilih Hasil Pencarian Block",
+        Values = { "Ketik nama di atas..." },
+        Callback = function(sel)
+            local id = searchMap[sel]
+            if id then
+                Config.farmPlaceId = id
+                SaveConfig()
+                Notify("Block diset ke: " .. ItemName(id) .. " [" .. id .. "]")
+            end
+        end,
+    })
+
+    Tab:Slider({
+        Title = "Speed Place (ms)",
+        IsTooltip = true,
+        Step = 10,
+        Value = { Min = 50, Max = 1000, Default = math.clamp(Config.farmPlaceMs, 50, 1000) },
+        Callback = function(v) Config.farmPlaceMs = tonumber(v) or 250; SaveConfig() end,
+    })
+
+    Tab:Input({
+        Title = "Speed Break (detik)",
+        Value = tostring(Config.farmDelay),
+        Placeholder = "0.22",
+        Callback = function(text)
+            local v = tonumber(text)
+            if v and v >= 0.03 and v <= 5 then Config.farmDelay = v; SaveConfig() end
+        end,
+    })
+
+    Tab:Toggle({
+        Title = "Auto Collect Drop",
+        Value = Config.farmTake,
+        Callback = function(on) Config.farmTake = on; SaveConfig() end,
+    })
+
+    Tab:Space()
+    Tab:Section({ Title = "Auto Save / Drop Seed (Saat Seed >= 200)" })
+
+    Tab:Toggle({
+        Title = "Aktifkan Auto Drop Seed Saat Penuh",
+        Desc = "Otomatis berhenti break, drop seed di world/posisi tujuan, lalu kembali lanjut Auto Farm.",
+        Value = Config.farmAutoDropSeed,
+        Callback = function(on) Config.farmAutoDropSeed = on; SaveConfig() end,
+    })
+
+    Tab:Slider({
+        Title = "Drop Saat Jumlah Seed Mencapai >=",
+        IsTooltip = true,
+        Step = 5,
+        Value = { Min = 20, Max = 200, Default = math.clamp(Config.farmSeedDropAt or 200, 20, 200) },
+        Callback = function(v) Config.farmSeedDropAt = math.floor(tonumber(v) or 200); SaveConfig() end,
+    })
+
+    Tab:Slider({
+        Title = "Sisakan Seed di Tas",
+        IsTooltip = true,
+        Step = 5,
+        Value = { Min = 0, Max = 190, Default = math.clamp(Config.farmSeedKeep or 0, 0, 190) },
+        Callback = function(v) Config.farmSeedKeep = math.floor(tonumber(v) or 0); SaveConfig() end,
+    })
+
+    Tab:Input({
+        Title = "World Drop Seed (Kosong = World Ini | WORLD | WORLD:PINTU)",
+        Value = Config.farmDropWorld,
+        Placeholder = "Contoh: STORAGE atau STORAGE:1",
+        Callback = function(t) Config.farmDropWorld = Trim(t or ""); SaveConfig() end,
+    })
+
+    Tab:Button({
+        Title = "SetPos Drop Seed (Simpan Posisi Sekarang)",
+        Color = Color3.fromHex("#10C550"),
+        Justify = "Center",
+        Callback = function()
+            local tx, ty = GetTile()
+            if not tx then Notify("Posisi belum terbaca!"); return end
+            Config.farmDropX, Config.farmDropY = tx, ty
+            SaveConfig()
+            Notify(string.format("Posisi Drop Seed Auto Farm disimpan di (%d, %d)!", tx, ty))
+        end,
+    })
+end)
+
+-- 2B. Tab: Auto Clear World (ModFly + Stand Above) -------------------
+SafeUI("Tab:AutoClear", function()
+    local Tab = AutoSection:Tab({
+        Title = "Auto Clear",
+        Icon = "solar:cursor-square-bold",
+        IconColor = Red,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.clear = Tab
+
+    local clearPara = Tab:Paragraph({ Title = "Status Auto Clear (ModFly)", Desc = "Memuat..." })
+
+    task.spawn(function()
+        while alive() and task.wait(0.4) do
+            pcall(function()
+                local st = Clear.stats
+                SetElementText(
+                    clearPara,
+                    string.format("Status: %s (Pass %d | Baris Y=%s)", Clear.status, st.pass, st.row >= 0 and tostring(st.row) or "-"),
+                    string.format("Target: %d | Sisa: %d | Di-skip: %d\nHancur: %d | Drop Diambil: %d", st.scanned, st.left, st.skipped, st.broken, st.picked)
+                )
+            end)
+        end
+    end)
+
+    AddFeatureToggle(Tab, "Auto Clear World (ModFly + Berdiri di Atas Block)", "ModFly otomatis selalu menyala, karakter berdiri tepat di atas block yang akan di-break hingga hancur lalu pindah.", "autoclear")
+
+    Tab:Dropdown({
+        Title = "Arah Sapuan (Sweep)",
+        Values = { "Zig-zag", "Kiri → Kanan" },
+        Value = Config.clearSweep,
+        Callback = function(v) Config.clearSweep = v or "Zig-zag"; SaveConfig() end,
+    })
+
+    Tab:Toggle({
+        Title = "Ikut Hancurkan Background",
+        Value = Config.clearIncludeBg,
+        Callback = function(on) Config.clearIncludeBg = on; SaveConfig() end,
+    })
+
+    Tab:Input({
+        Title = "Delay Pukulan Break (detik)",
+        Value = tostring(Config.clearBreakDelay),
+        Callback = function(text)
+            local v = tonumber(text)
+            if v and v >= 0.03 and v <= 5 then Config.clearBreakDelay = v; SaveConfig() end
+        end,
+    })
+
+    Tab:Input({
+        Title = "Delay Pindah Antar Blok (detik)",
+        Value = tostring(Config.clearTpDelay),
+        Callback = function(text)
+            local v = tonumber(text)
+            if v and v >= 0.05 and v <= 5 then Config.clearTpDelay = v; SaveConfig() end
+        end,
+    })
+
+    Tab:Toggle({
+        Title = "Auto Collect Drop",
+        Value = Config.clearTake,
+        Callback = function(on) Config.clearTake = on; SaveConfig() end,
+    })
+end)
+
+-- 2C. Tab: Farmer (Auto Harvest + Auto Plant) ------------------------
+SafeUI("Tab:Farmer", function()
+    local Tab = AutoSection:Tab({
+        Title = "Farmer (Harvest/Plant)",
+        Icon = "solar:check-square-bold",
+        IconColor = Green,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.harvest = Tab
+
+    local farmerPara = Tab:Paragraph({ Title = "Status Farmer", Desc = "Memuat..." })
+
+    task.spawn(function()
+        while alive() and task.wait(0.4) do
+            pcall(function()
+                local st = Farmer.stats
+                SetElementText(
+                    farmerPara,
+                    "Status: " .. Farmer.status,
+                    string.format(
+                        "Total Pohon: %d | Siap Panen: %d | Belum Siap: %d\nDipanen: %d | Ditanam: %d | Drop Diambil: %d\nSeed Tanam: %s [ID %d] (Stok: %d)",
+                        st.totalTrees, st.ready, st.skipped, st.harvested, st.planted, st.picked,
+                        ItemName(Config.harvestSeedId), Config.harvestSeedId, CountItem(Config.harvestSeedId)
+                    )
+                )
+            end)
+        end
+    end)
+
+    AddFeatureToggle(Tab, "Jalankan Farmer", "Otomatis panen pohon siap & tanam seed dengan Legit Walking + Bersih Pijakan.", "autoharvest")
+
+    Tab:Toggle({
+        Title = "Auto Harvest (Panen Pohon Siap)",
+        Value = Config.harvestDoHarvest,
+        Callback = function(on) Config.harvestDoHarvest = on; SaveConfig() end,
+    })
+
+    Tab:Toggle({
+        Title = "Auto Plant (Tanam Seed Otomatis)",
+        Value = Config.harvestDoPlant,
+        Callback = function(on) Config.harvestDoPlant = on; SaveConfig() end,
+    })
+
+    Tab:Input({
+        Title = "ID Seed untuk Auto Plant",
+        Desc = "Contoh: 3 = Dirt Seed, 5 = Lava Seed",
+        Value = tostring(Config.harvestSeedId),
+        Placeholder = "3",
+        Callback = function(text)
+            local v = tonumber(text)
+            if v and v > 0 then
+                Config.harvestSeedId = math.floor(v)
+                SaveConfig()
+                Notify("Seed diset ke: " .. ItemName(Config.harvestSeedId))
+            end
+        end,
+    })
+
+    Tab:Toggle({
+        Title = "Pakai Block Pijakan Saat Memanjat",
+        Value = Config.harvestUseBlock,
+        Callback = function(on) Config.harvestUseBlock = on; SaveConfig() end,
+    })
+
+    Tab:Toggle({
+        Title = "Auto Collect Hasil Panen",
+        Value = Config.harvestTake,
+        Callback = function(on) Config.harvestTake = on; SaveConfig() end,
+    })
+end)
+
+-- 2D. Tab: Auto DF (Dirt Farm Full World) ----------------------------
+SafeUI("Tab:AutoDF", function()
+    local Tab = AutoSection:Tab({
+        Title = "Auto DF (Full World)",
+        Icon = "solar:hamburger-menu-bold",
+        IconColor = Yellow,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.df = Tab
+
+    local dfPara = Tab:Paragraph({ Title = "Status Auto Dirt Farm (Full World)", Desc = "Memuat..." })
+
+    task.spawn(function()
+        while alive() and task.wait(0.4) do
+            pcall(function()
+                local st = DF.stats
+                local dirtId = GetDirtId()
+                local seedId = GetDirtSeedId()
+                SetElementText(
+                    dfPara,
+                    "Status: " .. DF.status .. " (" .. tostring(st.step) .. ")",
+                    string.format(
+                        "Lapisan Dirt: Y=%d | Bedrock: Y=%d\nStok Dirt: %d | Stok Dirt Seed: %d\nHancur: %d | Dirt Dipasang: %d | Drop Diambil: %d",
+                        st.topDirtY, st.bedrockY, CountItem(dirtId), CountItem(seedId), st.broken, st.placed, st.picked
+                    )
+                )
+            end)
+        end
+    end)
+
+    AddFeatureToggle(Tab, "Jalankan Auto Dirt Farm (Full World)", "Bangun DF bawah & atas otomatis + Smart Supply (tanam/panen/break Dirt otomatis saat stok habis, tanpa ModFly).", "autodf")
+
+    Tab:Toggle({
+        Title = "Ganti Lava/Rock dengan Dirt di Platform",
+        Value = Config.dfReplacePlatform,
+        Callback = function(on) Config.dfReplacePlatform = on; SaveConfig() end,
+    })
+
+    Tab:Toggle({
+        Title = "Auto Collect Drop",
+        Value = Config.dfTake,
+        Callback = function(on) Config.dfTake = on; SaveConfig() end,
+    })
+
+    Tab:Toggle({
+        Title = "Aktifkan ModFly Saat Auto DF (Anti-Lava)",
+        Desc = "Terbang & kebal lava saat menghancurkan blok agar tidak mati/respawn.",
+        Value = Config.dfModFly,
+        Callback = function(on)
+            Config.dfModFly = on
+            SaveConfig()
+            if DF.on then SetAutoFly("autodf", on) end
+        end,
+    })
+
+    Tab:Input({
+        Title = "Delay Pukulan Break (detik)",
+        Value = tostring(Config.dfBreakDelay),
+        Callback = function(text)
+            local v = tonumber(text)
+            if v and v >= 0.03 and v <= 5 then Config.dfBreakDelay = v; SaveConfig() end
+        end,
+    })
+
+    Tab:Input({
+        Title = "Delay Gerak / Langkah (detik)",
+        Value = tostring(Config.dfTpDelay),
+        Callback = function(text)
+            local v = tonumber(text)
+            if v and v >= 0.05 and v <= 5 then Config.dfTpDelay = v; SaveConfig() end
+        end,
+    })
+end)
+
+-- 2E. Tab: Auto Splice -----------------------------------------------
+SafeUI("Tab:AutoSplice", function()
+    local Tab = AutoSection:Tab({
+        Title = "Auto Splice",
+        Icon = "solar:square-transfer-horizontal-bold",
+        IconColor = Purple,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.splice = Tab
+
+    local splicePara = Tab:Paragraph({ Title = "Status Auto Splice", Desc = "Memuat..." })
+
+    task.spawn(function()
+        while alive() and task.wait(0.5) do
+            pcall(function()
+                SetElementText(
+                    splicePara,
+                    "Status: " .. SpliceBot.status,
+                    string.format(
+                        "%s\nSeed A: %s [%d] (x%d) | Seed B: %s [%d] (x%d)\nDitanam: %d | Berhasil Splice: %d",
+                        SpliceBot.ResultText(),
+                        ItemName(Config.spliceA), Config.spliceA, CountItem(Config.spliceA),
+                        ItemName(Config.spliceB), Config.spliceB, CountItem(Config.spliceB),
+                        SpliceBot.planted, SpliceBot.made
+                    )
+                )
+            end)
+        end
+    end)
+
+    AddFeatureToggle(Tab, "Jalankan Auto Splice", "Tanam Seed A lalu gabungkan (splice) dengan Seed B.", "autosplice")
+
+    Tab:Input({
+        Title = "ID Seed A (Ditanam Pertama)",
+        Value = tostring(Config.spliceA),
+        Placeholder = "3 (Dirt Seed)",
+        Callback = function(t)
+            local v = tonumber(t)
+            if v and v > 0 then Config.spliceA = math.floor(v); SaveConfig() end
+        end,
+    })
+
+    Tab:Input({
+        Title = "ID Seed B (Di-splice ke Pohon A)",
+        Value = tostring(Config.spliceB),
+        Placeholder = "5 (Lava Seed)",
+        Callback = function(t)
+            local v = tonumber(t)
+            if v and v > 0 then Config.spliceB = math.floor(v); SaveConfig() end
+        end,
+    })
+
+    Tab:Toggle({
+        Title = "Keliling World Otomatis (A*)",
+        Desc = "Nyala = cari tempat kosong di seluruh world. Mati = hanya di kotak Grid 5x5.",
+        Value = Config.spliceRoam,
+        Callback = function(on) Config.spliceRoam = on; SaveConfig() end,
+    })
+
+    Tab:Slider({
+        Title = "Jeda Tanam / Splice (ms)",
+        IsTooltip = true,
+        Step = 10,
+        Value = { Min = 140, Max = 2000, Default = math.clamp(Config.spliceMs, 140, 2000) },
+        Callback = function(v) Config.spliceMs = math.floor(tonumber(v) or 300); SaveConfig() end,
+    })
+end)
+
+-- 2F. Tab: Pabrik / Factory ------------------------------------------
+SafeUI("Tab:Pabrik", function()
+    local Tab = AutoSection:Tab({
+        Title = "Pabrik (Factory)",
+        Icon = "solar:folder-with-files-bold",
+        IconColor = Blue,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.pabrik = Tab
+
+    local pabrikPara = Tab:Paragraph({ Title = "Status Pabrik Seed", Desc = "Memuat..." })
+
+    task.spawn(function()
+        while alive() and task.wait(0.5) do
+            pcall(function()
+                local sid = Config.pabrikSeedId
+                local bid = BlockOfSeed(sid)
+                local wTarget, dTarget = Pabrik.ParseDropTarget()
+                local dropInfo = (wTarget ~= "" and wTarget or "World Ini")
+                    .. (dTarget and (" Pintu:" .. dTarget) or "")
+                    .. (Config.pabrikDropX >= 0 and string.format(" (%d,%d)", Config.pabrikDropX, Config.pabrikDropY) or "")
+                SetElementText(
+                    pabrikPara,
+                    string.format("Status: %s (Fase: %s)", Pabrik.status, Pabrik.phase),
+                    string.format(
+                        "Seed: %s [%d] x%d | Block: %s x%d\nSetPos Break: %s\nTarget Drop: %s (Saat Seed >= %d, Drop %d Seed)\nHasil: Panen %d | Tanam %d | Di-drop %d",
+                        ItemName(sid), sid, CountItem(sid),
+                        bid and ItemName(bid) or "-", bid and CountItem(bid) or 0,
+                        Config.pabrikBreakX >= 0 and string.format("Tile (%d, %d)", Config.pabrikBreakX, Config.pabrikBreakY) or "Belum diset!",
+                        Config.pabrikDrop and dropInfo or "Mati",
+                        Config.pabrikDropAt, Config.pabrikDropAmount or 100,
+                        Pabrik.harvested, Pabrik.planted, Pabrik.dropped
+                    )
+                )
+            end)
+        end
+    end)
+
+    AddFeatureToggle(Tab, "Jalankan Pabrik", "Siklus: Break Blok -> Tanam -> Tunggu -> Panen -> Drop 100 Seed saat >= 180.", "pabrik")
+
+    Tab:Input({
+        Title = "ID Seed Pabrik",
+        Desc = "Block otomatis terdeteksi (contoh: 3 = Dirt Seed -> Block ID 2 = Dirt).",
+        Value = tostring(Config.pabrikSeedId),
+        Callback = function(t)
+            local v = tonumber(t)
+            if v and v > 0 then Config.pabrikSeedId = math.floor(v); SaveConfig() end
+        end,
+    })
+
+    Tab:Input({
+        Title = "Max Seed Pabrik (Batas Tanam & Putaran Seed)",
+        Desc = "Contoh: 100 = Hanya menanam 100 seed. Jika setelah break seed > 100, otomatis drop sisanya dan menyisakan 100 seed.",
+        Value = tostring(Config.pabrikMaxSeed or 100),
+        Placeholder = "100",
+        Callback = function(t)
+            local v = tonumber(t)
+            if v and v >= 1 then
+                Config.pabrikMaxSeed = math.floor(v)
+                SaveConfig()
+                Notify("Max Seed Pabrik diset ke: " .. tostring(Config.pabrikMaxSeed))
+            end
+        end,
+    })
+
+    Tab:Space()
+    Tab:Section({ Title = "Posisi Break Pabrik (SetPos Break)" })
+
+    local breakPosGrp = Tab:Group({})
+    breakPosGrp:Button({
+        Title = "SetPos Break (Simpan Posisi)",
+        Color = Color3.fromHex("#10C550"),
+        Justify = "Center",
+        Callback = function()
+            local tx, ty = GetTile()
+            if not tx then Notify("Posisi karakter belum terbaca!"); return end
+            Config.pabrikBreakX, Config.pabrikBreakY = tx, ty
+            SaveConfig()
+            Notify(string.format("SetPos Break Pabrik disimpan di (%d, %d)!", tx, ty))
+        end,
+    })
+    breakPosGrp:Button({
+        Title = "Ke Pos Break",
+        Justify = "Center",
+        Callback = function()
+            if Config.pabrikBreakX < 0 or Config.pabrikBreakY < 0 then
+                Notify("SetPos Break belum disimpan!")
+                return
+            end
+            task.spawn(function()
+                Nav.To(Config.pabrikBreakX, Config.pabrikBreakY, nil, 0.3, true)
+            end)
+        end,
+    })
+
+    Tab:Button({
+        Title = "Pilih Tile Break Pabrik (Buka Grid 5x5 Mode Pabrik)",
+        Color = Color3.fromHex("#305dff"),
+        Justify = "Center",
+        Callback = function()
+            if SetGridMode then SetGridMode("pabrik") end
+            if GridGui then GridGui.Enabled = true end
+        end,
+    })
+
+    Tab:Space()
+    Tab:Section({ Title = "Pengaturan Penyimpanan / Auto Drop Seed" })
+
+    Tab:Toggle({
+        Title = "Aktifkan Auto Drop Seed ke Penyimpanan",
+        Value = Config.pabrikDrop,
+        Callback = function(on) Config.pabrikDrop = on; SaveConfig() end,
+    })
+
+    Tab:Slider({
+        Title = "Drop Saat Seed Mencapai >=",
+        Desc = "Default: 180 seed.",
+        IsTooltip = true,
+        Step = 5,
+        Value = { Min = 20, Max = 200, Default = math.clamp(Config.pabrikDropAt or 180, 20, 200) },
+        Callback = function(v) Config.pabrikDropAt = math.floor(tonumber(v) or 180); SaveConfig() end,
+    })
+
+    Tab:Slider({
+        Title = "Jumlah Seed yang Di-drop",
+        Desc = "Default: 100 seed sekali drop.",
+        IsTooltip = true,
+        Step = 5,
+        Value = { Min = 10, Max = 200, Default = math.clamp(Config.pabrikDropAmount or 100, 10, 200) },
+        Callback = function(v) Config.pabrikDropAmount = math.floor(tonumber(v) or 100); SaveConfig() end,
+    })
+
+    Tab:Input({
+        Title = "World Penyimpanan Seed (WORLD atau WORLD:ID_PINTU)",
+        Value = Config.pabrikDropWorld,
+        Placeholder = "Contoh: STORAGE atau STORAGE:1",
+        Callback = function(t) Config.pabrikDropWorld = Trim(t or ""); SaveConfig() end,
+    })
+
+    Tab:Button({
+        Title = "SetPos Drop Seed (Simpan Titik Drop Sekarang)",
+        Justify = "Center",
+        Callback = function()
+            local tx, ty = GetTile()
+            if not tx then Notify("Posisi belum terbaca!"); return end
+            Config.pabrikDropX, Config.pabrikDropY = tx, ty
+            SaveConfig()
+            Notify(string.format("Posisi Drop Seed disimpan di (%d, %d)", tx, ty))
+        end,
+    })
+end)
+
+-- 3A. Tab: Tas (Auto Recycle, Convert Lock & Drop WL) ----------------
+SafeUI("Tab:Bag", function()
+    local Tab = BagWorldSection:Tab({
+        Title = "Tas (Recycle & Lock)",
+        Icon = "solar:check-square-bold",
+        IconColor = Green,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.bag = Tab
+
+    local bagPara = Tab:Paragraph({ Title = "Status Manajemen Tas", Desc = "Memuat..." })
+
+    task.spawn(function()
+        while alive() and task.wait(0.8) do
+            pcall(function()
+                local ids = {}
+                for _, id in ipairs(Config.trashList or {}) do
+                    table.insert(ids, ItemName(id) .. " [" .. id .. "]")
+                end
+                SetElementText(
+                    bagPara,
+                    "Aksi Terakhir: " .. Bag.status,
+                    string.format(
+                        "Total Di-recycle: %d item | Convert Lock: %d kali\nDaftar Item Recycle: %s",
+                        Bag.recycled, Bag.converted, #ids > 0 and table.concat(ids, ", ") or "(Belum ada)"
+                    )
+                )
+            end)
+        end
+    end)
+
+    Tab:Toggle({
+        Title = "Aktifkan Auto Recycle (Buang Item Otomatis)",
+        Value = Config.trashOn,
+        Callback = function(on) Config.trashOn = on; SaveConfig() end,
+    })
+
+    Tab:Input({
+        Title = "Tambah / Hapus ID Item Recycle",
+        Desc = "Ketik angka ID item (misal 2 untuk Dirt) lalu Enter untuk menambah/menghapus dari daftar.",
+        Placeholder = "Ketik ID item...",
+        Callback = function(t)
+            local id = tonumber(t)
+            if not id or id <= 0 then return end
+            id = math.floor(id)
+            local idx = table.find(Config.trashList, id)
+            if idx then
+                table.remove(Config.trashList, idx)
+                Notify(ItemName(id) .. " dihapus dari daftar Auto Recycle.")
+            else
+                table.insert(Config.trashList, id)
+                Notify(ItemName(id) .. " ditambahkan ke daftar Auto Recycle.")
+            end
+            SaveConfig()
+        end,
+    })
+
+    Tab:Slider({
+        Title = "Recycle Kalau Jumlah >=",
+        IsTooltip = true,
+        Step = 5,
+        Value = { Min = 5, Max = 200, Default = math.clamp(Config.trashAt, 5, 200) },
+        Callback = function(v) Config.trashAt = math.floor(tonumber(v) or 150); SaveConfig() end,
+    })
+
+    Tab:Slider({
+        Title = "Sisakan di Tas (Jangan Di-recycle)",
+        IsTooltip = true,
+        Step = 5,
+        Value = { Min = 0, Max = 195, Default = math.clamp(Config.trashKeep, 0, 195) },
+        Callback = function(v) Config.trashKeep = math.floor(tonumber(v) or 0); SaveConfig() end,
+    })
+
+    Tab:Space()
+    Tab:Section({ Title = "Lock & Drop Cepat" })
+
+    Tab:Toggle({
+        Title = "Auto Convert Lock (100 WL -> 1 DL, 100 DL -> 1 BGL)",
+        Value = Config.convertLockOn,
+        Callback = function(on) Config.convertLockOn = on; SaveConfig() end,
+    })
+
+    local dropAmountText = "100"
+    Tab:Input({
+        Title = "Jumlah Drop World Lock",
+        Value = "100",
+        Placeholder = "Jumlah (1-10000)",
+        Callback = function(text) dropAmountText = text end,
+    })
+
+    Tab:Button({
+        Title = "Drop World Lock Sekarang",
+        Color = Color3.fromHex("#305dff"),
+        Justify = "Center",
+        Callback = function()
+            local amount = tonumber(dropAmountText)
+            if amount and amount >= 1 and amount <= MAX_AMOUNT then
+                task.spawn(DropWorldLock, math.floor(amount))
+            else
+                Notify("Jumlah WL tidak valid!")
+            end
+        end,
+    })
+end)
+
+-- 3B. Tab: GrowScan 9000 ---------------------------------------------
+SafeUI("Tab:GrowScan", function()
+    local ScanTab = BagWorldSection:Tab({
+        Title = "GrowScan 9000",
+        Icon = "solar:info-square-bold",
+        IconColor = Blue,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.scan = ScanTab
+
+    local scanInfoPara = ScanTab:Paragraph({ Title = "GrowScan 9000", Desc = "Tekan tombol Scan di bawah untuk memindai isi world." })
+
+    local function RunGrowScan()
+        local data = ScanWorld()
+        if not data then
+            SetElementText(scanInfoPara, "GrowScan", "World belum terbaca.")
+            return
+        end
+        local function topItems(counts, maxLines)
+            local arr = {}
+            for id, n in pairs(counts) do table.insert(arr, { id = id, n = n }) end
+            table.sort(arr, function(a, b) return a.n > b.n end)
+            local out = {}
+            for i = 1, math.min(maxLines or 12, #arr) do
+                table.insert(out, string.format("• %s [%d] x%d", ItemName(arr[i].id), arr[i].id, arr[i].n))
+            end
+            return #out > 0 and table.concat(out, "\n") or "Kosong"
+        end
+        local treeLines = {}
+        for id, t in pairs(data.trees) do
+            local nxt = t.nextIn and string.format(" (panen dlm %ds)", math.max(0, math.ceil(t.nextIn))) or ""
+            table.insert(treeLines, string.format("• %s: %d siap | %d tumbuh%s", ItemName(id), t.ready, t.growing, nxt))
+        end
+        local desc = table.concat({
+            string.format("World: %s (%dx%d)", CurrentWorldName(), data.w, data.h),
+            string.format("FG: %d | BG: %d | Floating: %d (%d tumpukan)", data.totalFg, data.totalBg, data.totalDrops, data.piles),
+            string.format("Pohon: %d siap panen | %d tumbuh", data.readyTrees, data.growingTrees),
+            "\n[POHON DI WORLD]:\n" .. (#treeLines > 0 and table.concat(treeLines, "\n") or "Tidak ada pohon"),
+            "\n[FLOATING DROPS]:\n" .. topItems(data.drops, 10),
+            "\n[WORLD BLOCKS]:\n" .. topItems(data.fg, 12),
+        }, "\n")
+        SetElementText(scanInfoPara, "Hasil GrowScan (" .. os.date("%H:%M:%S") .. ")", desc)
+    end
+
+    ScanTab:Button({
+        Title = "Scan Isi World Sekarang",
+        Color = Color3.fromHex("#305dff"),
+        Justify = "Center",
+        Callback = RunGrowScan,
+    })
+
+    ScanTab:Button({
+        Title = "Buka UI GrowScan Bawaan Game",
+        Justify = "Center",
+        Callback = function()
+            if not OpenNativeGrowScan() then Notify("GrowScan bawaan tidak tersedia.") end
+        end,
+    })
+end)
+
+-- 3C. Tab: Teleport & Posisi (Pos 1/2) -------------------------------
+SafeUI("Tab:Pos", function()
+    local PosTab = BagWorldSection:Tab({
+        Title = "Teleport & Posisi",
+        Icon = "solar:hamburger-menu-bold",
+        IconColor = Yellow,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.pos = PosTab
+
+    local warpTarget = ""
+    PosTab:Input({
+        Title = "Nama World Tujuan Warp",
+        Placeholder = "Ketik nama world...",
+        Callback = function(t) warpTarget = Trim(t or "") end,
+    })
+
+    PosTab:Button({
+        Title = "Warp ke World Tujuan",
+        Color = Color3.fromHex("#305dff"),
+        Justify = "Center",
+        Callback = function()
+            if warpTarget ~= "" then task.spawn(WarpToWorld, warpTarget) else Notify("Ketik nama world terlebih dahulu!") end
+        end,
+    })
+
+    PosTab:Space()
+    PosTab:Section({ Title = "Simpan & Teleport Posisi (Pos 1 / Pos 2)" })
+
+    for slot = 1, 2 do
+        local posPara = PosTab:Paragraph({ Title = "Pos " .. slot, Desc = "Belum diset" })
+        local function refPos()
+            local p = Config["pos" .. slot]
+            if type(p) == "table" and type(p.x) == "number" then
+                SetElementText(posPara, "Pos " .. slot .. " Tersimpan", string.format("Tile (%d, %d) di World %s", p.x, p.y, p.world or "-"))
+            else
+                SetElementText(posPara, "Pos " .. slot, "Belum diset")
+            end
+        end
+        table.insert(hub.refreshers, refPos)
+        refPos()
+
+        local grp = PosTab:Group({})
+        grp:Button({ Title = "Simpan Pos " .. slot, Justify = "Center", Callback = function() SetPos(slot); RefreshHub() end })
+        grp:Button({ Title = "Teleport (win" .. slot .. ")", Justify = "Center", Callback = function() task.spawn(GoToPos, slot) end })
+    end
+end)
+
+-- 4A. Tab: Penjaga (Anti-Mod) & Auto Reconnect -----------------------
+SafeUI("Tab:Guard", function()
+    local Tab = SecuritySection:Tab({
+        Title = "Penjaga & Reconnect",
+        Icon = "solar:info-square-bold",
+        IconColor = Red,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.guard = Tab
+
+    local guardPara = Tab:Paragraph({ Title = "Status Penjaga & Reconnect", Desc = "Mati" })
+
+    task.spawn(function()
+        while alive() and task.wait(0.5) do
+            pcall(function()
+                SetElementText(
+                    guardPara,
+                    "Penjaga: " .. Guard.status .. " | Reconnect: " .. Reconnect.status,
+                    string.format(
+                        "Pemain di World: %s\nStaff Online di Server: %s\nTerdeteksi: %d kali | Berhasil Rejoin: %d kali",
+                        Guard.hereText, Guard.staffServerText, Guard.detected, Reconnect.count
+                    )
+                )
+            end)
+        end
+    end)
+
+    AddFeatureToggle(Tab, "Aktifkan Penjaga (Anti-Mod)", "Pantau Moderator / Developer (termasuk undercover) atau pemain yang masuk ke world.", "guard")
+
+    Tab:Dropdown({
+        Title = "Target Deteksi",
+        Values = { "Staff (Mod/Dev)", "Semua pemain" },
+        Value = Config.guardWho,
+        Callback = function(v) Config.guardWho = v or "Staff (Mod/Dev)"; SaveConfig() end,
+    })
+
+    Tab:Toggle({
+        Title = "Hentikan Semua Aktivitas Bot",
+        Value = Config.guardStopAll,
+        Callback = function(on) Config.guardStopAll = on; SaveConfig() end,
+    })
+
+    Tab:Toggle({
+        Title = "Langsung Keluar World (Leave World)",
+        Value = Config.guardLeave,
+        Callback = function(on) Config.guardLeave = on; SaveConfig() end,
+    })
+
+    Tab:Toggle({
+        Title = "Lanjut Otomatis Setelah Aman",
+        Value = Config.guardAutoBack,
+        Callback = function(on) Config.guardAutoBack = on; SaveConfig() end,
+    })
+
+    Tab:Slider({
+        Title = "Waktu Tunggu Masuk Lagi (detik)",
+        IsTooltip = true,
+        Step = 5,
+        Value = { Min = 15, Max = 300, Default = math.clamp(Config.guardBackSec, 15, 300) },
+        Callback = function(v) Config.guardBackSec = tonumber(v) or 60; SaveConfig() end,
+    })
+
+    Tab:Button({
+        Title = "Whitelist Pemain yang Ada di World Sekarang",
+        Justify = "Center",
+        Callback = function()
+            local n = Guard.AllowCurrentPlayers()
+            Notify(n .. " pemain di world ini dimasukkan ke whitelist.")
+        end,
+    })
+
+    Tab:Space()
+    Tab:Section({ Title = "Auto Reconnect (World Closed & Server Disconnect)" })
+
+    AddFeatureToggle(Tab, "Aktifkan Auto Reconnect", "Masuk kembali & lanjutkan aktivitas bot jika terlempar atau disconnect.", "autorejoin")
+
+    Tab:Toggle({
+        Title = "Masuk Lagi Saat World Ditutup / Di-kick",
+        Value = Config.reconnectWorld,
+        Callback = function(on) Config.reconnectWorld = on; SaveConfig() end,
+    })
+
+    Tab:Toggle({
+        Title = "Selalu Kembali ke World (Jika Berada di Menu)",
+        Value = Config.reconnectKeep,
+        Callback = function(on) Config.reconnectKeep = on; SaveConfig() end,
+    })
+
+    Tab:Toggle({
+        Title = "Teleport Ulang Saat Disconnect dari Server",
+        Value = Config.reconnectServer,
+        Callback = function(on) Config.reconnectServer = on; SaveConfig() end,
+    })
+
+    Tab:Input({
+        Title = "World Tujuan Reconnect (Kosong = World Terakhir)",
+        Placeholder = "NAMAWORLD",
+        Callback = function(t) Config.targetWorld = Trim(t or ""); SaveConfig() end,
+    })
+end)
+
+-- 4B. Tab: Auto Chat (1 Pesan) & Bonus -------------------------------
+SafeUI("Tab:Bonus", function()
+    local Tab = SecuritySection:Tab({
+        Title = "Auto Chat & Bonus",
+        Icon = "solar:file-text-bold",
+        IconColor = Purple,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.bonus = Tab
+
+    local bonusPara = Tab:Paragraph({ Title = "Status Auto Chat & Bonus", Desc = "Memuat..." })
+
+    task.spawn(function()
+        while alive() and task.wait(0.6) do
+            pcall(function()
+                SetElementText(
+                    bonusPara,
+                    string.format("Auto Chat: %s (Terkirim: %d)", Spam.on and "AKTIF" or "MATI", Spam.sent),
+                    string.format("Pesan Disetting: %s\nTerakhir Terkirim: %s\nQuest: %s\nRedeem: %s", Config.chatText ~= "" and Config.chatText or "(Belum diisi)", Spam.last, Bonus.questText, Bonus.codeText)
+                )
+            end)
+        end
+    end)
+
+    Tab:Section({ Title = "Auto Chat / Spammer (1 Pesan)" })
+
+    AddFeatureToggle(Tab, "Aktifkan Auto Chat", "Kirim 1 pesan yang telah disetting secara otomatis ke channel world.", "autochat")
+
+    Tab:Input({
+        Title = "Pesan Auto Chat",
+        Placeholder = "Ketik 1 pesan yang akan dikirim otomatis...",
+        Callback = function(text)
+            Config.chatText = Trim(text or "")
+            SaveConfig()
+        end,
+    })
+
+    Tab:Slider({
+        Title = "Interval Chat (detik)",
+        IsTooltip = true,
+        Step = 1,
+        Value = { Min = 3, Max = 120, Default = math.clamp(Config.chatInterval, 3, 120) },
+        Callback = function(v) Config.chatInterval = tonumber(v) or 6; SaveConfig() end,
+    })
+
+    Tab:Space()
+    Tab:Section({ Title = "Bonus: Auto Claim Quest & Auto Redeem Code" })
+
+    Tab:Toggle({
+        Title = "Auto Claim Quest Harian (Server Net.call)",
+        Value = Config.bonusAutoQuest,
+        Callback = function(on)
+            Config.bonusAutoQuest = on
+            if on then Bonus.nextQuest = 0 end
+            SaveConfig()
+        end,
+    })
+
+    Tab:Button({
+        Title = "Cek & Klaim Quest Sekarang",
+        Justify = "Center",
+        Callback = function() task.spawn(Bonus.CheckQuests) end,
+    })
+
+    Tab:Toggle({
+        Title = "Auto Redeem Active Codes",
+        Value = Config.bonusAutoRedeem,
+        Callback = function(on)
+            Config.bonusAutoRedeem = on
+            if on then Bonus.nextCode = 0 end
+            SaveConfig()
+        end,
+    })
+
+    Tab:Input({
+        Title = "Redeem Code Manual",
+        Placeholder = "Ketik kode lalu Enter...",
+        Callback = function(text)
+            local code = Trim(text)
+            if code == "" then return end
+            task.spawn(function()
+                local ok, msg = Bonus.RedeemSingle(code)
+                Notify(code .. ": " .. tostring(msg), ok and "Redeem Sukses" or "Redeem Gagal")
+            end)
+        end,
+    })
+end)
+
+-- 5A. Tab: Visual, Role & Watermark ----------------------------------
+SafeUI("Tab:Visual", function()
+    local VisTab = SystemSection:Tab({
+        Title = "Visual & Watermark",
+        Icon = "solar:password-minimalistic-input-bold",
+        IconColor = Purple,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.visual = VisTab
+
+    VisTab:Toggle({
+        Title = "Watermark Nama Beranimasi",
+        Desc = "Ubah tampilan nama di atas karakter & HUD kiri atas dengan efek gradient.",
+        Value = Config.customWatermark,
+        Callback = function(on) Config.customWatermark = on; SaveConfig() end,
+    })
+
+    VisTab:Input({
+        Title = "Teks Watermark Nama",
+        Value = Config.watermarkText ~= "" and Config.watermarkText or "ANCH HUB",
+        Placeholder = "ANCH HUB",
+        Callback = function(text)
+            if Trim(text) ~= "" then
+                Config.watermarkText = Trim(text)
+                SaveConfig()
+            end
+        end,
+    })
+
+    VisTab:Space()
+    VisTab:Section({ Title = "Visual Item Lokal (Kuyang, LegendBot, Rayman)" })
+
+    local activeFilter, searchQ = "Semua", ""
+    local wearMap = {}
+    local wearDd
+
+    local function rebuildWear()
+        local list = GetWearables()
+        wearMap = {}
+        local vals = {}
+        local q = Trim(searchQ):lower()
+        for _, e in ipairs(list) do
+            if (activeFilter == "Semua" or table.find(e.tags, activeFilter)) and (q == "" or e.lower:find(q, 1, true)) then
+                local lbl = string.format("%s (%s)%s #%d", e.name, e.slot, IsVisualWorn(e.id) and " [ON]" or "", e.id)
+                wearMap[lbl] = e.id
+                table.insert(vals, lbl)
+                if #vals >= 80 then break end
+            end
+        end
+        if #vals == 0 then vals = { "Tidak ada item" } end
+        if wearDd and wearDd.Refresh then pcall(function() wearDd:Refresh(vals) end) end
+    end
+
+    VisTab:Dropdown({
+        Title = "Filter Kategori",
+        Values = { "Semua", "Kuyang", "LegendBot", "Rayman" },
+        Value = "Semua",
+        Callback = function(v) activeFilter = v or "Semua"; rebuildWear() end,
+    })
+
+    VisTab:Input({
+        Title = "Cari Item Visual",
+        Placeholder = "Ketik nama item...",
+        Callback = function(t) searchQ = t or ""; rebuildWear() end,
+    })
+
+    wearDd = VisTab:Dropdown({
+        Title = "Pilih Item Visual (Tap untuk Pakai/Lepas)",
+        Values = { "Memuat..." },
+        Callback = function(sel)
+            local id = wearMap[sel]
+            if id and ToggleVisual(id) then
+                Notify("Visual item diubah: " .. ItemName(id))
+                rebuildWear()
+            end
+        end,
+    })
+
+    VisTab:Button({
+        Title = "Reset Semua Visual Item",
+        Color = Color3.fromHex("#ff4830"),
+        Justify = "Center",
+        Callback = function() ResetVisuals(); rebuildWear() end,
+    })
+
+    VisTab:Space()
+    VisTab:Section({ Title = "Role / Title & Staff UI" })
+
+    local roleDd = VisTab:Dropdown({
+        Title = "Pilih Role / Title",
+        Values = { "none" },
+        Callback = function(v) Config.selectedRole = v or "none"; SaveConfig() end,
+    })
+
+    VisTab:Button({
+        Title = "Refresh & Pasang Role Sekarang",
+        Justify = "Center",
+        Callback = function()
+            if roleDd and roleDd.Refresh then pcall(function() roleDd:Refresh(GetOwnedRoles()) end) end
+            ApplyRole(Config.selectedRole)
+        end,
+    })
+
+    VisTab:Button({
+        Title = "Buka Staff Backpack",
+        Justify = "Center",
+        Callback = function()
+            if Refs.Menu and type(Refs.Menu.openBackpack) == "function" then
+                pcall(Refs.Menu.openBackpack, { name = Player.DisplayName or Player.Name, userId = Player.UserId })
+            else
+                Notify("Menu Staff belum ditemukan.")
+            end
+        end,
+    })
+
+    task.defer(rebuildWear)
+end)
+
+-- 5B. Tab: Discord Webhook & Pengaturan Sistem -----------------------
+SafeUI("Tab:Settings", function()
+    local SesiTab = SystemSection:Tab({
+        Title = "Discord & Pengaturan",
+        Icon = "solar:folder-with-files-bold",
+        IconColor = Blue,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.session = SesiTab
+    hub.tabs.settings = SesiTab
+
+    local whPara = SesiTab:Paragraph({ Title = "Status Discord Webhook", Desc = "-" })
+    task.spawn(function()
+        while alive() and task.wait(1) do
+            pcall(function()
+                SetElementText(whPara, "Status Webhook: " .. Webhook.Status, "Antrian Pesan: " .. #Webhook.Queue)
+            end)
+        end
+    end)
+
+    SesiTab:Toggle({
+        Title = "Aktifkan Notifikasi Discord Webhook",
+        Value = Config.webhookOn,
+        Callback = function(on) Config.webhookOn = on; SaveConfig() end,
+    })
+
+    SesiTab:Input({
+        Title = "URL Webhook Discord",
+        Placeholder = "https://discord.com/api/webhooks/...",
+        Callback = function(t)
+            Config.webhookUrl = Trim(t or "")
+            SaveConfig()
+            if Config.webhookUrl ~= "" and not Webhook.Valid(Config.webhookUrl) then
+                Notify("Format URL Webhook Discord tidak valid!")
+            end
+        end,
+    })
+
+    SesiTab:Button({
+        Title = "Tes Kirim Webhook Discord",
+        Justify = "Center",
+        Callback = function()
+            if not Webhook.Valid(Config.webhookUrl) then
+                Notify("Isi URL Webhook Discord yang valid terlebih dahulu!")
+                return
+            end
+            local prev = Config.webhookOn
+            Config.webhookOn = true
+            Webhook.Send("test", "Tes notifikasi dari ANCH Hub v1.2 Ultimate!")
+            Config.webhookOn = prev
+            Notify("Pesan tes masuk antrian kirim Discord.")
+        end,
+    })
+
+    SesiTab:Slider({
+        Title = "Interval Laporan Statistik ke Discord (Menit, 0 = Mati)",
+        IsTooltip = true,
+        Step = 5,
+        Value = { Min = 0, Max = 180, Default = math.clamp(Config.webhookReportMin, 0, 180) },
+        Callback = function(v) Config.webhookReportMin = math.floor(tonumber(v) or 0); SaveConfig() end,
+    })
+
+    SesiTab:Space()
+    SesiTab:Section({ Title = "Sesi, Kalibrasi & Autoexec" })
+
+    SesiTab:Toggle({
+        Title = "Pulihkan Fitur Otomatis Saat Masuk",
+        Value = Config.autoRestore,
+        Callback = function(on) Config.autoRestore = on; SaveConfig() end,
+    })
+
+    SesiTab:Toggle({
+        Title = "Auto-Reload Skrip Saat Teleport",
+        Value = Config.autoReload,
+        Callback = function(on) Config.autoReload = on; SaveConfig(); if on then QueueReload() end end,
+    })
+
+    SesiTab:Input({
+        Title = "URL Script (Untuk Auto-Reload Teleport)",
+        Placeholder = "https://...",
+        Callback = function(t) Config.scriptUrl = Trim(t or ""); SaveConfig() end,
+    })
+
+    SesiTab:Input({
+        Title = "Prefix Command Chat",
+        Value = Config.prefix ~= "" and Config.prefix or "/",
+        Callback = function(t) Config.prefix = Trim(t); SaveConfig() end,
+    })
+
+    SesiTab:Input({
+        Title = "Kalibrasi Posisi X",
+        Value = tostring(Config.calibX),
+        Callback = function(t) Config.calibX = tonumber(t) or 0; SaveConfig() end,
+    })
+
+    SesiTab:Input({
+        Title = "Kalibrasi Posisi Y",
+        Value = tostring(Config.calibY),
+        Callback = function(t) Config.calibY = tonumber(t) or 0; SaveConfig() end,
+    })
+
+    SesiTab:Keybind({
+        Title = "Keybind Buka/Tutup UI",
+        Value = "RightControl",
+        Callback = function(v) pcall(function() Window:SetToggleKey(Enum.KeyCode[v]) end) end,
+    })
+
+    SesiTab:Button({
+        Title = "Pasang Auto-Execute (autoexec)",
+        Justify = "Center",
+        Callback = InstallAutoexec,
+    })
+end)
+
+-- 5C. Tab: Bantuan & Daftar Command ----------------------------------
+SafeUI("Tab:Help", function()
+    local HelpTab = SystemSection:Tab({
+        Title = "Panduan Command",
+        Icon = "solar:info-square-bold",
+        IconColor = Green,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.help = HelpTab
+
+    HelpTab:Paragraph({
+        Title = "Daftar Perintah Chat ANCH Hub v1.2 Beta",
+        Desc = table.concat({
+            "/af [on/off]  —  Auto Farm (Multi-Target + Rayman)",
+            "/ac [on/off]  —  Auto Clear World (ModFly + Berdiri di Atas Blok)",
+            "/ah [on/off]  —  Farmer (Auto Harvest + Auto Plant)",
+            "/adf [on/off] —  Auto Dirt Farm (Full World + Smart Supply)",
+            "/as [on/off]  —  Auto Splice (Seed A + Seed B)",
+            "/pabrik [on/off] — Pabrik Seed (Panen -> Tanam -> Break -> Drop)",
+            "/guard [on/off] — Penjaga Anti-Mod / Staff Detector",
+            "/chat [on/off]  — Auto Chat / Spammer (1 Pesan)",
+            "/ctp [on/off] —  Click TP (Legit A* / Pillar)",
+            "/move <legit|walk|fly|mix> — Ubah mode gerak",
+            "/noclip | /uj | /god | /lite | /blink | /lh [n|off] | /aq [on|off|scan]",
+            "/wld <jumlah> | /tp <world> | /pos1 | /pos2 | /win1 | /win2",
+        }, "\n"),
+    })
+end)
+
+----------------------------------------------------------------------
+-- COMMAND HANDLER & CHAT HOOK
+----------------------------------------------------------------------
+local function ToggleHub(tabId)
+    local target = hub.tabs[tabId or "features"]
+    if target and target.Select then pcall(function() target:Select() end) end
+    if Window.Open then pcall(function() Window:Open() end) end
+end
+
+local function WantedState(args, current)
+    if args == "on" or args == "start" then return true
+    elseif args == "off" or args == "stop" then return false end
+    return not current
+end
+
+local function HandleMessage(text)
+    text = Trim(text)
+    if text == "" then return false end
+    local prefix = Config.prefix
+    local bodyText
+    if prefix == "" then
+        bodyText = text
+    elseif text:sub(1, #prefix) == prefix then
+        bodyText = text:sub(#prefix + 1)
+    elseif text:sub(1, 1) == "/" then
+        local w = text:sub(2):lower()
+        if w == "settingsgb" or w == "sgb" or w == "anch" then bodyText = text:sub(2) end
+    end
+    if not bodyText then return false end
+    local command, args = bodyText:match("^(%S+)%s*(.-)%s*$")
+    if not command then return false end
+    command, args = command:lower(), (args or ""):lower()
+
+    if command == "wld" or command == "wd" then
+        local n = tonumber(args:match("^(%d+)$"))
+        if n and n >= 1 and n <= MAX_AMOUNT then task.spawn(DropWorldLock, n) else Notify("Jumlah WL tidak valid!") end
+        return true
+    elseif command == "tp" or command == "warp" then
+        task.spawn(WarpToWorld, args); return true
+    elseif command == "pos1" or command == "pos2" then
+        SetPos(tonumber(command:sub(4))); RefreshHub(); return true
+    elseif command == "pos" then
+        ShowPos(); return true
+    elseif command == "win1" or command == "w1" or command == "win2" or command == "w2" then
+        local slot = tonumber(command:match("%d$"))
+        local n = tonumber(args:match("^(%d+)$"))
+        task.spawn(GoToPos, slot, n); return true
+    elseif command == "rejoin" or command == "rj" then
+        task.spawn(Rejoin); return true
+    elseif command == "noclip" then
+        SetFeature("noclip", WantedState(args, noclipOn)); return true
+    elseif command == "unlimitedjump" or command == "uj" or command == "infjump" then
+        SetFeature("ujump", WantedState(args, ujumpOn)); return true
+    elseif command == "afk" or command == "antiafk" then
+        SetFeature("antiafk", WantedState(args, antiAfkOn)); return true
+    elseif command == "autorejoin" or command == "arj" then
+        SetFeature("autorejoin", WantedState(args, Config.reconnectOn)); return true
+    elseif command == "blink" then
+        SetFeature("blink", WantedState(args, blinkOn)); return true
+    elseif command == "longhand" or command == "lh" then
+        local rangeNum = tonumber(args)
+        if rangeNum and rangeNum > 0 then
+            Config.longhandRange = rangeNum
+            SaveConfig()
+            SetFeature("longhand", true)
+        else
+            SetFeature("longhand", WantedState(args, longhandOn))
+        end
+        return true
+    elseif command == "autoquest" or command == "aq" then
+        if args == "scan" then
+            task.spawn(QuestReport)
+        else
+            SetFeature("autoquest", WantedState(args, questOn))
+        end
+        return true
+    elseif command == "god" or command == "godmode" then
+        SetFeature("god", WantedState(args, godOn)); return true
+    elseif command == "lite" then
+        SetFeature("lite", WantedState(args, Config.liteMode)); return true
+    elseif command == "guard" or command == "penjaga" then
+        SetFeature("guard", WantedState(args, Guard.on)); return true
+    elseif command == "chat" or command == "autochat" then
+        SetFeature("autochat", WantedState(args, Spam.on)); return true
+    elseif command == "autofarm" or command == "af" then
+        if args == "" then ToggleHub("farm") else SetFeature("autofarm", WantedState(args, Farm.on)) end
+        return true
+    elseif command == "autoclear" or command == "ac" or command == "clear" then
+        if args == "" then ToggleHub("clear") else SetFeature("autoclear", WantedState(args, Clear.on)) end
+        return true
+    elseif command == "autoharvest" or command == "ah" or command == "harvest" or command == "farmer" then
+        if args == "" then ToggleHub("harvest") else SetFeature("autoharvest", WantedState(args, Farmer.on)) end
+        return true
+    elseif command == "autodf" or command == "adf" or command == "df" then
+        if args == "" then ToggleHub("df") else SetFeature("autodf", WantedState(args, DF.on)) end
+        return true
+    elseif command == "autosplice" or command == "as" or command == "splice" then
+        if args == "" then ToggleHub("splice") else SetFeature("autosplice", WantedState(args, SpliceBot.on)) end
+        return true
+    elseif command == "pabrik" or command == "factory" then
+        if args == "" then ToggleHub("pabrik") else SetFeature("pabrik", WantedState(args, Pabrik.on)) end
+        return true
+    elseif command == "clicktp" or command == "ctp" then
+        SetFeature("clicktp", WantedState(args, Nav.clickOn)); return true
+    elseif command == "move" or command == "mv" then
+        local map = { legit = "legit", walk = "walk", jalan = "walk", fly = "fly", terbang = "fly", mix = "mix", campur = "mix" }
+        if map[args] then
+            Config.moveMode = map[args]
+            SaveConfig()
+            Notify("Mode gerak: " .. map[args])
+        else
+            Notify("Mode aktif: " .. Config.moveMode .. " (pilihan: legit | walk | fly | mix)")
+        end
+        return true
+    elseif command == "growscan" or command == "gs" then
+        ToggleHub("scan"); return true
+    elseif command == "visualitem" or command == "vi" then
+        ToggleHub("visual"); return true
+    elseif command == "settingsgb" or command == "sgb" or command == "session" or command == "sesi" then
+        ToggleHub("session"); return true
+    elseif command == "blockid" or command == "bid" then
+        local found = SearchItems(args, 5)
+        local parts = {}
+        for _, e in ipairs(found) do table.insert(parts, e.name .. " = " .. e.id) end
+        Notify(#parts > 0 and table.concat(parts, " | ") or "Block tidak ditemukan.")
+        return true
+    elseif command == "anch" then
+        ToggleHub("help"); return true
+    end
+    return false
+end
+
+do (function()
+    local hooked, lastMsg, lastTime = {}, nil, 0
+    local function processText(t)
+        if type(t) ~= "string" then return end
+        local norm = Trim(t):lower()
+        if norm == lastMsg and os.clock() - lastTime < 1.5 then return end
+        if HandleMessage(Trim(t)) then
+            lastMsg, lastTime = norm, os.clock()
+        end
+    end
+    local function hookBox(box)
+        if hooked[box] or not box:IsA("TextBox") then return end
+        local sg = box:FindFirstAncestorOfClass("ScreenGui")
+        if sg and (sg.Name:find("ANCH", 1, true) or sg.Name:lower():find("windui", 1, true)) then return end
+        hooked[box] = true
+        local last = ""
+        box:GetPropertyChangedSignal("Text"):Connect(function()
+            if box.Text ~= "" then last = box.Text end
+        end)
+        box.FocusLost:Connect(function(enter)
+            if enter then
+                local txt = box.Text ~= "" and box.Text or last
+                last = ""
+                processText(txt)
+            end
+        end)
+    end
+    for _, d in ipairs(PlayerGui:GetDescendants()) do hookBox(d) end
+    trackConn(PlayerGui.DescendantAdded:Connect(hookBox))
+    trackConn(Player.Chatted:Connect(processText))
+end)() end
+
+----------------------------------------------------------------------
+-- INISIALISASI & CLEANUP HANDLER
+----------------------------------------------------------------------
+Session.Cleanup = function()
+    Session.Alive = false
+    StopFarm()
+    Clear.Stop()
+    Farmer.Stop()
+    DF.Stop()
+    SpliceBot.Stop()
+    Pabrik.Stop()
+    Nav.StopClick()
+    Guard.Set(false)
+    Spam.on = false
+    StopBlink()
+    StopLonghand()
+    StopNoclip()
+    StopUjump()
+    StopGod()
+    if Session.RestoreFastWrench then
+        pcall(Session.RestoreFastWrench)
+    end
+    LiteMode.Set(false)
+    if Session.RestoreWatermark then pcall(Session.RestoreWatermark) end
+    if OrigIsDown and MenuModOk and rawget(MenuModule, "isDown") ~= OrigIsDown then
+        MenuModule.isDown = OrigIsDown
+    end
+    for _, c in ipairs(Session.Connections) do pcall(function() c:Disconnect() end) end
+    if GridGui then pcall(function() GridGui:Destroy() end) end
+    if FlyPadGui then pcall(function() FlyPadGui:Destroy() end) end
+    if Window then pcall(function() Window:Destroy() end) end
+end
+
+task.spawn(function()
+    StartAntiAfk()
+    Refs.Scan()
+    Stats.Reset()
+    if Config.liteMode then LiteMode.Set(true) end
+    pcall(QueueReload)
+    trackConn(Player.OnTeleport:Connect(function()
+        SaveConfig()
+        pcall(QueueReload)
+    end))
+    if Config.autoRestore then
+        for key, feature in pairs(Features) do
+            if Config.session[key] and not feature.noSession and not feature.get() then
+                pcall(feature.set, true)
+            end
+        end
+        if RefreshHub then RefreshHub() end
+    end
+    task.spawn(Reconnect.CheckStartup)
+    task.spawn(Pabrik.CheckStartup)
+    Notify("ANCH HUB v1.2 Beta Loaded! Semua tab & fitur siap digunakan.")
+end)
