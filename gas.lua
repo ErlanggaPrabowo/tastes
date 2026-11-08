@@ -1235,7 +1235,9 @@ trackConn(RunService.Heartbeat:Connect(function()
     if not alive() then return end
     local w = Refs.World
     if not w then return end
-    if Config.walkSpeed ~= 100 then
+    if Drops.collecting then
+        w.speedScale = 1
+    elseif Config.walkSpeed ~= 100 then
         w.speedScale = Config.walkSpeed / 100
     end
     if IsAnyFlyActive() and w.ghost ~= true then
@@ -2801,130 +2803,137 @@ do (function()
         return true
     end
 
-    -- Mode Sentuhan Simpel: Setelah break, karakter langsung bergerak mengunjungi tile yang habis di-break lalu kembali ke (hx, hy)
+    -- Fungsi jalan mendatar murni (Tanpa TP / Tanpa w.goTo)
+    function Drops.walkToX(targetCenterX, maxSec)
+        local s0 = PlayerPhysicsState()
+        if not s0 or s0.dead then return false end
+        local dx0 = targetCenterX - s0.x
+        if math.abs(dx0) <= 0.12 then
+            ReleaseInput()
+            return true
+        end
+        local dir = (dx0 > 0) and 1 or -1
+        local t0 = os.clock()
+        while alive() and (Farm.on or Farm.Override ~= nil) and (os.clock() - t0) < (maxSec or 2.0) do
+            local s = PlayerPhysicsState()
+            if not s or s.dead then break end
+            local rem = (targetCenterX - s.x) * dir
+            if rem <= 0.08 then
+                ReleaseInput()
+                return true
+            end
+            AutoInput.left = (dir < 0)
+            AutoInput.right = (dir > 0)
+            task.wait()
+        end
+        ReleaseInput()
+        return false
+    end
+
+    -- Mode Sentuhan Murni: Berjalan fisik (speed 1x) ke setiap tile yang baru di-break, tanpa pernah TP!
     function Drops.touchAll(brokenTiles, hx, hy)
         if type(brokenTiles) ~= "table" or #brokenTiles == 0 then return false end
+        local w = FindWorld()
+        if not w then return false end
 
-        local targets = {}
+        -- Tunggu maksimal 0.35 detik sampai tile yang baru pecah berubah jadi kosong (fg == 0) di client
+        local tWait = os.clock()
+        while alive() and (os.clock() - tWait) < 0.35 do
+            local allClear = true
+            for _, t in ipairs(brokenTiles) do
+                if (TileValue(w, "fg", t.x, t.y) or 0) ~= 0 then
+                    allClear = false
+                    break
+                end
+            end
+            if allClear then break end
+            task.wait(0.03)
+        end
+
+        -- Beri jeda singkat agar dropped item keluar dari blok & siap diambil (armed)
+        task.wait(0.18)
+
+        local minX, maxX = hx, hx
+        local jumpCols = {}
+        local jumpSeen = {}
+
         for _, t in ipairs(brokenTiles) do
             if not Nav.SolidAt(t.x, t.y) then
-                table.insert(targets, { x = t.x, y = t.y })
+                if t.y == hy and math.abs(t.x - hx) <= 3 then
+                    if t.x < minX then minX = t.x end
+                    if t.x > maxX then maxX = t.x end
+                elseif t.y < hy and math.abs(t.x - hx) <= 2 then
+                    if not jumpSeen[t.x] then
+                        jumpSeen[t.x] = t.y
+                        table.insert(jumpCols, { x = t.x, y = t.y })
+                    elseif t.y < jumpSeen[t.x] then
+                        jumpSeen[t.x] = t.y
+                    end
+                end
             end
         end
-        if #targets == 0 then return false end
 
-        -- Urutkan dari tile yang paling dekat dengan posisi awal (hx, hy)
-        table.sort(targets, function(a, b)
-            local da = math.abs(a.x - hx) + math.abs(a.y - hy) * 1.5
-            local db = math.abs(b.x - hx) + math.abs(b.y - hy) * 1.5
-            return da < db
-        end)
-
-        local was = AutoInput.active
+        local wasActive = AutoInput.active
         AutoInput.active = true
-
-        local function steer(s, targetX, tol)
-            local dx = targetX - s.x
-            local vx = s.vx or 0
-            local decel = s.grounded and 48 or 17
-            local dir = 0
-            if math.abs(dx) > tol then
-                dir = dx > 0 and 1 or -1
-                if vx * dir > 0 and (vx * vx) / (2 * decel) >= math.abs(dx) - tol * 0.5 then
-                    dir = 0
-                end
-            end
-            AutoInput.left = dir < 0
-            AutoInput.right = dir > 0
-        end
-
-        -- Gerakkan karakter secara fisik ke kolom targetTileX
-        local function walkToColumn(targetTileX, maxT)
-            local cx = targetTileX + 0.5
-            local s0 = PlayerPhysicsState()
-            local startX = s0 and s0.x or (hx + 0.5)
-            local t0 = os.clock()
-            local moved = false
-
-            while alive() and (Farm.on or Farm.Override ~= nil) and os.clock() - t0 < (maxT or 1.5) do
-                local c = PlayerPhysicsState()
-                if not c or c.dead then break end
-                if math.abs(c.x - startX) > 0.08 then moved = true end
-                steer(c, cx, 0.08)
-                if math.abs(c.x - cx) <= 0.20 and math.abs(c.vx or 0) < 2.5 then
-                    ReleaseInput()
-                    return true
-                end
-                -- Fallback jika dalam 0.45 detik fisik tertahan/tidak bergeser, dorong dengan goTo
-                if not moved and os.clock() - t0 > 0.45 then
-                    local w = FindWorld()
-                    if w and type(w.goTo) == "function" then
-                        pcall(w.goTo, targetTileX, hy)
-                    end
-                    moved = true
-                end
-                task.wait()
-            end
-            ReleaseInput()
-            return false
-        end
-
-        -- Lompat untuk mengambil drop di tile atas kepala (targetY < hy)
-        local function jumpAtColumn(targetY)
-            ReleaseInput()
-            task.wait()
-            local isHigh = (targetY <= hy - 2)
-            AutoInput.jump = true
-            local t0 = os.clock()
-            local airborne = false
-            while alive() and (Farm.on or Farm.Override ~= nil) and os.clock() - t0 < 1.3 do
-                local c = PlayerPhysicsState()
-                if not c or c.dead then break end
-                if not c.grounded then
-                    airborne = true
-                    if not isHigh or c.y <= targetY + 0.55 or (c.vy or 0) >= 0 then
-                        AutoInput.jump = false
-                    end
-                end
-                if airborne and c.grounded then break end
-                if not airborne and os.clock() - t0 > 0.35 then break end
-                task.wait()
-            end
-            ReleaseInput()
-        end
+        Drops.collecting = true
+        w.speedScale = 1
 
         pcall(function()
-            for _, t in ipairs(targets) do
-                if not alive() or not (Farm.on or Farm.Override ~= nil) then break end
-                if not Nav.SolidAt(t.x, t.y) then
-                    -- 1. Berjalan menuju kolom X tile yang telah di-break
-                    local cNow = PlayerPhysicsState()
-                    if not cNow or math.abs(cNow.x - (t.x + 0.5)) > 0.20 then
-                        walkToColumn(t.x, 1.5)
-                    end
+            -- 1. Sapu tile yang di-break di sebelah kiri (jika ada)
+            if minX < hx then
+                Drops.walkToX(minX + 0.5, 2.0)
+                task.wait(0.16)
+            end
 
-                    -- 2. Jika tile berada di atas karakter (dy < 0), lompat untuk menyentuh drop-nya
-                    if t.y < hy then
-                        jumpAtColumn(t.y)
-                    else
-                        -- Diam sejenak di tile tersebut agar dropped item tersentuh badan
-                        task.wait(0.14)
+            -- 2. Sapu tile yang di-break di sebelah kanan (jika ada)
+            if maxX > hx then
+                Drops.walkToX(maxX + 0.5, 2.5)
+                task.wait(0.16)
+            end
+
+            -- 3. Jika ada tile yang di-break di atas kepala (dy < 0), jalan ke bawahnya lalu lompat
+            if #jumpCols > 0 then
+                table.sort(jumpCols, function(a, b) return a.x < b.x end)
+                for _, jc in ipairs(jumpCols) do
+                    if not alive() or not (Farm.on or Farm.Override ~= nil) then break end
+                    Drops.walkToX(jc.x + 0.5, 1.8)
+                    ReleaseInput()
+                    task.wait(0.05)
+                    local highJump = (jumpSeen[jc.x] <= hy - 2)
+                    AutoInput.jump = true
+                    local jt0 = os.clock()
+                    local air = false
+                    while alive() and (Farm.on or Farm.Override ~= nil) and (os.clock() - jt0) < 1.2 do
+                        local s = PlayerPhysicsState()
+                        if not s or s.dead then break end
+                        if not s.grounded then
+                            air = true
+                            if not highJump or s.y <= (jumpSeen[jc.x] + 0.6) or (s.vy or 0) >= 0 then
+                                AutoInput.jump = false
+                            end
+                        end
+                        if air and s.grounded then break end
+                        if not air and (os.clock() - jt0) > 0.35 then break end
+                        task.wait()
                     end
+                    ReleaseInput()
+                    task.wait(0.10)
                 end
             end
 
-            -- 3. Kembali ke posisi awal (hx, hy) setelah selesai memungut semua tile
+            -- 4. Jalan kembali ke titik tengah Auto Farm (hx + 0.5) tanpa TP
             if alive() and (Farm.on or Farm.Override ~= nil) then
-                walkToColumn(hx, 1.6)
-                local fx, fy = GetTile()
-                if fx and (fx ~= hx or fy ~= hy) then
-                    Nav.To(hx, hy, function() return not (Farm.on or Farm.Override ~= nil) end, 0.25, false)
-                end
+                Drops.walkToX(hx + 0.5, 2.5)
+                task.wait(0.08)
             end
         end)
 
         ReleaseInput()
-        AutoInput.active = was
+        Drops.collecting = false
+        if Config.walkSpeed ~= 100 and Refs.World then
+            Refs.World.speedScale = Config.walkSpeed / 100
+        end
+        AutoInput.active = wasActive
         return true
     end
 
@@ -3125,14 +3134,22 @@ do (function()
             local px, py = GetTile()
             if not px then break end
             if not Farm.Override and (px ~= anchor.x or py ~= anchor.y) then
-                Nav.To(anchor.x, anchor.y, function() return Farm.token ~= token end, 0.2, true)
-                px, py = GetTile()
-                if not px then break end
+                if py == anchor.y and math.abs(px - anchor.x) <= 4 and Drops.walkToX then
+                    local wasA = AutoInput.active
+                    AutoInput.active = true
+                    Drops.collecting = true
+                    Drops.walkToX(anchor.x + 0.5, 2.0)
+                    Drops.collecting = false
+                    AutoInput.active = wasA
+                else
+                    Nav.To(anchor.x, anchor.y, function() return Farm.token ~= token end, 0.2, false)
+                end
+                px, py = anchor.x, anchor.y
             end
 
             local tiles = {}
             for _, o in ipairs(offsets) do
-                local tx, ty = px + o.dx, py + o.dy
+                local tx, ty = anchor.x + o.dx, anchor.y + o.dy
                 if InBounds(w, tx, ty) then
                     table.insert(tiles, { x = tx, y = ty })
                 end
@@ -3140,15 +3157,6 @@ do (function()
 
             local acted, outOfBlock = false, false
 
-            -- 0) Ambil drop yang ada di tile grid sebelum menaruh block baru (seperti Tadonoki)
-            if (Config.farmTake or Farm.Override) and Config.collectMode == "Sentuhan" then
-                Drops.waitSpawn(tiles)
-                if Drops.touchAll then
-                    Drops.touchAll(tiles, px, py)
-                end
-            end
-
-            -- 1) Place semua tile kosong
             if doPlace then
                 Farm.stats.status = "Place " .. ItemName(id)
                 local layer = LayerOf(id)
@@ -3172,7 +3180,6 @@ do (function()
 
             if not Farm.on or Farm.token ~= token then break end
 
-            -- 2) Break semua tile sampai hancur
             local brokenTiles = {}
             local brokenSeen = {}
 
@@ -3192,7 +3199,7 @@ do (function()
 
                     local hits, rayDir = nil, nil
                     if K > 1 and raymanOn() then
-                        hits, rayDir = raymanLine(px, py, active)
+                        hits, rayDir = raymanLine(anchor.x, anchor.y, active)
                     end
                     if not rayDir then
                         hits = { active[1] }
@@ -3219,7 +3226,7 @@ do (function()
                             Farm.stats.broken += 1
                             brokeAny = true
                         end
-                        if r == nil or a.n > 80 or (r == "broke" and not breakableAt(w, a.x, a.y)) then
+                        if r == nil or a.n > 80 or not breakableAt(w, a.x, a.y) then
                             a.done = true
                         end
                         a.used = true
@@ -3247,10 +3254,9 @@ do (function()
                 end
             end
 
-            -- Setelah selesai break, langsung bergerak ke tile yang telah di-break untuk mengambil drop!
+            -- Setelah selesai break semua tile, berjalan murni (tanpa TP) ke tile yang di-break lalu kembali ke anchor
             if #brokenTiles > 0 and (Config.farmTake or Farm.Override) and Config.collectMode == "Sentuhan" then
-                Farm.stats.status = "Bergerak ambil drop..."
-                task.wait(0.15) -- beri waktu singkat agar drop keluar dari blok yang baru pecah
+                Farm.stats.status = "Mengambil drop (Sentuhan)..."
                 if Drops.touchAll then
                     Drops.touchAll(brokenTiles, anchor.x, anchor.y)
                 end
@@ -6499,7 +6505,7 @@ do (function()
     end
 
     -- ====================================================================
-    -- FAST PULL / FAST KICK / FAST BAN (ABORT DIALOG THREAD & AMAN BAGI UI)
+    -- FAST PULL / FAST KICK / FAST BAN (UPVALUE HOOK + COROUTINE YIELD)
     -- ====================================================================
     local lastClickTileX, lastClickTileY = nil, nil
     local lastPlayerAtUid, lastPlayerAtName, lastPlayerAtClock = nil, nil, 0
@@ -6512,15 +6518,6 @@ do (function()
             local name = entry.name or entry[2]
             if uid and uid > 1000 and uid ~= Player.UserId then
                 return uid, type(name) == "string" and name:gsub("`.", "") or nil
-            end
-            for _, v in pairs(entry) do
-                if type(v) == "number" and v > 1000 and v ~= Player.UserId then
-                    for _, plr in ipairs(Players:GetPlayers()) do
-                        if plr.UserId == v then
-                            return v, plr.DisplayName or plr.Name
-                        end
-                    end
-                end
             end
         end
         return nil, nil
@@ -6548,10 +6545,12 @@ do (function()
             return lastPlayerAtUid, lastPlayerAtName
         end
 
+        -- 1. Cek langsung terhadap daftar Players di server
         if arg1 ~= nil then
-            local uid, name = ExtractUidFromEntry(arg1)
-            if uid then return uid, name or tostring(uid) end
             local numId = tonumber(arg1) or (type(arg1) == "string" and tonumber(arg1:match("(%d+)")))
+            if type(arg1) == "table" then
+                numId = tonumber(arg1.userId or arg1.id or arg1[1])
+            end
             for _, plr in ipairs(Players:GetPlayers()) do
                 if plr ~= Player then
                     if (numId and plr.UserId == numId)
@@ -6560,10 +6559,14 @@ do (function()
                     end
                 end
             end
+            if numId and numId > 1000 and numId ~= Player.UserId then
+                return numId, tostring(numId)
+            end
         end
 
+        -- 2. Cek melalui Call Stack Upvalues (fungsi pemanggil Wrench)
         if debug and debug.info then
-            for stackLvl = 2, 8 do
+            for stackLvl = 2, 7 do
                 local okF, callerFn = pcall(debug.info, stackLvl, "f")
                 if not okF or type(callerFn) ~= "function" then break end
                 for _, upVal in pairs(GetUpvalues(callerFn)) do
@@ -6573,73 +6576,53 @@ do (function()
             end
         end
 
+        -- 3. Cek melalui tabel Refs.Others
         local o = Refs.Others
         if not o then Refs.Scan(); o = Refs.Others end
         local candidates = {}
 
-        if o then
-            for _, fnName in ipairs({ "list", "playerAt", "where" }) do
-                local fn = rawget(o, fnName)
-                if type(fn) == "function" then
-                    for _, upTbl in pairs(GetUpvalues(fn)) do
-                        if type(upTbl) == "table" and upTbl ~= Refs.World then
-                            if arg1 ~= nil and upTbl[arg1] ~= nil then
-                                local uid, name = ExtractUidFromEntry(upTbl[arg1])
-                                if uid then return uid, name or tostring(uid) end
+        if o and type(rawget(o, "list")) == "function" then
+            local ok, list = pcall(o.list)
+            if ok and type(list) == "table" then
+                for idx, e in pairs(list) do
+                    if type(e) == "table" then
+                        local uid = tonumber(e[1] or e.userId)
+                        local name = tostring(e[2] or e.name or uid or ""):gsub("`.", "")
+                        if uid and uid ~= Player.UserId then
+                            if arg1 ~= nil and (idx == arg1 or e.id == arg1 or e.pid == arg1 or e.netId == arg1 or e[3] == arg1) then
+                                return uid, name
                             end
-                            for k, v in pairs(upTbl) do
-                                local uid, name = ExtractUidFromEntry(v)
-                                if uid then
-                                    if arg1 ~= nil and (k == arg1 or (type(v) == "table" and (v.id == arg1 or v.pid == arg1 or v.netId == arg1 or v.slot == arg1 or v[3] == arg1))) then
-                                        return uid, name or tostring(uid)
-                                    end
-                                end
-                            end
+                            table.insert(candidates, { uid = uid, name = name })
                         end
                     end
                 end
             end
+        end
 
-            if type(rawget(o, "list")) == "function" then
-                local ok, list = pcall(o.list)
-                if ok and type(list) == "table" then
-                    for idx, e in pairs(list) do
-                        local uid, name = ExtractUidFromEntry(e)
-                        if uid then
-                            if arg1 ~= nil and (idx == arg1 or (tonumber(arg1) and idx == tonumber(arg1) - 1)) then
-                                if #list == 1 or idx == arg1 then
-                                    return uid, name or tostring(uid)
-                                end
-                            end
-                            table.insert(candidates, { uid = uid, name = name or tostring(uid) })
-                        end
+        if o and lastClickTileX and lastClickTileY then
+            if type(rawget(o, "playerAt")) == "function" then
+                local okP, pAt = pcall(o.playerAt, lastClickTileX, lastClickTileY)
+                if okP and pAt then
+                    local uid = (type(pAt) == "table" and tonumber(pAt[1] or pAt.userId)) or tonumber(pAt)
+                    if uid and uid ~= Player.UserId then
+                        return uid, tostring(uid)
                     end
                 end
             end
-
-            if lastClickTileX and lastClickTileY then
-                if type(rawget(o, "playerAt")) == "function" then
-                    local okP, pAt = pcall(o.playerAt, lastClickTileX, lastClickTileY)
-                    if okP and pAt then
-                        local uid, name = ExtractUidFromEntry(pAt)
-                        if uid then return uid, name or tostring(uid) end
-                    end
-                end
-                if type(rawget(o, "where")) == "function" and #candidates > 0 then
-                    local bestUid, bestName, bestDist = nil, nil, math.huge
-                    for _, c in ipairs(candidates) do
-                        local okW, wx, wy = pcall(o.where, c.uid)
-                        if okW and type(wx) == "table" then wx, wy = wx.x or wx[1], wx.y or wx[2] end
-                        if okW and type(wx) == "number" and type(wy) == "number" then
-                            local dist = math.abs(wx - lastClickTileX) + math.abs(wy - lastClickTileY)
-                            if dist < bestDist then
-                                bestUid, bestName, bestDist = c.uid, c.name, dist
-                            end
+            if type(rawget(o, "where")) == "function" and #candidates > 0 then
+                local bestUid, bestName, bestDist = nil, nil, math.huge
+                for _, c in ipairs(candidates) do
+                    local okW, wx, wy = pcall(o.where, c.uid)
+                    if okW and type(wx) == "table" then wx, wy = wx.x or wx[1], wx.y or wx[2] end
+                    if okW and type(wx) == "number" and type(wy) == "number" then
+                        local dist = math.abs(wx - lastClickTileX) + math.abs(wy - lastClickTileY)
+                        if dist < bestDist then
+                            bestUid, bestName, bestDist = c.uid, c.name, dist
                         end
                     end
-                    if bestUid and bestDist <= 5 then
-                        return bestUid, bestName
-                    end
+                end
+                if bestUid and bestDist <= 5 then
+                    return bestUid, bestName
                 end
             end
         end
@@ -6660,16 +6643,15 @@ do (function()
     end
 
     local origNetCall = (NetOk and type(Net) == "table" and type(Net.call) == "function") and Net.call or nil
-    local origWorldCall = nil
-    local origPlayerAt = nil
+    local hookedUpvalues = {}
     local lastFastWrenchClock = 0
 
-    local function ResetCallerBusyUpvalues()
+    local function ResetCallerBusyUpvalues(wrapperRef)
         if not (debug and debug.info and getupvalueFn and setupvalueFn) then return end
-        for stackLvl = 2, 7 do
+        for stackLvl = 2, 6 do
             local okF, callerFn = pcall(debug.info, stackLvl, "f")
             if not okF or type(callerFn) ~= "function" then break end
-            if not (isexecutorclosure and pcall(isexecutorclosure, callerFn) and isexecutorclosure(callerFn)) then
+            if callerFn ~= wrapperRef and not (isexecutorclosure and pcall(isexecutorclosure, callerFn) and isexecutorclosure(callerFn)) then
                 for upIdx = 1, 20 do
                     local okU, upVal = pcall(getupvalueFn, callerFn, upIdx)
                     if not okU then break end
@@ -6685,11 +6667,16 @@ do (function()
         lastFastWrenchClock = os.clock()
         task.spawn(function()
             pcall(callFn, "WorldCommand", fastCmd, "#" .. tostring(targetUid))
+            local w = FindWorld()
+            if w and type(rawget(w, "call")) == "function" then
+                pcall(rawget(w, "call"), "WorldCommand", fastCmd, "#" .. tostring(targetUid))
+            end
             pcall(callFn, "SetBusy", 0)
             Notify(string.format("%s -> %s (#%s)", fastLabel, tostring(targetName or "Player"), tostring(targetUid)), fastLabel, 2)
         end)
     end
 
+    local wrapperFn
     local function FastWrenchInterceptor(callFn, cmdName, arg1, ...)
         local fastCmd, fastLabel = GetActiveFastWrenchCmd()
         if fastCmd then
@@ -6699,14 +6686,13 @@ do (function()
                     if os.clock() - lastFastWrenchClock > 0.15 then
                         ExecuteFastWrenchOn(callFn, fastCmd, fastLabel, targetUid, targetName)
                     end
-                    ResetCallerBusyUpvalues()
-                    -- Hentikan eksekusi fungsi pembuka Dialog Wrench tepat di baris ini
-                    -- supaya game batal membuat/menampilkan Dialog Wrench tanpa merusak UI GrowBlox!
-                    error("ANCH_FAST_WRENCH_ABORT", 0)
+                    ResetCallerBusyUpvalues(wrapperFn)
+                    -- Tidurkan thread pembuka dialog selamanya (menembus pcall) agar UI Dialog Wrench batal dibuat!
+                    return coroutine.yield()
                 end
             elseif cmdName == "SetBusy" and arg1 == 2 then
-                if os.clock() - lastFastWrenchClock < 0.8 then
-                    ResetCallerBusyUpvalues()
+                if os.clock() - lastFastWrenchClock < 1.0 then
+                    ResetCallerBusyUpvalues(wrapperFn)
                     return false
                 end
             end
@@ -6714,57 +6700,44 @@ do (function()
         return callFn(cmdName, arg1, ...)
     end
 
-    local function HookFastWrenchTargets()
-        if origNetCall and NetOk and type(Net) == "table" then
-            Net.call = function(cmdName, arg1, ...)
-                if not alive() then return origNetCall(cmdName, arg1, ...) end
-                return FastWrenchInterceptor(origNetCall, cmdName, arg1, ...)
-            end
+    if origNetCall then
+        wrapperFn = function(cmdName, arg1, ...)
+            if not alive() then return origNetCall(cmdName, arg1, ...) end
+            return FastWrenchInterceptor(origNetCall, cmdName, arg1, ...)
         end
-        local w = Refs.World
-        if w and type(rawget(w, "call")) == "function" then
-            if not origWorldCall then origWorldCall = rawget(w, "call") end
-            local baseCall = origNetCall or origWorldCall
-            rawset(w, "call", function(cmdName, arg1, ...)
-                if not alive() then return origWorldCall(cmdName, arg1, ...) end
-                return FastWrenchInterceptor(baseCall, cmdName, arg1, ...)
-            end)
-        end
-        local o = Refs.Others
-        if o and type(rawget(o, "playerAt")) == "function" then
-            if not origPlayerAt then origPlayerAt = rawget(o, "playerAt") end
-            rawset(o, "playerAt", function(...)
-                local a, b, c = origPlayerAt(...)
-                if a ~= nil then
-                    local uid, name = ExtractUidFromEntry(a)
-                    if not uid and b ~= nil then uid, name = ExtractUidFromEntry(b) end
-                    if uid then
-                        lastPlayerAtUid, lastPlayerAtName, lastPlayerAtClock = uid, name or tostring(uid), os.clock()
+        Net.call = wrapperFn
+
+        -- Ganti semua upvalue lokal `local call = Net.call` di fungsi game
+        if getgcFn and getupvalueFn and setupvalueFn then
+            task.spawn(function()
+                for _, fn in ipairs(getgcFn(false)) do
+                    if type(fn) == "function" and fn ~= wrapperFn and fn ~= FastWrenchInterceptor then
+                        if not (isexecutorclosure and pcall(isexecutorclosure, fn) and isexecutorclosure(fn)) then
+                            for i = 1, 30 do
+                                local okU, val = pcall(getupvalueFn, fn, i)
+                                if not okU then break end
+                                if val == origNetCall then
+                                    pcall(setupvalueFn, fn, i, wrapperFn)
+                                    table.insert(hookedUpvalues, { fn = fn, idx = i, orig = origNetCall })
+                                end
+                            end
+                        end
                     end
                 end
-                return a, b, c
             end)
         end
     end
-
-    HookFastWrenchTargets()
-    task.spawn(function()
-        while alive() do
-            HookFastWrenchTargets()
-            task.wait(2)
-        end
-    end)
 
     function Session.RestoreFastWrench()
         if origNetCall and NetOk and type(Net) == "table" then
             Net.call = origNetCall
         end
-        if origWorldCall and Refs.World then
-            pcall(rawset, Refs.World, "call", origWorldCall)
+        if setupvalueFn then
+            for _, h in ipairs(hookedUpvalues) do
+                pcall(setupvalueFn, h.fn, h.idx, h.orig)
+            end
         end
-        if origPlayerAt and Refs.Others then
-            pcall(rawset, Refs.Others, "playerAt", origPlayerAt)
-        end
+        table.clear(hookedUpvalues)
     end
 
     function StartAutoRejoin()
