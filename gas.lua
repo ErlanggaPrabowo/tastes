@@ -6506,15 +6506,38 @@ do (function()
     end
 
     -- ====================================================================
-    -- FAST PULL / FAST KICK / FAST BAN (BYPASS DIALOG WRENCH 0ms)
+    -- FAST PULL / FAST KICK / FAST BAN (BYPASS DIALOG WRENCH 0ms & ANTI-CRASH)
     -- ====================================================================
     local lastClickTileX, lastClickTileY = nil, nil
-    local lastClickScreenPos = nil
+    local lastPlayerAtUid, lastPlayerAtName, lastPlayerAtClock = nil, nil, 0
+    local recentModalFrames = {}
 
-    trackConn(UserInputService.InputBegan:Connect(function(inp, processed)
-        if processed or not alive() then return end
+    local function ExtractUidFromEntry(entry)
+        if type(entry) == "number" and entry > 1000 and entry ~= Player.UserId then
+            return entry, nil
+        elseif type(entry) == "table" then
+            local uid = tonumber(entry.userId or entry.uid or entry.id or entry[1])
+            local name = entry.name or entry[2]
+            if uid and uid > 1000 and uid ~= Player.UserId then
+                return uid, type(name) == "string" and name:gsub("`.", "") or nil
+            end
+            for _, v in pairs(entry) do
+                if type(v) == "number" and v > 1000 and v ~= Player.UserId then
+                    for _, plr in ipairs(Players:GetPlayers()) do
+                        if plr.UserId == v then
+                            return v, plr.DisplayName or plr.Name
+                        end
+                    end
+                end
+            end
+        end
+        return nil, nil
+    end
+
+    -- Jangan blokir `processed == true` karena klik world 2D di GrowBlox selalu dianggap GUI klik!
+    trackConn(UserInputService.InputBegan:Connect(function(inp)
+        if not alive() then return end
         if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-            lastClickScreenPos = inp.Position
             local tx, ty = Nav.ScreenToTile(inp.Position)
             if tx and ty then
                 lastClickTileX, lastClickTileY = tx, ty
@@ -6530,12 +6553,16 @@ do (function()
     end
 
     local function ResolveWrenchedTargetUid(arg1)
-        -- 1. Cek langsung terhadap daftar Players di server (jika arg1 adalah UserId, "#UserId", atau Nama)
+        -- 0. Jika baru saja terdeteksi oleh hook Others.playerAt
+        if lastPlayerAtUid and (os.clock() - lastPlayerAtClock < 0.6) then
+            return lastPlayerAtUid, lastPlayerAtName
+        end
+
+        -- 1. Cek jika arg1 langsung berisi UserId (> 1000) atau Nama Player
         if arg1 ~= nil then
+            local uid, name = ExtractUidFromEntry(arg1)
+            if uid then return uid, name or tostring(uid) end
             local numId = tonumber(arg1) or (type(arg1) == "string" and tonumber(arg1:match("(%d+)")))
-            if type(arg1) == "table" then
-                numId = tonumber(arg1.userId or arg1.id or arg1[1])
-            end
             for _, plr in ipairs(Players:GetPlayers()) do
                 if plr ~= Player then
                     if (numId and plr.UserId == numId)
@@ -6544,58 +6571,92 @@ do (function()
                     end
                 end
             end
-            if numId and numId > 1000 and numId ~= Player.UserId then
-                return numId, tostring(numId)
+        end
+
+        -- 2. Cari UserId dari Upvalues fungsi pemanggil di Call Stack (saat GetPlayerLevel dipanggil)
+        if debug and debug.info then
+            for stackLvl = 2, 8 do
+                local okF, callerFn = pcall(debug.info, stackLvl, "f")
+                if not okF or type(callerFn) ~= "function" then break end
+                for _, upVal in pairs(GetUpvalues(callerFn)) do
+                    local uid, name = ExtractUidFromEntry(upVal)
+                    if uid then return uid, name or tostring(uid) end
+                end
             end
         end
 
-        -- 2. Cek melalui tabel Refs.Others (shortId / indeks / posisi klik)
+        -- 3. Cari dari tabel Refs.Others (termasuk tabel Upvalue internal yang memetakan netId `2` -> UserId)
         local o = Refs.Others
         if not o then Refs.Scan(); o = Refs.Others end
         local candidates = {}
 
-        if o and type(rawget(o, "list")) == "function" then
-            local ok, list = pcall(o.list)
-            if ok and type(list) == "table" then
-                for idx, e in pairs(list) do
-                    if type(e) == "table" then
-                        local uid = tonumber(e[1] or e.userId)
-                        local name = tostring(e[2] or e.name or uid or ""):gsub("`.", "")
-                        if uid and uid ~= Player.UserId then
-                            if arg1 ~= nil and (idx == arg1 or e.id == arg1 or e.pid == arg1 or e.netId == arg1 or e[3] == arg1) then
-                                return uid, name
+        if o then
+            -- 3a. Cek upvalue internal dari Others.list / Others.playerAt / Others.where untuk key [arg1] (misal [2])
+            for _, fnName in ipairs({ "list", "playerAt", "where" }) do
+                local fn = rawget(o, fnName)
+                if type(fn) == "function" then
+                    for _, upTbl in pairs(GetUpvalues(fn)) do
+                        if type(upTbl) == "table" and upTbl ~= Refs.World then
+                            if arg1 ~= nil and upTbl[arg1] ~= nil then
+                                local uid, name = ExtractUidFromEntry(upTbl[arg1])
+                                if uid then return uid, name or tostring(uid) end
                             end
-                            table.insert(candidates, { uid = uid, name = name })
+                            for k, v in pairs(upTbl) do
+                                local uid, name = ExtractUidFromEntry(v)
+                                if uid then
+                                    if arg1 ~= nil and (k == arg1 or (type(v) == "table" and (v.id == arg1 or v.pid == arg1 or v.netId == arg1 or v.slot == arg1 or v[3] == arg1))) then
+                                        return uid, name or tostring(uid)
+                                    end
+                                end
+                            end
                         end
                     end
                 end
             end
-        end
 
-        if o and lastClickTileX and lastClickTileY then
-            if type(rawget(o, "playerAt")) == "function" then
-                local okP, pAt = pcall(o.playerAt, lastClickTileX, lastClickTileY)
-                if okP and pAt then
-                    local uid = (type(pAt) == "table" and tonumber(pAt[1] or pAt.userId)) or tonumber(pAt)
-                    if uid and uid ~= Player.UserId then
-                        return uid, tostring(uid)
-                    end
-                end
-            end
-            if type(rawget(o, "where")) == "function" and #candidates > 0 then
-                local bestUid, bestName, bestDist = nil, nil, math.huge
-                for _, c in ipairs(candidates) do
-                    local okW, wx, wy = pcall(o.where, c.uid)
-                    if okW and type(wx) == "table" then wx, wy = wx.x or wx[1], wx.y or wx[2] end
-                    if okW and type(wx) == "number" and type(wy) == "number" then
-                        local dist = math.abs(wx - lastClickTileX) + math.abs(wy - lastClickTileY)
-                        if dist < bestDist then
-                            bestUid, bestName, bestDist = c.uid, c.name, dist
+            -- 3b. Cek dari Others.list()
+            if type(rawget(o, "list")) == "function" then
+                local ok, list = pcall(o.list)
+                if ok and type(list) == "table" then
+                    for idx, e in pairs(list) do
+                        local uid, name = ExtractUidFromEntry(e)
+                        if uid then
+                            -- Catatan: di Others.list(), player ke-1 seringkali punya netId = 2 (karena 1 adalah LocalPlayer)
+                            if arg1 ~= nil and (idx == arg1 or ( tonumber(arg1) and idx == tonumber(arg1) - 1 )) then
+                                if #list == 1 or idx == arg1 then
+                                    return uid, name or tostring(uid)
+                                end
+                            end
+                            table.insert(candidates, { uid = uid, name = name or tostring(uid) })
                         end
                     end
                 end
-                if bestUid and bestDist <= 5 then
-                    return bestUid, bestName
+            end
+
+            -- 3c. Cek dari posisi tile yang diklik (Others.playerAt & Others.where)
+            if lastClickTileX and lastClickTileY then
+                if type(rawget(o, "playerAt")) == "function" then
+                    local okP, pAt = pcall(o.playerAt, lastClickTileX, lastClickTileY)
+                    if okP and pAt then
+                        local uid, name = ExtractUidFromEntry(pAt)
+                        if uid then return uid, name or tostring(uid) end
+                    end
+                end
+                if type(rawget(o, "where")) == "function" and #candidates > 0 then
+                    local bestUid, bestName, bestDist = nil, nil, math.huge
+                    for _, c in ipairs(candidates) do
+                        local okW, wx, wy = pcall(o.where, c.uid)
+                        if okW and type(wx) == "table" then wx, wy = wx.x or wx[1], wx.y or wx[2] end
+                        if okW and type(wx) == "number" and type(wy) == "number" then
+                            local dist = math.abs(wx - lastClickTileX) + math.abs(wy - lastClickTileY)
+                            if dist < bestDist then
+                                bestUid, bestName, bestDist = c.uid, c.name, dist
+                            end
+                        end
+                    end
+                    if bestUid and bestDist <= 5 then
+                        return bestUid, bestName
+                    end
                 end
             end
         end
@@ -6616,8 +6677,10 @@ do (function()
     end
 
     local origNetCall = (NetOk and type(Net) == "table" and type(Net.call) == "function") and Net.call or nil
-    local hookedUpvalues = {}
+    local origWorldCall = nil
+    local origPlayerAt = nil
     local lastFastWrenchClock = 0
+
     local SAFE_GUI_NAMES = {
         GameGui = true, World = true, Camera = true, Tiles = true, PlayerView = true,
         NameTag = true, Wrench = true, ChatGui = true, HUD = true, PlayerPanel = true,
@@ -6626,11 +6689,28 @@ do (function()
 
     local function SuppressWrenchDialogUI()
         pcall(function()
-            if Refs.Menu and type(Refs.Menu.ui) == "table" then
+            if Refs.Menu then
                 for _, fnName in ipairs({ "close", "hide", "cancel", "closeModal", "closePopup" }) do
-                    local fn = rawget(Refs.Menu.ui, fnName) or rawget(Refs.Menu, fnName)
+                    local fn = (type(Refs.Menu.ui) == "table" and rawget(Refs.Menu.ui, fnName)) or rawget(Refs.Menu, fnName)
                     if type(fn) == "function" then pcall(fn) end
                 end
+                if type(Refs.Menu.ui) == "table" then
+                    for k, v in pairs(Refs.Menu.ui) do
+                        if typeof(v) == "Instance" and v:IsA("GuiObject") and not SAFE_GUI_NAMES[v.Name] then
+                            local lk = tostring(k):lower()
+                            if lk:find("modal") or lk:find("popup") or lk:find("dialog") or lk:find("wrench") or lk:find("player") or lk:find("menu") then
+                                v.Visible = false
+                            end
+                        end
+                    end
+                end
+            end
+            for i = #recentModalFrames, 1, -1 do
+                local fr = recentModalFrames[i]
+                if fr and fr.Parent and fr:IsA("GuiObject") and not SAFE_GUI_NAMES[fr.Name] then
+                    fr.Visible = false
+                end
+                recentModalFrames[i] = nil
             end
             local gg = PlayerGui:FindFirstChild("GameGui")
             if gg then
@@ -6645,69 +6725,54 @@ do (function()
 
     local function ExecuteFastWrenchOn(callFn, fastCmd, fastLabel, targetUid, targetName)
         lastFastWrenchClock = os.clock()
+        SuppressWrenchDialogUI()
         task.spawn(function()
+            -- Kirim langsung paket WorldCommand (pull / kick / ban) + "#UserId" sesuai hasil Spy
             pcall(callFn, "WorldCommand", fastCmd, "#" .. tostring(targetUid))
-            local w = FindWorld()
-            if w and type(rawget(w, "call")) == "function" then
-                pcall(rawget(w, "call"), "WorldCommand", fastCmd, "#" .. tostring(targetUid))
-            end
             pcall(callFn, "SetBusy", 0)
             SuppressWrenchDialogUI()
             task.wait(0.05)
             SuppressWrenchDialogUI()
+            pcall(callFn, "SetBusy", 0)
             Notify(string.format("%s -> %s (#%s)", fastLabel, tostring(targetName or "Player"), tostring(targetUid)), fastLabel, 2)
         end)
     end
 
-    -- Jika dialog Wrench sempat terbuat secara lokal di GUI, sembunyikan dalam 0ms & otomatis picu aksinya
+    -- Pantau elemen UI baru di GameGui saat Wrench diklik untuk langsung disembunyikan
     local ggRef = PlayerGui:FindFirstChild("GameGui")
     if ggRef then
         trackConn(ggRef.DescendantAdded:Connect(function(desc)
-            if not alive() then return end
-            local fastCmd, fastLabel = GetActiveFastWrenchCmd()
-            if not fastCmd then return end
-
-            if (os.clock() - lastFastWrenchClock < 0.45) then
+            if not alive() or not GetActiveFastWrenchCmd() then return end
+            if desc:IsA("GuiObject") then
                 local topChild = desc
-                while topChild and topChild.Parent and topChild.Parent ~= ggRef do
+                while topChild and topChild.Parent and topChild.Parent ~= ggRef and topChild.Parent.Name ~= "World" do
                     topChild = topChild.Parent
                 end
                 if topChild and topChild:IsA("GuiObject") and not SAFE_GUI_NAMES[topChild.Name] then
-                    topChild.Visible = false
+                    table.insert(recentModalFrames, topChild)
+                    if os.clock() - lastFastWrenchClock < 0.6 then
+                        topChild.Visible = false
+                    end
                 end
             end
-
-            if desc:IsA("TextButton") or desc:IsA("TextLabel") then
-                task.defer(function()
-                    local txt = Trim(desc.Text or ""):lower()
-                    if txt == fastCmd or txt:find("^" .. fastCmd .. "%s") then
-                        local topChild = desc
-                        while topChild and topChild.Parent and topChild.Parent ~= ggRef do
-                            topChild = topChild.Parent
-                        end
-                        if topChild and topChild:IsA("GuiObject") and not SAFE_GUI_NAMES[topChild.Name] then
-                            topChild.Visible = false
-                        end
-                        if os.clock() - lastFastWrenchClock > 0.20 then
-                            local targetUid, targetName = ResolveWrenchedTargetUid(nil)
-                            if targetUid and origNetCall then
-                                ExecuteFastWrenchOn(origNetCall, fastCmd, fastLabel, targetUid, targetName)
-                            elseif desc:IsA("TextButton") and getconnections then
-                                for _, sig in ipairs({ desc.MouseButton1Click, desc.Activated }) do
-                                    local okC, conns = pcall(getconnections, sig)
-                                    if okC and type(conns) == "table" then
-                                        for _, c in ipairs(conns) do
-                                            if c.Fire then pcall(c.Fire, c) elseif c.Function then pcall(c.Function) end
-                                        end
-                                    end
-                                end
-                                SuppressWrenchDialogUI()
-                            end
-                        end
-                    end
-                end)
-            end
         end))
+    end
+
+    local function ResetCallerBusyUpvalues()
+        if not (debug and debug.info and getupvalueFn and setupvalueFn) then return end
+        for stackLvl = 2, 6 do
+            local okF, callerFn = pcall(debug.info, stackLvl, "f")
+            if not okF or type(callerFn) ~= "function" then break end
+            if not (isexecutorclosure and pcall(isexecutorclosure, callerFn) and isexecutorclosure(callerFn)) then
+                for upIdx = 1, 20 do
+                    local okU, upVal = pcall(getupvalueFn, callerFn, upIdx)
+                    if not okU then break end
+                    if upVal == true then
+                        pcall(setupvalueFn, callerFn, upIdx, false)
+                    end
+                end
+            end
+        end
     end
 
     local function FastWrenchInterceptor(callFn, cmdName, arg1, ...)
@@ -6715,82 +6780,83 @@ do (function()
         if fastCmd then
             if cmdName == "GetPlayerLevel" or cmdName == "WrenchPlayer" or cmdName == "PlayerInfo" then
                 local targetUid, targetName = ResolveWrenchedTargetUid(arg1)
-                if targetUid and (os.clock() - lastFastWrenchClock > 0.18) then
+                if targetUid and (os.clock() - lastFastWrenchClock > 0.15) then
                     ExecuteFastWrenchOn(callFn, fastCmd, fastLabel, targetUid, targetName)
-                    -- Reset flag busy di fungsi pemanggil agar bisa langsung wrench lagi tanpa nyangkut
-                    if debug and debug.info and getupvalueFn and setupvalueFn then
-                        for stackLvl = 2, 5 do
-                            local okF, callerFn = pcall(debug.info, stackLvl, "f")
-                            if okF and type(callerFn) == "function" and callerFn ~= FastWrenchInterceptor then
-                                for upIdx = 1, 20 do
-                                    local okU, upVal = pcall(getupvalueFn, callerFn, upIdx)
-                                    if not okU then break end
-                                    if upVal == true then
-                                        pcall(setupvalueFn, callerFn, upIdx, false)
-                                    end
-                                end
-                            end
-                        end
-                    end
+                    ResetCallerBusyUpvalues()
                     return nil
                 end
             elseif cmdName == "SetBusy" and arg1 == 2 then
-                local targetUid, targetName = ResolveWrenchedTargetUid(nil)
-                if targetUid and lastClickScreenPos and (os.clock() - lastFastWrenchClock > 0.25) then
-                    -- Jika player baru saja mengklik tile player lain, langsung cegat sebelum dialog terbuka
-                    local px, py = GetTile()
-                    if not (px == lastClickTileX and py == lastClickTileY) then
-                        ExecuteFastWrenchOn(callFn, fastCmd, fastLabel, targetUid, targetName)
-                        return false
-                    end
-                end
-                if os.clock() - lastFastWrenchClock < 1.0 then
+                if os.clock() - lastFastWrenchClock < 0.8 then
+                    ResetCallerBusyUpvalues()
                     SuppressWrenchDialogUI()
                     return false
+                end
+                local targetUid, targetName = ResolveWrenchedTargetUid(nil)
+                if targetUid then
+                    local px, py = GetTile()
+                    if not (px and lastClickTileX and px == lastClickTileX and py == lastClickTileY) then
+                        ExecuteFastWrenchOn(callFn, fastCmd, fastLabel, targetUid, targetName)
+                        ResetCallerBusyUpvalues()
+                        return false
+                    end
                 end
             end
         end
         return callFn(cmdName, arg1, ...)
     end
 
-    if origNetCall then
-        local wrapperFn = function(cmdName, arg1, ...)
-            if not alive() then return origNetCall(cmdName, arg1, ...) end
-            return FastWrenchInterceptor(origNetCall, cmdName, arg1, ...)
+    -- Pasang hook pada Net.call, Refs.World.call, dan Refs.Others.playerAt (Tanpa getgc loop!)
+    local function HookFastWrenchTargets()
+        if origNetCall and NetOk and type(Net) == "table" then
+            Net.call = function(cmdName, arg1, ...)
+                if not alive() then return origNetCall(cmdName, arg1, ...) end
+                return FastWrenchInterceptor(origNetCall, cmdName, arg1, ...)
+            end
         end
-        Net.call = wrapperFn
-
-        -- Ganti juga semua upvalue lokal `local call = Net.call` di seluruh fungsi game pada getgc!
-        if getgcFn and getupvalueFn and setupvalueFn then
-            task.spawn(function()
-                for _, fn in ipairs(getgcFn(false)) do
-                    if type(fn) == "function" and fn ~= wrapperFn and fn ~= FastWrenchInterceptor then
-                        if not (isexecutorclosure and pcall(isexecutorclosure, fn) and isexecutorclosure(fn)) then
-                            for i = 1, 30 do
-                                local okU, val = pcall(getupvalueFn, fn, i)
-                                if not okU then break end
-                                if val == origNetCall then
-                                    pcall(setupvalueFn, fn, i, wrapperFn)
-                                    table.insert(hookedUpvalues, { fn = fn, idx = i, orig = origNetCall })
-                                end
-                            end
-                        end
+        local w = Refs.World
+        if w and type(rawget(w, "call")) == "function" then
+            if not origWorldCall then origWorldCall = rawget(w, "call") end
+            local baseCall = origNetCall or origWorldCall
+            rawset(w, "call", function(cmdName, arg1, ...)
+                if not alive() then return origWorldCall(cmdName, arg1, ...) end
+                return FastWrenchInterceptor(baseCall, cmdName, arg1, ...)
+            end)
+        end
+        local o = Refs.Others
+        if o and type(rawget(o, "playerAt")) == "function" then
+            if not origPlayerAt then origPlayerAt = rawget(o, "playerAt") end
+            rawset(o, "playerAt", function(...)
+                local a, b, c = origPlayerAt(...)
+                if a ~= nil then
+                    local uid, name = ExtractUidFromEntry(a)
+                    if not uid and b ~= nil then uid, name = ExtractUidFromEntry(b) end
+                    if uid then
+                        lastPlayerAtUid, lastPlayerAtName, lastPlayerAtClock = uid, name or tostring(uid), os.clock()
                     end
                 end
+                return a, b, c
             end)
         end
     end
+
+    HookFastWrenchTargets()
+    task.spawn(function()
+        while alive() do
+            HookFastWrenchTargets()
+            task.wait(2)
+        end
+    end)
 
     function Session.RestoreFastWrench()
         if origNetCall and NetOk and type(Net) == "table" then
             Net.call = origNetCall
         end
-        if setupvalueFn then
-            for _, h in ipairs(hookedUpvalues) do
-                pcall(setupvalueFn, h.fn, h.idx, h.orig)
-            end
+        if origWorldCall and Refs.World then
+            pcall(rawset, Refs.World, "call", origWorldCall)
         end
-        table.clear(hookedUpvalues)
+        if origPlayerAt and Refs.Others then
+            pcall(rawset, Refs.Others, "playerAt", origPlayerAt)
+        end
     end
 
     function StartAutoRejoin()
@@ -9227,8 +9293,8 @@ Session.Cleanup = function()
     StopNoclip()
     StopUjump()
     StopGod()
-    if origNetCall and NetOk and type(Net) == "table" then
-        Net.call = origNetCall
+    if Session.RestoreFastWrench then
+        pcall(Session.RestoreFastWrench)
     end
     LiteMode.Set(false)
     if Session.RestoreWatermark then pcall(Session.RestoreWatermark) end
