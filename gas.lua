@@ -480,81 +480,85 @@ end)() end
 -- Input buatan untuk Legit Walking, Auto Collect & FlyPad (Hook langsung ke getgc + VirtualInputManager)
 local AutoInput = { active = false, left = false, right = false, jump = false, down = false }
 local FlyPadState = { up = false, down = false }
-local VIM = cloneref(game:GetService("VirtualInputManager"))
-local vimState = { left = false, right = false, jump = false }
+local OrigIsDown = G.__ANCH_TrueOrigIsDown
+local SyncVimKeys, ReleaseInput
 
-local function SetVimKey(keyName, kc, down)
-    if vimState[keyName] == down then return end
-    vimState[keyName] = down
-    pcall(function()
-        if VIM and VIM.SendKeyEvent then
-            VIM:SendKeyEvent(down, kc, false, game)
+do (function()
+    local VIM = cloneref(game:GetService("VirtualInputManager"))
+    local vimState = { left = false, right = false, jump = false }
+
+    local function SetVimKey(keyName, kc, down)
+        if vimState[keyName] == down then return end
+        vimState[keyName] = down
+        pcall(function()
+            if VIM and VIM.SendKeyEvent then
+                VIM:SendKeyEvent(down, kc, false, game)
+            end
+        end)
+    end
+
+    SyncVimKeys = function()
+        if not AutoInput.active then
+            SetVimKey("left", Enum.KeyCode.A, false)
+            SetVimKey("right", Enum.KeyCode.D, false)
+            SetVimKey("jump", Enum.KeyCode.Space, false)
+            return
         end
-    end)
-end
+        SetVimKey("left", Enum.KeyCode.A, AutoInput.left == true)
+        SetVimKey("right", Enum.KeyCode.D, AutoInput.right == true)
+        SetVimKey("jump", Enum.KeyCode.Space, AutoInput.jump == true)
+    end
 
-local function SyncVimKeys()
-    if not AutoInput.active then
+    ReleaseInput = function()
+        AutoInput.left, AutoInput.right, AutoInput.jump, AutoInput.down = false, false, false, false
         SetVimKey("left", Enum.KeyCode.A, false)
         SetVimKey("right", Enum.KeyCode.D, false)
         SetVimKey("jump", Enum.KeyCode.Space, false)
-        return
     end
-    SetVimKey("left", Enum.KeyCode.A, AutoInput.left == true)
-    SetVimKey("right", Enum.KeyCode.D, AutoInput.right == true)
-    SetVimKey("jump", Enum.KeyCode.Space, AutoInput.jump == true)
-end
 
-local function ReleaseInput()
-    AutoInput.left, AutoInput.right, AutoInput.jump, AutoInput.down = false, false, false, false
-    SetVimKey("left", Enum.KeyCode.A, false)
-    SetVimKey("right", Enum.KeyCode.D, false)
-    SetVimKey("jump", Enum.KeyCode.Space, false)
-end
-
-local OrigIsDown = G.__ANCH_TrueOrigIsDown
-local function IsDownInterceptor(saved, key, ...)
-    if alive() then
-        if AutoInput.active then
-            if key == "keyLeft" then return AutoInput.left end
-            if key == "keyRight" then return AutoInput.right end
-            if key == "keyJump" then return AutoInput.jump end
-            if key == "keyDown" then return AutoInput.down end
+    local function IsDownInterceptor(saved, key, ...)
+        if alive() then
+            if AutoInput.active then
+                if key == "keyLeft" then return AutoInput.left end
+                if key == "keyRight" then return AutoInput.right end
+                if key == "keyJump" then return AutoInput.jump end
+                if key == "keyDown" then return AutoInput.down end
+            end
+            if FlyPadState.up and key == "keyJump" then return true end
+            if FlyPadState.down and key == "keyDown" then return true end
         end
-        if FlyPadState.up and key == "keyJump" then return true end
-        if FlyPadState.down and key == "keyDown" then return true end
-    end
-    if OrigIsDown then
-        return OrigIsDown(saved, key, ...)
-    end
-    return false
-end
-
-local function HookAllIsDownTables()
-    if MenuModOk and type(MenuModule) == "table" and type(rawget(MenuModule, "isDown")) == "function" then
-        local fn = rawget(MenuModule, "isDown")
-        if not OrigIsDown and not (isexecutorclosure and pcall(isexecutorclosure, fn) and isexecutorclosure(fn)) then
-            OrigIsDown = fn
-            G.__ANCH_TrueOrigIsDown = fn
+        if OrigIsDown then
+            return OrigIsDown(saved, key, ...)
         end
-        rawset(MenuModule, "isDown", IsDownInterceptor)
+        return false
     end
-    if getgcFn then
-        for _, v in ipairs(getgcFn(true)) do
-            if type(v) == "table" then
-                local fn = rawget(v, "isDown")
-                if type(fn) == "function" then
-                    if not OrigIsDown and not (isexecutorclosure and pcall(isexecutorclosure, fn) and isexecutorclosure(fn)) then
-                        OrigIsDown = fn
-                        G.__ANCH_TrueOrigIsDown = fn
+
+    local function HookAllIsDownTables()
+        if MenuModOk and type(MenuModule) == "table" and type(rawget(MenuModule, "isDown")) == "function" then
+            local fn = rawget(MenuModule, "isDown")
+            if not OrigIsDown and not (isexecutorclosure and pcall(isexecutorclosure, fn) and isexecutorclosure(fn)) then
+                OrigIsDown = fn
+                G.__ANCH_TrueOrigIsDown = fn
+            end
+            rawset(MenuModule, "isDown", IsDownInterceptor)
+        end
+        if getgcFn then
+            for _, v in ipairs(getgcFn(true)) do
+                if type(v) == "table" then
+                    local fn = rawget(v, "isDown")
+                    if type(fn) == "function" then
+                        if not OrigIsDown and not (isexecutorclosure and pcall(isexecutorclosure, fn) and isexecutorclosure(fn)) then
+                            OrigIsDown = fn
+                            G.__ANCH_TrueOrigIsDown = fn
+                        end
+                        rawset(v, "isDown", IsDownInterceptor)
                     end
-                    rawset(v, "isDown", IsDownInterceptor)
                 end
             end
         end
     end
-end
-HookAllIsDownTables()
+    HookAllIsDownTables()
+end)() end
 
 do (function()
     local function isSetTileFn(fn)
@@ -7321,13 +7325,8 @@ do (function()
     -- FAST DROP & FAST RECYCLE/TRASH (INTERCEPT UPVAL[5] openDialog 0ms)
     -- ====================================================================
     local bpInvRef = nil
-    local bpActionsTbl = nil
     local bpGridCells = nil
-    local dropHandlerFn = nil
-    local recycleHandlerFn = nil
     local hookedDialogUpvalues = {}
-    local lastClickedBpAction = nil
-    local lastClickedBpClock = 0
 
     local function CloseBackpackInfoDialog()
         pcall(function()
@@ -7339,7 +7338,6 @@ do (function()
         end)
     end
 
-    -- Ambil ID item yang sedang dipilih di Backpack (dari Upval[1].selected atau Upval[3] cell.sel.Visible)
     local function GetSelectedBackpackItemId()
         local inv = bpInvRef or Refs.Inv
         if inv then
@@ -7436,7 +7434,6 @@ do (function()
         local actions = bp and bp:FindFirstChild("Actions")
         if not actions or not getconnections or not getupvalueFn or not setupvalueFn then return end
 
-        -- Cari Upval[1] (inv), Upval[2] (buttonsTbl), Upval[3] (gridCells), dan Upval[5] (openDialog) dari tombol di Actions
         for _, child in ipairs(actions:GetChildren()) do
             if child:IsA("GuiButton") then
                 for _, sig in ipairs({ child.Activated, child.MouseButton1Click }) do
@@ -7450,17 +7447,9 @@ do (function()
                                 local ok3, u3 = pcall(getupvalueFn, fn, 3)
                                 local ok5, u5 = pcall(getupvalueFn, fn, 5)
                                 if ok2 and type(u2) == "table" and rawget(u2, "drop") and rawget(u2, "recycle") and ok5 and type(u5) == "function" then
-                                    bpInvRef = ok1 and type(u1) == "table" and u1 or bpInvRef
-                                    bpActionsTbl = u2
-                                    bpGridCells = ok3 and type(u3) == "table" and u3 or bpGridCells
+                                    bpInvRef = (ok1 and type(u1) == "table") and u1 or bpInvRef
+                                    bpGridCells = (ok3 and type(u3) == "table") and u3 or bpGridCells
 
-                                    if child == rawget(u2, "drop") then
-                                        dropHandlerFn = fn
-                                    elseif child == rawget(u2, "recycle") then
-                                        recycleHandlerFn = fn
-                                    end
-
-                                    -- Simpan fungsi asli openDialog walaupun sudah pernah ter-hook sesi sebelumnya
                                     if not G.__ANCH_TrueOrigOpenDialog then
                                         if isexecutorclosure and pcall(isexecutorclosure, u5) and isexecutorclosure(u5) then
                                             for _, uu in pairs(GetUpvalues(u5)) do
@@ -7475,31 +7464,28 @@ do (function()
                                     end
 
                                     local origOpenDlg = G.__ANCH_TrueOrigOpenDialog
-                                    if origOpenDlg and u5 ~= Session.OpenDialogWrapper then
-                                        Session.OpenDialogWrapper = Session.OpenDialogWrapper or function(...)
-                                            if not alive() then
+                                    if origOpenDlg then
+                                        if child == rawget(u2, "drop") and u5 ~= Session.DropDialogWrapper then
+                                            Session.DropDialogWrapper = function(...)
+                                                if alive() and Config.fastDrop then
+                                                    ExecuteFastDropNow()
+                                                    return
+                                                end
                                                 return origOpenDlg(...)
                                             end
-                                            local caller = (debug and debug.info and debug.info(2, "f")) or nil
-                                            local isDropCall = (caller and caller == dropHandlerFn)
-                                                or (lastClickedBpAction == "drop" and (os.clock() - lastClickedBpClock) < 0.25)
-                                            local isRecycleCall = (caller and caller == recycleHandlerFn)
-                                                or (lastClickedBpAction == "recycle" and (os.clock() - lastClickedBpClock) < 0.25)
-
-                                            if isDropCall and Config.fastDrop then
-                                                lastClickedBpAction = nil
-                                                ExecuteFastDropNow()
-                                                return
-                                            elseif isRecycleCall and Config.fastRecycle then
-                                                lastClickedBpAction = nil
-                                                ExecuteFastRecycleNow()
-                                                return
+                                            pcall(setupvalueFn, fn, 5, Session.DropDialogWrapper)
+                                            table.insert(hookedDialogUpvalues, { fn = fn, idx = 5, orig = origOpenDlg })
+                                        elseif child == rawget(u2, "recycle") and u5 ~= Session.RecycleDialogWrapper then
+                                            Session.RecycleDialogWrapper = function(...)
+                                                if alive() and Config.fastRecycle then
+                                                    ExecuteFastRecycleNow()
+                                                    return
+                                                end
+                                                return origOpenDlg(...)
                                             end
-                                            return origOpenDlg(...)
+                                            pcall(setupvalueFn, fn, 5, Session.RecycleDialogWrapper)
+                                            table.insert(hookedDialogUpvalues, { fn = fn, idx = 5, orig = origOpenDlg })
                                         end
-
-                                        pcall(setupvalueFn, fn, 5, Session.OpenDialogWrapper)
-                                        table.insert(hookedDialogUpvalues, { fn = fn, idx = 5, orig = origOpenDlg })
                                     end
                                 end
                             end
@@ -7508,37 +7494,12 @@ do (function()
                 end
             end
         end
-
-        -- Pasang penanda tombol Drop & Recycle saat ditekan
-        if bpActionsTbl then
-            local dropBtn = rawget(bpActionsTbl, "drop")
-            local recBtn = rawget(bpActionsTbl, "recycle")
-            if typeof(dropBtn) == "Instance" and dropBtn:IsA("GuiButton") and not dropBtn:GetAttribute("ANCHHooked") then
-                dropBtn:SetAttribute("ANCHHooked", true)
-                trackConn(dropBtn.InputBegan:Connect(function(inp)
-                    if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                        lastClickedBpAction = "drop"
-                        lastClickedBpClock = os.clock()
-                    end
-                end))
-            end
-            if typeof(recBtn) == "Instance" and recBtn:IsA("GuiButton") and not recBtn:GetAttribute("ANCHHooked") then
-                recBtn:SetAttribute("ANCHHooked", true)
-                trackConn(recBtn.InputBegan:Connect(function(inp)
-                    if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                        lastClickedBpAction = "recycle"
-                        lastClickedBpClock = os.clock()
-                    end
-                end))
-            end
-        end
     end
 
-    HookFastBackpackActions()
     task.spawn(function()
         while alive() do
             pcall(HookFastBackpackActions)
-            task.wait(2)
+            task.wait(1.5)
         end
     end)
 
@@ -8142,6 +8103,8 @@ end)() end
 ----------------------------------------------------------------------
 -- GUI UTAMA (WINDUI - STRUKTUR RILIS PUBLIK + PROTEKSI SAFEUI)
 ----------------------------------------------------------------------
+local Window
+do (function()
 local WindUI
 do
     local ok, result = pcall(function() return require("./src/Init") end)
@@ -8167,7 +8130,7 @@ local Green  = Color3.fromHex("#10C550")
 local Blue   = Color3.fromHex("#257AF7")
 local Red    = Color3.fromHex("#EF4F1D")
 
-local Window = WindUI:CreateWindow({
+Window = WindUI:CreateWindow({
     Title = "ANCH Hub  |  GrowBlox Ultimate",
     Folder = "ANCHHub_GrowBlox",
     Icon = "solar:folder-2-bold-duotone",
@@ -10072,6 +10035,7 @@ do (function()
     for _, d in ipairs(PlayerGui:GetDescendants()) do hookBox(d) end
     trackConn(PlayerGui.DescendantAdded:Connect(hookBox))
     trackConn(Player.Chatted:Connect(processText))
+end)() end
 end)() end
 
 ----------------------------------------------------------------------
