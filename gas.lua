@@ -121,7 +121,34 @@ local TakeDropRemote = WorldRemotes and WorldRemotes:FindFirstChild("TakeDrop")
 local PickTitleRemote = WorldRemotes and WorldRemotes:FindFirstChild("PickTitle")
 local WorldClosedRemote = WorldRemotes and WorldRemotes:FindFirstChild("WorldClosed")
 
-local ItemDB = Shared and require(Shared:WaitForChild("ItemDB", 5)) or {}
+local ItemDB = {}
+local function ResolveItemDB()
+    if next(ItemDB) ~= nil then return ItemDB end
+    pcall(function()
+        local rawRep = game:GetService("ReplicatedStorage")
+        local sh = rawRep:FindFirstChild("Shared") or Shared
+        local mod = sh and (sh:FindFirstChild("ItemDB") or sh:WaitForChild("ItemDB", 5))
+        if mod then
+            local ok, res = pcall(require, mod)
+            if ok and type(res) == "table" then
+                if type(rawget(res, 2)) == "table" or type(res[2]) == "table" then
+                    ItemDB = res
+                else
+                    for _, k in ipairs({ "items", "Items", "list", "byId", "data", "db" }) do
+                        local sub = rawget(res, k)
+                        if type(sub) == "table" and (type(sub[2]) == "table" or type(sub["2"]) == "table") then
+                            ItemDB = sub
+                            break
+                        end
+                    end
+                    if next(ItemDB) == nil then ItemDB = res end
+                end
+            end
+        end
+    end)
+    return ItemDB
+end
+ResolveItemDB()
 local InvModOk, InventoryModule = pcall(function() return require(Shared:WaitForChild("Inventory", 5)) end)
 local NetOk, Net = pcall(function() return require(Shared:WaitForChild("Net", 5)) end)
 local RolesOk, RolesModule = pcall(function() return require(Shared:FindFirstChild("Roles")) end)
@@ -314,7 +341,10 @@ local function LoadConfig()
     end)
 end
 
+local UIInitializing = true
+
 local function SaveConfig()
+    if UIInitializing then return end
     pcall(function()
         if writefile then
             writefile(CONFIG_FILE, HttpService:JSONEncode(Config))
@@ -357,7 +387,8 @@ local function Trim(text)
 end
 
 local ToastHook = nil
-local function Notify(message, title, duration)
+local function Notify(message, title, duration, forceShow)
+    if UIInitializing and not forceShow then return end
     if ToastHook then
         local ok = pcall(ToastHook, tostring(message), title, duration)
         if ok then
@@ -733,7 +764,14 @@ do (function()
         return false
     end
 
-    function Refs.Scan()
+    local lastScanAt = 0
+    function Refs.Scan(force)
+        local now = os.clock()
+        if not force and (now - lastScanAt) < 2.5 and Refs.World then
+            return true
+        end
+        lastScanAt = now
+        ResolveItemDB()
         Refs.World, Refs.Inv, Refs.InvTable, Refs.SetTile, Refs.Punch, Refs.State, Refs.Menu, Refs.Gems, Refs.Hud, Refs.Others =
             nil, nil, nil, nil, nil, nil, nil, nil, nil, nil
         Refs.Particles = {}
@@ -742,6 +780,15 @@ do (function()
             for _, v in ipairs(getgcFn(true)) do
             local tv = type(v)
             if tv == "table" then
+                if next(ItemDB) == nil or type(ItemDB[2]) ~= "table" then
+                    local okDb, isDb = pcall(function()
+                        local d2 = rawget(v, 2)
+                        local d242 = rawget(v, 242)
+                        return type(d2) == "table" and type(d242) == "table"
+                            and (type(rawget(d2, "name")) == "string" or type(rawget(d2, "hits")) == "number")
+                    end)
+                    if okDb and isDb then ItemDB = v end
+                end
                 if not Refs.World then
                     local ok, valid = pcall(function()
                         return type(rawget(v, "fg")) == "table" and type(rawget(v, "bg")) == "table"
@@ -977,9 +1024,28 @@ local function FindRigs()
     return Refs.Rigs
 end
 
+local function GetItemEntry(id)
+    if not id then return nil end
+    if next(ItemDB) == nil then ResolveItemDB() end
+    local num = tonumber(id)
+    local it = (num and (rawget(ItemDB, num) or ItemDB[num])) or rawget(ItemDB, tostring(id)) or ItemDB[tostring(id)]
+    if type(it) == "table" then return it end
+    if type(ItemDB.get) == "function" then
+        local ok, res = pcall(ItemDB.get, num or id)
+        if ok and type(res) == "table" then return res end
+    end
+    return nil
+end
+
 local function ItemName(id)
-    local it = ItemDB and ItemDB[id]
-    return (type(it) == "table" and type(it.name) == "string") and it.name or ("Item #" .. tostring(id))
+    local it = GetItemEntry(id)
+    if type(it) == "table" then
+        local nm = rawget(it, "name") or it.name or rawget(it, "title") or rawget(it, "itemName") or rawget(it, 1)
+        if type(nm) == "string" and nm ~= "" then
+            return nm
+        end
+    end
+    return "Item #" .. tostring(id)
 end
 
 local function CountItem(id)
@@ -1208,20 +1274,59 @@ local function WaitPlaceGuard(x, y)
     end
 end
 
-local function CanBreakId(id)
-    if not id or id == 0 then return false end
-    local it = ItemDB[id]
-    if not it then return true end
-    if it.lock or it.area or it.guildLock or it.vend or it.display then return false end
-    local name = type(it.name) == "string" and it.name:lower() or ""
-    if name:find("bedrock", 1, true) or name:find("main door", 1, true) or name:find("white door", 1, true) then
+-- Whitelist Permanen: ID Bedrock, Pintu Utama, dan Seluruh Jenis Lock
+local UNBREAKABLE_IDS = {
+    [6]    = true, -- Main Door
+    [8]    = true, -- Bedrock
+    [202]  = true, -- Small Lock
+    [204]  = true, -- Big Lock
+    [206]  = true, -- Huge Lock
+    [242]  = true, -- World Lock
+    [1796] = true, -- Diamond Lock
+    [4994] = true, -- Builder's Lock
+    [5814] = true, -- Guild Lock
+    [7188] = true, -- Blue Gem Lock
+}
+
+local function CanBreakId(id, x, y)
+    if not id or id == 0 or UNBREAKABLE_IDS[id] then return false end
+
+    local w = FindWorld()
+    if w and x and y then
+        if typeof(w.spawn) == "Vector2" and x == math.floor(w.spawn.X) and y == math.floor(w.spawn.Y) then
+            return false
+        end
+        if type(w.lock) == "table" and w.lock.x == x and w.lock.y == y then
+            return false
+        end
+    end
+
+    local it = GetItemEntry(id)
+    if not it then
+        -- Jika ItemDB belum terbaca dan blok berada di dasar world (baris bedrock), jangan pernah di-break!
+        if w and y and y >= w.h - 6 then return false end
+        return true
+    end
+
+    if it.lock or it.area or it.guildLock or it.vend or it.display or it.bedrock or it.unbreakable or it.door or it.entrance then
         return false
     end
+
+    local name = tostring(rawget(it, "name") or it.name or ""):lower()
+    if name:find("bedrock", 1, true)
+        or name:find("lock", 1, true)
+        or name:find("main door", 1, true)
+        or name:find("white door", 1, true)
+        or name:find("vending", 1, true) then
+        return false
+    end
+
     local h = (it.kind == "seed") and 20 or it.hits
-    if type(h) == "number" and h > 0 then return true end
-    local w = FindWorld()
-    if it.staffHits and w and w.areas and w.areas.staff then return true end
-    return h == nil
+    if type(h) == "number" then
+        return h > 0
+    end
+    if it.staffHits then return false end
+    return true
 end
 
 local function TryBreakOnce(x, y, includeBg)
@@ -1237,7 +1342,7 @@ local function TryBreakOnce(x, y, includeBg)
     elseif includeBg and bg and bg ~= 0 then
         layer, id = "bg", bg
     end
-    if not layer or not CanBreakId(id) then return nil end
+    if not layer or not CanBreakId(id, x, y) then return nil end
 
     WaitPlaceGuard(x, y)
 
@@ -2194,11 +2299,49 @@ do (function()
         return true
     end
 
-    -- TELEPORT MODE STEPPER REAL-TIME (Cek GetTile() Tiap 1 Tile + Cari Rute A* Agar Tidak Nembus Blok + Retry 3x)
+    -- Router BFS Udara: Mencari jalur tile kosong (tanpa menabrak blok) agar tidak pernah stuck/rollback
+    local function FindOpenAirPath(w, sx, sy, tx, ty)
+        local W, H = w.w, w.h
+        local startKey = sy * W + sx
+        local goalKey = ty * W + tx
+        if startKey == goalKey then return {} end
+
+        local queue = { startKey }
+        local cameFrom = { [startKey] = -1 }
+        local qHead = 1
+        local dirs = { { 0, -1 }, { 1, 0 }, { -1, 0 }, { 0, 1 } } -- Prioritaskan naik ke udara terbuka dulu
+
+        while qHead <= #queue and qHead <= 3500 do
+            local cur = queue[qHead]
+            qHead = qHead + 1
+            if cur == goalKey then
+                local path = {}
+                local step = cur
+                while step ~= startKey do
+                    table.insert(path, 1, { x = step % W, y = math.floor(step / W) })
+                    step = cameFrom[step]
+                end
+                return path
+            end
+            local cx, cy = cur % W, math.floor(cur / W)
+            for _, d in ipairs(dirs) do
+                local nx, ny = cx + d[1], cy + d[2]
+                if nx >= 0 and nx < W and ny >= 0 and ny < H then
+                    local nKey = ny * W + nx
+                    if cameFrom[nKey] == nil and (nKey == goalKey or openAt(nx, ny)) then
+                        cameFrom[nKey] = cur
+                        table.insert(queue, nKey)
+                    end
+                end
+            end
+        end
+        return nil
+    end
+
     function Nav.FlyTo(tx, ty, cancel, stepDelayOverride, allowThroughBlocks)
         local w = FindWorld()
         if not w or type(w.goTo) ~= "function" then return false end
-        local stepDelay = math.max(0.20, tonumber(stepDelayOverride) or tonumber(Config.moveStepDelay) or 0.25)
+        local stepDelay = math.max(0.16, tonumber(stepDelayOverride) or tonumber(Config.moveStepDelay) or 0.22)
 
         for attempt = 1, 3 do
             if cancel and cancel() then return false end
@@ -2207,15 +2350,36 @@ do (function()
             if cx == tx and cy == ty then return true end
 
             w.ghost = true
-            local failCount = 0
-            local maxLoops = 220
 
+            -- 1. Coba ikuti jalur udara terbuka (BFS) agar tidak memaksa menembus blok solid
+            local bfsPath = FindOpenAirPath(w, cx, cy, tx, ty)
+            if bfsPath and #bfsPath > 0 then
+                local stuck = false
+                for _, node in ipairs(bfsPath) do
+                    if cancel and cancel() then return false end
+                    w.ghost = true
+                    pcall(w.goTo, node.x, node.y)
+                    task.wait(stepDelay)
+                    local rx, ry = GetTile()
+                    if not rx or (math.abs(rx - node.x) > 2 or math.abs(ry - node.y) > 2) then
+                        stuck = true
+                        break
+                    end
+                end
+                local fx, fy = GetTile()
+                if not stuck and fx == tx and fy == ty then
+                    return true
+                end
+            end
+
+            -- 2. Fallback: Naik dulu ke baris udara terbuka (Y kecil), geser X, baru turun ke Y tujuan
+            local failCount = 0
+            local maxLoops = 160
             while (cx ~= tx or cy ~= ty) and maxLoops > 0 and alive() do
                 maxLoops = maxLoops - 1
                 if cancel and cancel() then return false end
                 w.ghost = true
 
-                -- Selalu baca posisi Real-Time sebelum melangkah 1 tile!
                 local rx, ry = GetTile()
                 if not rx then return false end
                 cx, cy = rx, ry
@@ -2223,40 +2387,30 @@ do (function()
 
                 local stepX = (tx > cx and 1) or (tx < cx and -1) or 0
                 local stepY = (ty > cy and 1) or (ty < cy and -1) or 0
-                local nx, ny = cx + stepX, cy + stepY
+                local nx, ny = cx, cy
 
-                -- Jika tidak boleh menembus blok solid (seperti di DF), prioritaskan geser di sumbu yang terbuka
-                if not allowThroughBlocks and not openAt(nx, ny) then
-                    if stepX ~= 0 and openAt(cx + stepX, cy) then
-                        nx, ny = cx + stepX, cy
-                    elseif stepY ~= 0 and openAt(cx, cy + stepY) then
-                        nx, ny = cx, cy + stepY
-                    elseif cx <= 2 or cx >= w.w - 3 then
-                        nx, ny = cx, cy + stepY
-                    else
-                        -- Jika terhalang platform di atas/bawah, jalan ke ujung kiri/kanan dulu baru naik/turun!
-                        local edgeX = (math.abs(cx - 1) <= math.abs(cx - (w.w - 2))) and 1 or (w.w - 2)
-                        local dirEdge = (edgeX > cx) and 1 or -1
-                        if openAt(cx + dirEdge, cy) then
-                            nx, ny = cx + dirEdge, cy
-                        end
-                    end
+                -- Jangan melangkah diagonal jika terhalang blok; dahulukan sumbu yang terbuka
+                if stepY < 0 and openAt(cx, cy - 1) then
+                    nx, ny = cx, cy - 1
+                elseif stepX ~= 0 and openAt(cx + stepX, cy) then
+                    nx, ny = cx + stepX, cy
+                elseif stepY ~= 0 and openAt(cx, cy + stepY) then
+                    nx, ny = cx, cy + stepY
+                elseif cy > 0 and openAt(cx, cy - 1) then
+                    nx, ny = cx, cy - 1 -- Naik 1 tile ke atas untuk melewati gundukan blok
+                elseif allowThroughBlocks then
+                    nx, ny = cx + stepX, cy + stepY
+                else
+                    break
                 end
 
                 pcall(w.goTo, nx, ny)
                 task.wait(stepDelay)
 
-                -- Cek apakah posisi karakter benar-benar berpindah
                 local ax, ay = GetTile()
                 if ax == cx and ay == cy then
                     failCount = failCount + 1
-                    if failCount >= 3 then
-                        -- Gagal berpindah 3x berturut-turut: mundur/geser sedikit lalu ulangi pencarian rute
-                        local nudgeX = (cx > 1 and openAt(cx - 1, cy)) and (cx - 1) or (cx + 1)
-                        pcall(w.goTo, nudgeX, cy)
-                        task.wait(stepDelay)
-                        break
-                    end
+                    if failCount >= 3 then break end
                 else
                     failCount = 0
                 end
@@ -3430,23 +3584,38 @@ end)() end
 -- 2. AUTO CLEAR WORLD (MODFLY SELALU NYALA + BERDIRI DI ATAS BLOCK TARGET)
 ----------------------------------------------------------------------
 do (function()
-    local BREAK_TIMEOUT = 5.0
+    local BREAK_TIMEOUT = 3.5
 
     local function ClearLayerAt(w, x, y)
-        if typeof(w.spawn) == "Vector2" and x == math.floor(w.spawn.X) and y == math.floor(w.spawn.Y) then
-            return nil
-        end
         local fg = TileValue(w, "fg", x, y)
         if fg == nil then return nil end
         if fg ~= 0 then
-            if CanBreakId(fg) then return "fg", fg end
+            if CanBreakId(fg, x, y) then return "fg", fg end
             return nil
         end
         if Config.clearIncludeBg then
             local bg = TileValue(w, "bg", x, y)
-            if bg and bg ~= 0 and CanBreakId(bg) then return "bg", bg end
+            if bg and bg ~= 0 and CanBreakId(bg, x, y) then return "bg", bg end
         end
         return nil
+    end
+
+    -- Cari tile berdiri yang kosong (tidak menabrak Lock / Bedrock) di sekitar target
+    local function FindBestStandTile(w, tx, ty)
+        local candidates = {
+            { x = tx,     y = ty - 1 }, -- Tepat di atas blok
+            { x = tx - 1, y = ty },     -- Sebelah kiri blok
+            { x = tx + 1, y = ty },     -- Sebelah kanan blok
+            { x = tx - 1, y = ty - 1 }, -- Serong kiri atas
+            { x = tx + 1, y = ty - 1 }, -- Serong kanan atas
+            { x = tx,     y = ty - 2 }, -- 2 tile di atas blok
+        }
+        for _, c in ipairs(candidates) do
+            if InBounds(w, c.x, c.y) and Nav.OpenAt(c.x, c.y) then
+                return c.x, c.y
+            end
+        end
+        return tx, math.max(0, ty - 1)
     end
 
     local function CollectTargets(w, skippedSet)
@@ -3481,7 +3650,6 @@ do (function()
     end
 
     local function ClearLoop(token, home)
-        -- ModFly SELALU NYALA selama Auto Clear berjalan
         SetAutoFly("autoclear", true)
         ReleaseInput()
         AutoInput.active = false
@@ -3510,7 +3678,7 @@ do (function()
 
             if pass == 1 then
                 local first = targets[1]
-                Notify(string.format("Auto Clear (ModFly): %d blok ditemukan. Mulai dari (%d, %d).", #targets, first.x, first.y))
+                Notify(string.format("Auto Clear: %d blok ditemukan. Mulai dari (%d, %d).", #targets, first.x, first.y))
             end
 
             local brokeAny = false
@@ -3523,56 +3691,62 @@ do (function()
                 local curLayer, curId = ClearLayerAt(w, target.x, target.y)
                 if curLayer then
                     Clear.stats.row = target.y
-                    -- Karakter SELALU berdiri tepat di atas block yang akan di-break (x, y - 1)
-                    local standX = target.x
-                    local standY = math.max(0, target.y - 1)
+                    local standX, standY = FindBestStandTile(w, target.x, target.y)
 
                     SetAutoFly("autoclear", true)
                     w.ghost = true
 
                     local px, py = GetTile()
+                    local movedOk = true
                     if px ~= standX or py ~= standY then
-                        Clear.status = string.format("Terbang ke atas blok (%d,%d) [%d/%d]", standX, standY, idx, #targets)
-                        Nav.FlyTo(standX, standY, function()
+                        Clear.status = string.format("Menuju (%d,%d) [%d/%d]", standX, standY, idx, #targets)
+                        movedOk = Nav.FlyTo(standX, standY, function()
                             return not Clear.on or Clear.token ~= token or not alive()
-                        end, Config.clearTpDelay)
+                        end, Config.clearTpDelay, false)
                     end
 
-                    -- Pastikan karakter tepat di (standX, standY) dengan ModFly aktif
-                    w.ghost = true
-                    pcall(w.goTo, standX, standY)
-                    task.wait(0.05)
-
-                    local started = os.clock()
-                    local timedOut = false
-                    Clear.status = string.format("Break %s di bawah (%d,%d) [%d/%d]", ItemName(curId), target.x, target.y, idx, #targets)
-
-                    -- Pukul terus blok di bawah kaki sampai fg & bg habis sebelum pindah ke blok selanjutnya
-                    while Clear.on and Clear.token == token and alive() do
-                        w.ghost = true
-                        local lNow, idNow = ClearLayerAt(w, target.x, target.y)
-                        if not lNow then break end
-                        if os.clock() - started >= BREAK_TIMEOUT then
-                            timedOut = true
-                            break
-                        end
-                        Clear.status = string.format("Break %s (%d,%d) [%d/%d]", ItemName(idNow), target.x, target.y, idx, #targets)
-                        local r = TryBreakOnce(target.x, target.y, Config.clearIncludeBg)
-                        if r == "broke" then
-                            brokeAny = true
-                            Clear.stats.broken += 1
-                            started = os.clock()
-                        end
-                        task.wait(math.max(0.04, Config.clearBreakDelay))
-                    end
-
-                    if not ClearLayerAt(w, target.x, target.y) then
-                        Clear.stats.left = math.max(0, Clear.stats.left - 1)
-                    elseif timedOut then
+                    if not movedOk then
                         skippedSet[target.key] = true
                         Clear.stats.skipped += 1
                         Clear.stats.left = math.max(0, Clear.stats.left - 1)
-                        Clear.status = string.format("Skip (%d,%d) > 5 dtk", target.x, target.y)
+                        Clear.status = string.format("Skip (%d,%d) rute terhalang", target.x, target.y)
+                    else
+                        w.ghost = true
+                        pcall(w.goTo, standX, standY)
+                        task.wait(0.04)
+
+                        local started = os.clock()
+                        local timedOut = false
+
+                        while Clear.on and Clear.token == token and alive() do
+                            w.ghost = true
+                            local lNow, idNow = ClearLayerAt(w, target.x, target.y)
+                            if not lNow then break end
+                            if os.clock() - started >= BREAK_TIMEOUT then
+                                timedOut = true
+                                break
+                            end
+                            Clear.status = string.format("Break %s (%d,%d) [%d/%d]", ItemName(idNow), target.x, target.y, idx, #targets)
+                            local r = TryBreakOnce(target.x, target.y, Config.clearIncludeBg)
+                            if r == nil then
+                                timedOut = true
+                                break
+                            elseif r == "broke" then
+                                brokeAny = true
+                                Clear.stats.broken += 1
+                                started = os.clock()
+                            end
+                            task.wait(math.max(0.04, Config.clearBreakDelay))
+                        end
+
+                        if not ClearLayerAt(w, target.x, target.y) then
+                            Clear.stats.left = math.max(0, Clear.stats.left - 1)
+                        elseif timedOut then
+                            skippedSet[target.key] = true
+                            Clear.stats.skipped += 1
+                            Clear.stats.left = math.max(0, Clear.stats.left - 1)
+                            Clear.status = string.format("Skip (%d,%d) tidak bisa hancur", target.x, target.y)
+                        end
                     end
                 else
                     Clear.stats.left = math.max(0, Clear.stats.left - 1)
@@ -7004,13 +7178,6 @@ do (function()
             VirtualUser:Button2Up(Vector2.new(0, 0), cf)
             VirtualUser:ClickButton2(Vector2.new(0, 0))
         end)
-        pcall(function()
-            if VirtualInputManager and VirtualInputManager.SendKeyEvent then
-                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.RightControl, false, game)
-                task.wait(0.05)
-                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.RightControl, false, game)
-            end
-        end)
     end
 
     function StartAntiAfk()
@@ -7427,6 +7594,11 @@ do (function()
         end)
     end
 
+    local dropHandlerFn = nil
+    local recycleHandlerFn = nil
+    local lastClickedBpAction = nil
+    local lastClickedBpClock = 0
+
     local function HookFastBackpackActions()
         local invGui = PlayerGui:FindFirstChild("InventoryGui")
         local holder = invGui and invGui:FindFirstChild("Holder")
@@ -7450,6 +7622,33 @@ do (function()
                                     bpInvRef = (ok1 and type(u1) == "table") and u1 or bpInvRef
                                     bpGridCells = (ok3 and type(u3) == "table") and u3 or bpGridCells
 
+                                    local dropBtn = rawget(u2, "drop")
+                                    local recBtn = rawget(u2, "recycle")
+
+                                    if child == dropBtn then
+                                        dropHandlerFn = fn
+                                        if not dropBtn:GetAttribute("ANCHDropHook") then
+                                            dropBtn:SetAttribute("ANCHDropHook", true)
+                                            trackConn(dropBtn.InputBegan:Connect(function(inp)
+                                                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                                                    lastClickedBpAction = "drop"
+                                                    lastClickedBpClock = os.clock()
+                                                end
+                                            end))
+                                        end
+                                    elseif child == recBtn then
+                                        recycleHandlerFn = fn
+                                        if not recBtn:GetAttribute("ANCHRecHook") then
+                                            recBtn:SetAttribute("ANCHRecHook", true)
+                                            trackConn(recBtn.InputBegan:Connect(function(inp)
+                                                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                                                    lastClickedBpAction = "recycle"
+                                                    lastClickedBpClock = os.clock()
+                                                end
+                                            end))
+                                        end
+                                    end
+
                                     if not G.__ANCH_TrueOrigOpenDialog then
                                         if isexecutorclosure and pcall(isexecutorclosure, u5) and isexecutorclosure(u5) then
                                             for _, uu in pairs(GetUpvalues(u5)) do
@@ -7464,28 +7663,33 @@ do (function()
                                     end
 
                                     local origOpenDlg = G.__ANCH_TrueOrigOpenDialog
-                                    if origOpenDlg then
-                                        if child == rawget(u2, "drop") and u5 ~= Session.DropDialogWrapper then
-                                            Session.DropDialogWrapper = function(...)
-                                                if alive() and Config.fastDrop then
-                                                    ExecuteFastDropNow()
-                                                    return
+                                    if origOpenDlg and u5 ~= Session.SharedDialogWrapper then
+                                        Session.SharedDialogWrapper = function(...)
+                                            if alive() then
+                                                local caller = (debug and debug.info and debug.info(2, "f")) or nil
+                                                local isDrop = (caller and dropHandlerFn and caller == dropHandlerFn)
+                                                    or (lastClickedBpAction == "drop" and (os.clock() - lastClickedBpClock) < 0.5)
+                                                local isRec = (caller and recycleHandlerFn and caller == recycleHandlerFn)
+                                                    or (lastClickedBpAction == "recycle" and (os.clock() - lastClickedBpClock) < 0.5)
+
+                                                if isDrop and not isRec then
+                                                    lastClickedBpAction = nil
+                                                    if Config.fastDrop then
+                                                        ExecuteFastDropNow()
+                                                        return
+                                                    end
+                                                elseif isRec and not isDrop then
+                                                    lastClickedBpAction = nil
+                                                    if Config.fastRecycle then
+                                                        ExecuteFastRecycleNow()
+                                                        return
+                                                    end
                                                 end
-                                                return origOpenDlg(...)
                                             end
-                                            pcall(setupvalueFn, fn, 5, Session.DropDialogWrapper)
-                                            table.insert(hookedDialogUpvalues, { fn = fn, idx = 5, orig = origOpenDlg })
-                                        elseif child == rawget(u2, "recycle") and u5 ~= Session.RecycleDialogWrapper then
-                                            Session.RecycleDialogWrapper = function(...)
-                                                if alive() and Config.fastRecycle then
-                                                    ExecuteFastRecycleNow()
-                                                    return
-                                                end
-                                                return origOpenDlg(...)
-                                            end
-                                            pcall(setupvalueFn, fn, 5, Session.RecycleDialogWrapper)
-                                            table.insert(hookedDialogUpvalues, { fn = fn, idx = 5, orig = origOpenDlg })
+                                            return origOpenDlg(...)
                                         end
+                                        pcall(setupvalueFn, fn, 5, Session.SharedDialogWrapper)
+                                        table.insert(hookedDialogUpvalues, { fn = fn, idx = 5, orig = origOpenDlg })
                                     end
                                 end
                             end
@@ -7830,7 +8034,7 @@ local function SetFeature(key, on)
     if RefreshHub then RefreshHub() end
 end
 
-local HasQueuedTeleport = false
+local lastQueuedClock = 0
 
 local function ReloadSource()
     if type(G.ANCHHub_ReloadCode) == "string" and G.ANCHHub_ReloadCode ~= "" then
@@ -7841,9 +8045,13 @@ local function ReloadSource()
     if type(url) == "string" and url ~= "" then
         return string.format("loadstring(game:HttpGet(%q))()", url)
     end
-    local okFile, exists = pcall(function() return isfile and readfile and isfile(SCRIPT_FILE) end)
-    if okFile and exists then
-        return string.format("loadstring(readfile(%q))()", SCRIPT_FILE)
+    if isfile and readfile then
+        for _, fname in ipairs({ SCRIPT_FILE, "ANCHHub-Test.lua", "ANCHHub.lua", "ANCHHub_Loader.lua" }) do
+            local okF, ex = pcall(isfile, fname)
+            if okF and ex then
+                return string.format("loadstring(readfile(%q))()", fname)
+            end
+        end
     end
     return nil
 end
@@ -7855,12 +8063,13 @@ local function GetQueueFn()
         or (getgenv and getgenv().queue_on_teleport)
 end
 
-QueueReload = function()
-    if not Config.autoReload or HasQueuedTeleport then return false end
+QueueReload = function(force)
+    if not Config.autoReload then return false end
+    if not force and (os.clock() - lastQueuedClock) < 5 then return true end
     local qFn, src = GetQueueFn(), ReloadSource()
     if not qFn or not src then return false end
     local ok = pcall(qFn, src)
-    if ok then HasQueuedTeleport = true end
+    if ok then lastQueuedClock = os.clock() end
     return ok
 end
 
@@ -9154,8 +9363,18 @@ SafeUI("Tab:FastWrench", function()
             SaveConfig()
         end,
     })
+end)
 
-    Tab:Space()
+SafeUI("Tab:FastDropRecycle", function()
+    local Tab = HelperSection:Tab({
+        Title = "Fast Drop & Recycle",
+        Icon = "solar:square-transfer-horizontal-bold",
+        IconColor = Purple,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.fastdroprecycle = Tab
+
     Tab:Section({ Title = "Fast Drop & Fast Recycle / Trash (Bypass Dialog)" })
 
     Tab:Toggle({
@@ -10074,14 +10293,16 @@ Session.Cleanup = function()
 end
 
 task.spawn(function()
+    task.wait(0.4)
     StartAntiAfk()
-    Refs.Scan()
+    Refs.Scan(true)
     Stats.Reset()
     if Config.liteMode then LiteMode.Set(true) end
-    pcall(QueueReload)
+    pcall(QueueReload, true)
     trackConn(Player.OnTeleport:Connect(function()
+        UIInitializing = false
         SaveConfig()
-        pcall(QueueReload)
+        pcall(QueueReload, true)
     end))
     if Config.autoRestore then
         for key, feature in pairs(Features) do
@@ -10091,8 +10312,23 @@ task.spawn(function()
         end
         if RefreshHub then RefreshHub() end
     end
+
+    -- Matikan guard inisialisasi setelah semua UI selesai dibuat agar tidak ada spam notifikasi di awal
+    UIInitializing = false
+    Notify("ANCH HUB v1.1 Beta Loaded! Semua tab & fitur siap digunakan.", "ANCH HUB", 4, true)
+
     task.spawn(Reconnect.CheckStartup)
     task.spawn(Pabrik.CheckStartup)
     task.spawn(AutoMove.CheckStartup)
-    Notify("ANCH HUB v1.1 Beta Loaded! Semua tab & fitur siap digunakan.")
+
+    -- Pantau perpindahan world di dalam server yang sama agar Refs selalu otomatis ter-update
+    local lastSeenWorld = CurrentWorldName()
+    while alive() do
+        task.wait(1.5)
+        local curW = CurrentWorldName()
+        if curW ~= "" and curW ~= lastSeenWorld then
+            lastSeenWorld = curW
+            Refs.Scan(true)
+        end
+    end
 end)
