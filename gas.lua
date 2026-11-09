@@ -39,14 +39,25 @@
 -- SESI & CEGAH DOBEL EKSEKUSI (DENGAN CLEANUP OTOMATIS)
 ----------------------------------------------------------------------
 local G = (getgenv and getgenv()) or _G
-for _, key in ipairs({ "__ANCHHubSession", "__Alfian", "__GTFarm" }) do
-    if G[key] and G[key].Cleanup then
-        pcall(G[key].Cleanup)
+
+-- Cegah eksekusi dobel/spam (3x load sekaligus) saat baru pindah world / teleport
+if G.__ANCHHub_LoadingAt and (os.clock() - G.__ANCHHub_LoadingAt) < 4.5 then
+    return
+end
+G.__ANCHHub_LoadingAt = os.clock()
+
+for _, key in ipairs({ "__ANCHHubSession", "__Tadonoki", "__Alfian", "__GTFarm" }) do
+    if G[key] then
+        G[key].Alive = false
+        if G[key].Cleanup then
+            pcall(G[key].Cleanup)
+        end
     end
     G[key] = nil
 end
 
 local Session = { Alive = true, Connections = {} }
+Session.Cleanup = function() Session.Alive = false end
 G.__ANCHHubSession = Session
 G.ANCHHubGB_Loaded = os.clock()
 
@@ -2149,33 +2160,126 @@ do (function()
         return finish(true)
     end
 
-    -- FUNGSI MEMANJAT VERTIKAL (DENGAN OPSI allowBreakOverhead AGAR TIDAK MERUSAK DIRT FARM)
+    -- FUNGSI MEMANJAT VERTIKAL ANTI-STUCK & 100% BERSIH PIJAKAN
     function Nav.ClimbUpWithDirt(x, targetY, cancel, cleanBehind, stepDelayOverride, allowBreakOverhead)
         local world = FindWorld()
         if not world then return false end
         if cleanBehind == nil then cleanBehind = true end
         if allowBreakOverhead == nil then allowBreakOverhead = false end
-        local settleDelay = math.max(0.28, tonumber(stepDelayOverride) or tonumber(Config.moveStepDelay) or 0.30)
+        local settleDelay = math.max(0.24, tonumber(stepDelayOverride) or tonumber(Config.moveStepDelay) or 0.28)
 
         local savedLocks = {}
         for k, v in pairs(autoFlyLocks) do savedLocks[k] = v end
         table.clear(autoFlyLocks)
         local wasNoclip = noclipOn
+        local wasCollecting = Drops.collecting
         noclipOn = false
+        Drops.collecting = true -- Kunci speedScale = 1 agar lompatan pilar vertikal presisi di tengah tile
+        world.speedScale = 1
         SyncGhostState()
         AutoInput.active = true
         ReleaseInput()
 
-        local function restore()
+        local tempPlaced = {}
+
+        -- Fungsi pembersih pijakan yang sudah berada >= 2 tile di bawah posisi karakter
+        local function breakPlacedBelow(limitY)
+            if not cleanBehind then return end
+            local sortedY = {}
+            for py in pairs(tempPlaced) do
+                if py >= limitY then
+                    table.insert(sortedY, py)
+                end
+            end
+            table.sort(sortedY, function(a, b) return a > b end) -- Hancurkan dari yang paling bawah dulu
+            for _, py in ipairs(sortedY) do
+                if cancel and cancel() then return end
+                local curFg = fgIdAt(x, py)
+                if curFg ~= 0 and CanBreakId(curFg, x, py) then
+                    WaitPlaceGuard(x, py)
+                    local t0 = os.clock()
+                    while fgIdAt(x, py) ~= 0 and (os.clock() - t0) < 3.5 and alive() do
+                        if cancel and cancel() then break end
+                        local s = PlayerPhysicsState()
+                        -- Jika pijakan terlalu jauh di bawah (> 2.4 tile), turun sedikit dengan ghost agar terjangkau
+                        if s and math.abs((py + 0.5) - (s.y - 0.475)) > PunchReach() - 0.1 then
+                            world.ghost = true
+                            pcall(world.goTo, x, math.max(0, py - 2))
+                            task.wait(0.06)
+                        end
+                        TryBreakOnce(x, py, false)
+                        task.wait(0.14)
+                    end
+                end
+                if fgIdAt(x, py) == 0 then
+                    tempPlaced[py] = nil
+                end
+            end
+        end
+
+        -- Fungsi pembersih seluruh sisa pijakan di akhir panjatan (menggunakan hover ModFly singkat agar pijakan tepat di bawah kaki ikut hancur)
+        local function cleanupAllRemainingScaffolds()
+            if not cleanBehind or next(tempPlaced) == nil then return end
+
+            -- 1. Coba geser 1 langkah ke samping jika ada lantai padat di sebelahnya
+            local sideCandidates = (x <= 2) and { x + 1, x + 2 }
+                or ((x >= world.w - 3) and { x - 1, x - 2 } or { x + 1, x - 1 })
+            for _, sx in ipairs(sideCandidates) do
+                if InBounds(world, sx, targetY) and openAt(sx, targetY) and realSupport(sx, targetY) then
+                    execWalk(sx, targetY, cancel)
+                    task.wait(0.12)
+                    break
+                end
+            end
+
+            -- 2. Aktifkan ghost (hover) sementara agar meskipun tidak ada pijakan samping (misal di x=99),
+            --    karakter tetap mengambang di (x, targetY) dan bisa menghancurkan blok pijakan terakhir di bawah kakinya!
+            world.ghost = true
+            local sortedY = {}
+            for py in pairs(tempPlaced) do table.insert(sortedY, py) end
+            table.sort(sortedY)
+
+            for _, py in ipairs(sortedY) do
+                if cancel and cancel() then break end
+                if fgIdAt(x, py) ~= 0 and CanBreakId(fgIdAt(x, py), x, py) then
+                    local standY = math.max(0, py - 1)
+                    local cx, cy = GetTile()
+                    if cx and cy and (math.abs(cx - x) > 2 or math.abs(cy - py) > 2) then
+                        world.ghost = true
+                        pcall(world.goTo, x, standY)
+                        task.wait(0.08)
+                    end
+                    WaitPlaceGuard(x, py)
+                    local t0 = os.clock()
+                    while fgIdAt(x, py) ~= 0 and (os.clock() - t0) < 3.5 and alive() do
+                        if cancel and cancel() then break end
+                        world.ghost = true
+                        TryBreakOnce(x, py, false)
+                        task.wait(0.14)
+                    end
+                end
+                if fgIdAt(x, py) == 0 then
+                    tempPlaced[py] = nil
+                end
+            end
+        end
+
+        local function restore(result)
+            pcall(cleanupAllRemainingScaffolds)
             ReleaseInput()
             AutoInput.active = false
+            Drops.collecting = wasCollecting
+            if Config.walkSpeed ~= 100 and Refs.World and not wasCollecting then
+                Refs.World.speedScale = Config.walkSpeed / 100
+            end
             noclipOn = wasNoclip
             for k, v in pairs(savedLocks) do autoFlyLocks[k] = v end
             SyncGhostState()
+            return result
         end
 
         local cx, cy = GetTile()
-        if not cx then restore(); return false end
+        if not cx then return restore(false) end
 
         if cx ~= x then
             if not execWalk(x, cy, cancel) then
@@ -2183,10 +2287,9 @@ do (function()
                 task.wait(settleDelay)
             end
             cx, cy = GetTile()
-            if not cx then restore(); return false end
+            if not cx then return restore(false) end
         end
 
-        local tempPlaced = {}
         local scaffoldBlock = activeScaffoldId()
 
         if InBounds(world, x, cy + 1) and not realSupport(x, cy) then
@@ -2198,105 +2301,77 @@ do (function()
 
         local stuckTries = 0
         while cy > targetY and alive() do
-            if cancel and cancel() then restore(); return false end
+            if cancel and cancel() then return restore(false) end
             local nextY = cy - 1
 
-            -- Jika di atas kepala ada blok dan tidak diizinkan menghancurkan (misal di Pabrik/Farmer), batalkan panjat di kolom ini!
+            -- Jika di atas kepala ada blok dan tidak diizinkan menghancurkan (misal di Pabrik/Farmer), batalkan panjat
             if not allowBreakOverhead and fgIdAt(x, nextY) ~= 0 and solidAt(x, nextY) then
-                restore()
-                return false
+                return restore(false)
             end
 
             if allowBreakOverhead then
                 for checkY = nextY, math.max(0, nextY - 2), -1 do
                     local fgUp = fgIdAt(x, checkY)
-                    if fgUp ~= 0 and CanBreakId(fgUp) then
+                    if fgUp ~= 0 and CanBreakId(fgUp, x, checkY) then
                         local t0 = os.clock()
-                        while fgIdAt(x, checkY) ~= 0 and os.clock() - t0 < 4 do
-                            if cancel and cancel() then restore(); return false end
+                        while fgIdAt(x, checkY) ~= 0 and (os.clock() - t0) < 4 and alive() do
+                            if cancel and cancel() then return restore(false) end
                             TryBreakOnce(x, checkY, false)
-                            task.wait(0.16)
+                            task.wait(0.15)
                         end
                     end
                 end
             end
 
-            local beforeX, beforeY = GetTile()
+            -- Pusatkan posisi X di tengah tile (x + 0.5) sebelum melompat pilar
+            if Drops.walkToX then
+                Drops.walkToX(x + 0.5, 0.6)
+            end
+
+            local beforeY = cy
+            local wasEmptyAtCy = (fgIdAt(x, cy) == 0)
             local okPillar = execPillar({ fx = x, fy = cy, x = x, y = nextY }, cancel)
-            if okPillar then
+
+            -- Catat ke tempPlaced jika blok di (x, cy) berubah menjadi terisi (walaupun execPillar return false!)
+            if okPillar or (wasEmptyAtCy and fgIdAt(x, cy) ~= 0) then
                 tempPlaced[cy] = scaffoldBlock
-            else
-                if fgIdAt(x, cy) == 0 then
-                    placeScaffold(x, cy)
+            elseif fgIdAt(x, cy) == 0 then
+                if placeScaffold(x, cy) then
                     tempPlaced[cy] = scaffoldBlock
                 end
-                task.wait(0.15)
+                task.wait(0.14)
                 pcall(world.goTo, x, nextY)
             end
 
             task.wait(math.max(PLACE_GUARD, settleDelay))
 
-            -- Verifikasi posisi Real-Time setelah lompat
-            local nowX, nowY = GetTile()
-            if nowY and nowY < (beforeY or cy) then
+            local _, nowY = GetTile()
+            if nowY and nowY < beforeY then
                 cy = nowY
                 stuckTries = 0
             else
-                stuckTries = stuckTries + 1
-                if stuckTries >= 3 then
-                    restore()
-                    return false
+                -- Jika blok sudah terpasang di (x, beforeY) tapi badan nyangkut di sampingnya, naikkan ke atas blok tersebut
+                if fgIdAt(x, beforeY) ~= 0 and openAt(x, nextY) then
+                    pcall(world.goTo, x, nextY)
+                    task.wait(0.18)
+                    _, nowY = GetTile()
                 end
-            end
-
-            if cleanBehind then
-                for py, _ in pairs(tempPlaced) do
-                    if py >= cy + 2 and math.abs(py - cy) <= 3 and fgIdAt(x, py) ~= 0 and CanBreakId(fgIdAt(x, py)) then
-                        WaitPlaceGuard(x, py)
-                        local t0 = os.clock()
-                        while fgIdAt(x, py) ~= 0 and os.clock() - t0 < 3.5 do
-                            if cancel and cancel() then restore(); return false end
-                            TryBreakOnce(x, py, false)
-                            task.wait(0.16)
-                        end
-                        if fgIdAt(x, py) == 0 then tempPlaced[py] = nil end
+                if nowY and nowY < beforeY then
+                    cy = nowY
+                    stuckTries = 0
+                else
+                    stuckTries = stuckTries + 1
+                    if stuckTries >= 3 then
+                        return restore(false)
                     end
                 end
             end
+
+            -- Segera hancurkan semua pijakan yang sudah berada >= 2 tile di bawah posisi karakter sekarang
+            breakPlacedBelow(cy + 2)
         end
 
-        if cleanBehind and next(tempPlaced) ~= nil then
-            local sideCandidates = (x <= 2) and { x + 1, x + 2, x - 1 }
-                or ((x >= world.w - 3) and { x - 1, x - 2, x + 1 } or { x + 1, x - 1, x + 2, x - 2 })
-            local steppedSide = false
-            for _, sx in ipairs(sideCandidates) do
-                if InBounds(world, sx, targetY) and openAt(sx, targetY) and realSupport(sx, targetY) then
-                    if not execWalk(sx, targetY, cancel) then pcall(world.goTo, sx, targetY) end
-                    task.wait(settleDelay)
-                    steppedSide = true
-                    break
-                end
-            end
-            if steppedSide then
-                local sortedY = {}
-                for py in pairs(tempPlaced) do table.insert(sortedY, py) end
-                table.sort(sortedY)
-                for _, py in ipairs(sortedY) do
-                    if fgIdAt(x, py) ~= 0 and math.abs(py - targetY) <= 3 and CanBreakId(fgIdAt(x, py)) then
-                        WaitPlaceGuard(x, py)
-                        local t0 = os.clock()
-                        while fgIdAt(x, py) ~= 0 and os.clock() - t0 < 3.5 do
-                            if cancel and cancel() then break end
-                            TryBreakOnce(x, py, false)
-                            task.wait(0.16)
-                        end
-                    end
-                end
-            end
-        end
-
-        restore()
-        return true
+        return restore(true)
     end
 
     -- Router BFS Udara: Mencari jalur tile kosong (tanpa menabrak blok) agar tidak pernah stuck/rollback
@@ -3581,7 +3656,7 @@ do (function()
 end)() end
 
 ----------------------------------------------------------------------
--- 2. AUTO CLEAR WORLD (MODFLY SELALU NYALA + BERDIRI DI ATAS BLOCK TARGET)
+-- 2. AUTO CLEAR WORLD (LEGIT WALKING SAAT PINDAH + MODFLY SAAT BREAK)
 ----------------------------------------------------------------------
 do (function()
     local BREAK_TIMEOUT = 3.5
@@ -3598,24 +3673,6 @@ do (function()
             if bg and bg ~= 0 and CanBreakId(bg, x, y) then return "bg", bg end
         end
         return nil
-    end
-
-    -- Cari tile berdiri yang kosong (tidak menabrak Lock / Bedrock) di sekitar target
-    local function FindBestStandTile(w, tx, ty)
-        local candidates = {
-            { x = tx,     y = ty - 1 }, -- Tepat di atas blok
-            { x = tx - 1, y = ty },     -- Sebelah kiri blok
-            { x = tx + 1, y = ty },     -- Sebelah kanan blok
-            { x = tx - 1, y = ty - 1 }, -- Serong kiri atas
-            { x = tx + 1, y = ty - 1 }, -- Serong kanan atas
-            { x = tx,     y = ty - 2 }, -- 2 tile di atas blok
-        }
-        for _, c in ipairs(candidates) do
-            if InBounds(w, c.x, c.y) and Nav.OpenAt(c.x, c.y) then
-                return c.x, c.y
-            end
-        end
-        return tx, math.max(0, ty - 1)
     end
 
     local function CollectTargets(w, skippedSet)
@@ -3649,8 +3706,18 @@ do (function()
         return list
     end
 
+    -- Cari tile pijakan terbaik (di atas blok target atau di sebelahnya) untuk dituju dengan Legit Walking
+    local function FindWalkGoalForTarget(w, tx, ty)
+        local standAboveY = ty - 1
+        if standAboveY >= 0 and Nav.OpenAt(tx, standAboveY) then
+            return tx, standAboveY, 0.45
+        end
+        local R = math.max(1.8, PunchReach() - 0.35)
+        return tx, ty, R
+    end
+
     local function ClearLoop(token, home)
-        SetAutoFly("autoclear", true)
+        SetAutoFly("autoclear", false)
         ReleaseInput()
         AutoInput.active = false
 
@@ -3664,7 +3731,6 @@ do (function()
                 Clear.status = "World berubah, berhenti"
                 break
             end
-            w.ghost = true
 
             Clear.status = "Scan objek di world..."
             Clear.stats.pass = pass
@@ -3682,6 +3748,7 @@ do (function()
             end
 
             local brokeAny = false
+            local reachR = PunchReach() - 0.15
 
             for idx, target in ipairs(targets) do
                 if not Clear.on or Clear.token ~= token or not alive() then return end
@@ -3691,29 +3758,69 @@ do (function()
                 local curLayer, curId = ClearLayerAt(w, target.x, target.y)
                 if curLayer then
                     Clear.stats.row = target.y
-                    local standX, standY = FindBestStandTile(w, target.x, target.y)
-
-                    SetAutoFly("autoclear", true)
-                    w.ghost = true
-
-                    local px, py = GetTile()
-                    local movedOk = true
-                    if px ~= standX or py ~= standY then
-                        Clear.status = string.format("Menuju (%d,%d) [%d/%d]", standX, standY, idx, #targets)
-                        movedOk = Nav.FlyTo(standX, standY, function()
-                            return not Clear.on or Clear.token ~= token or not alive()
-                        end, Config.clearTpDelay, false)
+                    local cancelFn = function()
+                        return not Clear.on or Clear.token ~= token or not alive()
                     end
 
-                    if not movedOk then
+                    -- Cek apakah karakter sudah berada dalam jangkauan pukul atau tepat di atas blok
+                    local sNow = PlayerPhysicsState()
+                    local px, py = GetTile()
+                    local alreadyInRange = (px == target.x and py == target.y - 1)
+                        or (sNow and Nav.StateReaches(sNow, target.x, target.y, reachR))
+
+                    local movedOk = true
+                    if not alreadyInRange then
+                        -- 1. MATIKAN MODFLY SAAT BERPINDAH TEMPAT & GUNAKAN LEGIT WALKING!
+                        SetAutoFly("autoclear", false)
+                        if w and not noclipOn then w.ghost = false end
+
+                        -- Tunggu sejenak agar karakter menapak tanah sebelum A* mencari jalur jalan
+                        local tGround = os.clock()
+                        while alive() and not cancelFn() and (os.clock() - tGround) < 0.45 do
+                            local st = PlayerPhysicsState()
+                            if st and st.grounded then break end
+                            task.wait(0.03)
+                        end
+
+                        local gx, gy, gRadius = FindWalkGoalForTarget(w, target.x, target.y)
+                        Clear.status = string.format("Jalan ke (%d,%d) [%d/%d]", target.x, target.y, idx, #targets)
+
+                        -- Jika blok berada lebih tinggi di kolom yang sama/dekat, panjat dengan Dirt
+                        px, py = GetTile()
+                        if py and gy < py and px and math.abs(px - gx) <= 2 then
+                            Nav.ClimbUpWithDirt(gx, gy, cancelFn, true, Config.clearTpDelay, true)
+                        end
+
+                        sNow = PlayerPhysicsState()
+                        px, py = GetTile()
+                        alreadyInRange = (px == target.x and py == target.y - 1)
+                            or (sNow and Nav.StateReaches(sNow, target.x, target.y, reachR))
+
+                        if not alreadyInRange then
+                            movedOk = Nav.LegitTo(gx, gy, cancelFn, gRadius, true)
+                            if not movedOk and gRadius < 1.5 then
+                                movedOk = Nav.LegitTo(target.x, target.y, cancelFn, math.max(1.8, reachR), true)
+                            end
+                        end
+                    end
+
+                    local sCheck = PlayerPhysicsState()
+                    local cx, cy = GetTile()
+                    local canHitNow = movedOk and (
+                        (cx == target.x and cy == target.y - 1)
+                        or (sCheck and Nav.StateReaches(sCheck, target.x, target.y, reachR + 0.35))
+                    )
+
+                    if not canHitNow then
                         skippedSet[target.key] = true
                         Clear.stats.skipped += 1
                         Clear.stats.left = math.max(0, Clear.stats.left - 1)
-                        Clear.status = string.format("Skip (%d,%d) rute terhalang", target.x, target.y)
+                        Clear.status = string.format("Skip (%d,%d) belum terjangkau", target.x, target.y)
                     else
+                        -- 2. NYALAKAN MODFLY HANYA SAAT BREAK AGAR TIDAK JATUH SAAT BLOK DI BAWAH KAKI HANCUR!
+                        SetAutoFly("autoclear", true)
                         w.ghost = true
-                        pcall(w.goTo, standX, standY)
-                        task.wait(0.04)
+                        ReleaseInput()
 
                         local started = os.clock()
                         local timedOut = false
@@ -3754,6 +3861,7 @@ do (function()
             end
 
             if not brokeAny then break end
+            table.clear(skippedSet)
         end
 
         SetAutoFly("autoclear", false)
@@ -8063,13 +8171,16 @@ local function GetQueueFn()
         or (getgenv and getgenv().queue_on_teleport)
 end
 
-QueueReload = function(force)
-    if not Config.autoReload then return false end
-    if not force and (os.clock() - lastQueuedClock) < 5 then return true end
+-- Hanya mengantri 1 kali per sesi server + proteksi anti-dobel eksekusi di dalam payload
+QueueReload = function()
+    if not Config.autoReload or G.__ANCHHub_TeleportQueued then return false end
     local qFn, src = GetQueueFn(), ReloadSource()
     if not qFn or not src then return false end
-    local ok = pcall(qFn, src)
-    if ok then lastQueuedClock = os.clock() end
+    local guardedSrc = "local g=(getgenv and getgenv()) or _G; if g.__ANCH_TpLock and (os.clock()-g.__ANCH_TpLock)<6 then return end; g.__ANCH_TpLock=os.clock(); " .. src
+    local ok = pcall(qFn, guardedSrc)
+    if ok then
+        G.__ANCHHub_TeleportQueued = true
+    end
     return ok
 end
 
@@ -10298,11 +10409,11 @@ task.spawn(function()
     Refs.Scan(true)
     Stats.Reset()
     if Config.liteMode then LiteMode.Set(true) end
-    pcall(QueueReload, true)
+    G.__ANCHHub_LoadingAt = nil
     trackConn(Player.OnTeleport:Connect(function()
         UIInitializing = false
         SaveConfig()
-        pcall(QueueReload, true)
+        pcall(QueueReload)
     end))
     if Config.autoRestore then
         for key, feature in pairs(Features) do
