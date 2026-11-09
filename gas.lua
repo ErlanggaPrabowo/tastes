@@ -180,8 +180,8 @@ local Config = {
     selectedRole = "none",
     calibX = 0,
     calibY = 0,
-    -- Auto Collect Global ("Sentuhan" = fisik badan anti-tolak server | "Remote" = jarak jauh)
-    collectMode = "Sentuhan",
+    -- Auto Collect Global ("Legit" = fisik badan anti-tolak server | "Remote" = jarak jauh)
+    collectMode = "Legit",
     collectAround = false,
     collectRadius = 3,
     -- Vending Machine
@@ -2699,7 +2699,7 @@ local function CanPlantAt(w, x, y, seedId)
 end
 
 ----------------------------------------------------------------------
--- FAST AUTO-COLLECT DUAL MODE ("Sentuhan" Badan Fisik & "Remote")
+-- FAST AUTO-COLLECT DUAL MODE ("Legit" Badan Fisik & "Remote")
 ----------------------------------------------------------------------
 do (function()
     local function inTile(t, x, y)
@@ -3026,7 +3026,7 @@ do (function()
         if not s or type(s.x) ~= "number" then return end
         local cx, cy = s.x, s.y - 0.475
 
-        -- Mode "Sentuhan": drop dipungut otomatis oleh game saat tersentuh badan; hitung statistiknya
+        -- Mode "Legit": drop dipungut otomatis oleh game saat tersentuh badan; hitung statistiknya
         if Config.collectMode ~= "Remote" then
             local seen = {}
             for _, d in ipairs(list) do
@@ -3314,7 +3314,7 @@ do (function()
             end
 
             -- Begitu semua tile selesai di-break, tunggu 0.18 detik agar drop keluar lalu jalan ke brokenTiles!
-            if #brokenTiles > 0 and (Config.farmTake or Farm.Override) and Config.collectMode == "Sentuhan" then
+            if #brokenTiles > 0 and (Config.farmTake or Farm.Override) and Config.collectMode == "Legit" then
                 Farm.stats.status = "Bergerak ambil drop..."
                 task.wait(0.18)
                 if Drops.touchAll then
@@ -7546,11 +7546,11 @@ local function AddFeatureToggle(tab, title, desc, key)
 end
 
 -- 5 Kategori Proporsional Standar Publik
-local MainSection     = Window:Section({ Title = "Utama", Opened = true })
-local AutoSection     = Window:Section({ Title = "Farming & Bot", Opened = true })
-local BagWorldSection = Window:Section({ Title = "Tas & World", Opened = true })
-local SecuritySection = Window:Section({ Title = "Keamanan & Sosial", Opened = true })
-local SystemSection   = Window:Section({ Title = "Visual & Sistem", Opened = true })
+local MainSection     = Window:Section({ Title = "Main Section", Opened = true })
+local AutoSection     = Window:Section({ Title = "Auto Section", Opened = true })
+local BagWorldSection = Window:Section({ Title = "World Section", Opened = true })
+local SecuritySection = Window:Section({ Title = "Safety Section", Opened = true })
+local SystemSection   = Window:Section({ Title = "System & Settings", Opened = true })
 
 -- 1A. Tab: Dashboard & Statistik (Utama) -----------------------------
 SafeUI("Tab:Dashboard", function()
@@ -7630,22 +7630,12 @@ SafeUI("Tab:Dashboard", function()
         end,
     })
 
-    Tab:Space()
-    Tab:Section({ Title = "Sakelar Cepat Bot Utama" })
-
-    AddFeatureToggle(Tab, "Auto Farm (Grid 5x5 + Rayman)", "Place & break otomatis di sekitar karakter.", "autofarm")
-    AddFeatureToggle(Tab, "Auto Clear World (ModFly + Stand Above)", "ModFly aktif penuh, berdiri di atas blok target sampai hancur lalu pindah.", "autoclear")
-    AddFeatureToggle(Tab, "Farmer (Auto Harvest + Auto Plant)", "Panen pohon siap & tanam seed otomatis.", "autoharvest")
-    AddFeatureToggle(Tab, "Auto Dirt Farm (Full World + Smart Supply)", "Bangun Dirt Farm bagian bawah & atas otomatis.", "autodf")
-    AddFeatureToggle(Tab, "Auto Splice (Seed A + Seed B)", "Tanam Seed A lalu gabungkan dengan Seed B.", "autosplice")
-    AddFeatureToggle(Tab, "Pabrik Seed (Siklus Panen-Tanam-Break-Drop)", "Produksi seed otomatis & drop lintas world.", "pabrik")
-    AddFeatureToggle(Tab, "Penjaga (Anti-Mod / Staff Detector)", "Jeda / keluar world otomatis saat Mod atau pemain masuk.", "guard")
 end)
 
 -- 1B. Tab: Karakter & Movement (Utama) -------------------------------
 SafeUI("Tab:Character", function()
     local Tab = MainSection:Tab({
-        Title = "Karakter & Navigasi",
+        Title = "Character",
         Icon = "solar:square-transfer-horizontal-bold",
         IconColor = Blue,
         IconShape = "Square",
@@ -7666,25 +7656,6 @@ SafeUI("Tab:Character", function()
             SaveConfig()
             Notify("Metode bergerak diubah ke: " .. Config.moveMethod)
         end,
-    })
-
-    Tab:Dropdown({
-        Title = "Mode Auto Collect (Sentuhan Badan / Remote)",
-        Desc = "Sentuhan = Sapu fisik & lompat kecil (tidak ditolak server). Remote = Ambil jarak jauh.",
-        Values = { "Sentuhan", "Remote" },
-        Value = Config.collectMode or "Sentuhan",
-        Callback = function(v)
-            Config.collectMode = v or "Sentuhan"
-            SaveConfig()
-            Notify("Mode Auto Collect: " .. Config.collectMode)
-        end,
-    })
-
-    Tab:Toggle({
-        Title = "Animasi Ayunan Tangan & Efek Place",
-        Desc = "Tampilkan gerakan tangan saat break/place di layar sendiri.",
-        Value = Config.visualAnim,
-        Callback = function(on) Config.visualAnim = on; SaveConfig() end,
     })
 
     Tab:Space()
@@ -7842,6 +7813,24 @@ SafeUI("Tab:AutoFarm", function()
     end)
 
     AddFeatureToggle(Tab, "Jalankan Auto Farm", "Place & break otomatis sesuai Grid 5x5.", "autofarm")
+    Tab:Dropdown({
+        Title = "Mode Auto Collect (Legit Badan / Remote)",
+        Desc = "Legit = Sapu fisik & lompat kecil (tidak ditolak server). Remote = Ambil jarak jauh.",
+        Values = { "Legit", "Vacuum" },
+        Value = Config.collectMode or "Legit",
+        Callback = function(v)
+            Config.collectMode = v or "Legit"
+            SaveConfig()
+            Notify("Mode Auto Collect: " .. Config.collectMode)
+        end,
+    })
+
+    Tab:Toggle({
+        Title = "Animasi Ayunan Tangan & Efek Place",
+        Desc = "Tampilkan gerakan tangan saat break/place di layar sendiri.",
+        Value = Config.visualAnim,
+        Callback = function(on) Config.visualAnim = on; SaveConfig() end,
+    })
 
     Tab:Button({
         Title = "Buka Floating Grid 5x5 (Mode Farm)",
@@ -8387,24 +8376,6 @@ SafeUI("Tab:Pabrik", function()
         Callback = function(on) Config.pabrikDrop = on; SaveConfig() end,
     })
 
-    Tab:Slider({
-        Title = "Drop Saat Seed Mencapai >=",
-        Desc = "Default: 180 seed.",
-        IsTooltip = true,
-        Step = 5,
-        Value = { Min = 20, Max = 200, Default = math.clamp(Config.pabrikDropAt or 180, 20, 200) },
-        Callback = function(v) Config.pabrikDropAt = math.floor(tonumber(v) or 180); SaveConfig() end,
-    })
-
-    Tab:Slider({
-        Title = "Jumlah Seed yang Di-drop",
-        Desc = "Default: 100 seed sekali drop.",
-        IsTooltip = true,
-        Step = 5,
-        Value = { Min = 10, Max = 200, Default = math.clamp(Config.pabrikDropAmount or 100, 10, 200) },
-        Callback = function(v) Config.pabrikDropAmount = math.floor(tonumber(v) or 100); SaveConfig() end,
-    })
-
     Tab:Input({
         Title = "World Penyimpanan Seed (WORLD atau WORLD:ID_PINTU)",
         Value = Config.pabrikDropWorld,
@@ -8835,7 +8806,7 @@ end)
 -- 5A. Tab: Visual, Role & Watermark ----------------------------------
 SafeUI("Tab:Visual", function()
     local VisTab = SystemSection:Tab({
-        Title = "Visual & Watermark",
+        Title = "Visual",
         Icon = "solar:password-minimalistic-input-bold",
         IconColor = Purple,
         IconShape = "Square",
@@ -8844,14 +8815,14 @@ SafeUI("Tab:Visual", function()
     hub.tabs.visual = VisTab
 
     VisTab:Toggle({
-        Title = "Watermark Nama Beranimasi",
+        Title = "Visual Nama Beranimasi",
         Desc = "Ubah tampilan nama di atas karakter & HUD kiri atas dengan efek gradient.",
         Value = Config.customWatermark,
         Callback = function(on) Config.customWatermark = on; SaveConfig() end,
     })
 
     VisTab:Input({
-        Title = "Teks Watermark Nama",
+        Title = "Teks Visual Nama",
         Value = Config.watermarkText ~= "" and Config.watermarkText or "ANCH HUB",
         Placeholder = "ANCH HUB",
         Callback = function(text)
@@ -8863,7 +8834,7 @@ SafeUI("Tab:Visual", function()
     })
 
     VisTab:Space()
-    VisTab:Section({ Title = "Visual Item Lokal (Kuyang, LegendBot, Rayman)" })
+    VisTab:Section({ Title = "Visual Item Lokal" })
 
     local activeFilter, searchQ = "Semua", ""
     local wearMap = {}
@@ -8885,13 +8856,6 @@ SafeUI("Tab:Visual", function()
         if #vals == 0 then vals = { "Tidak ada item" } end
         if wearDd and wearDd.Refresh then pcall(function() wearDd:Refresh(vals) end) end
     end
-
-    VisTab:Dropdown({
-        Title = "Filter Kategori",
-        Values = { "Semua", "Kuyang", "LegendBot", "Rayman" },
-        Value = "Semua",
-        Callback = function(v) activeFilter = v or "Semua"; rebuildWear() end,
-    })
 
     VisTab:Input({
         Title = "Cari Item Visual",
@@ -8936,17 +8900,17 @@ SafeUI("Tab:Visual", function()
         end,
     })
 
-    VisTab:Button({
-        Title = "Buka Staff Backpack",
-        Justify = "Center",
-        Callback = function()
-            if Refs.Menu and type(Refs.Menu.openBackpack) == "function" then
-                pcall(Refs.Menu.openBackpack, { name = Player.DisplayName or Player.Name, userId = Player.UserId })
-            else
-                Notify("Menu Staff belum ditemukan.")
-            end
-        end,
-    })
+    -- VisTab:Button({
+    --     Title = "Buka Staff Backpack",
+    --     Justify = "Center",
+    --     Callback = function()
+    --         if Refs.Menu and type(Refs.Menu.openBackpack) == "function" then
+    --             pcall(Refs.Menu.openBackpack, { name = Player.DisplayName or Player.Name, userId = Player.UserId })
+    --         else
+    --             Notify("Menu Staff belum ditemukan.")
+    --         end
+    --     end,
+    -- })
 
     task.defer(rebuildWear)
 end)
