@@ -107,38 +107,24 @@ end
 local cloneref = (cloneref or clonereference or function(instance)
     return instance
 end)
-
-local Players = cloneref(game:GetService("Players"))
-local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
-local StarterGui = cloneref(game:GetService("StarterGui"))
-local GuiService = cloneref(game:GetService("GuiService"))
-local UserInputService = cloneref(game:GetService("UserInputService"))
-local HttpService = cloneref(game:GetService("HttpService"))
-local TweenService = cloneref(game:GetService("TweenService"))
-local RunService = cloneref(game:GetService("RunService"))
-local TeleportService = cloneref(game:GetService("TeleportService"))
-local VirtualUser = cloneref(game:GetService("VirtualUser"))
-local TextChatService = cloneref(game:GetService("TextChatService"))
-local TextService = cloneref(game:GetService("TextService"))
-
 local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
+local PlayerGui = Player:WaitForChild("PlayerGui", 5)
 
-local Shared = ReplicatedStorage:WaitForChild("Shared", 10)
-local WorldRemotes = ReplicatedStorage:WaitForChild("WorldRemotes", 10)
-local DropEvent = WorldRemotes and WorldRemotes:WaitForChild("DropItem", 5)
+local Shared = ReplicatedStorage:FindFirstChild("Shared") or ReplicatedStorage:WaitForChild("Shared", 3)
+local WorldRemotes = ReplicatedStorage:FindFirstChild("WorldRemotes") or ReplicatedStorage:WaitForChild("WorldRemotes", 1)
+local DropEvent = WorldRemotes and WorldRemotes:FindFirstChild("DropItem")
 local SetTileRemote = WorldRemotes and WorldRemotes:FindFirstChild("SetTile")
 local TakeDropRemote = WorldRemotes and WorldRemotes:FindFirstChild("TakeDrop")
 local PickTitleRemote = WorldRemotes and WorldRemotes:FindFirstChild("PickTitle")
 local WorldClosedRemote = WorldRemotes and WorldRemotes:FindFirstChild("WorldClosed")
 
-local ItemDB = {}
+local ItemDB = G.__ANCH_ItemDBCache or {}
 local function ResolveItemDB()
     if next(ItemDB) ~= nil then return ItemDB end
     pcall(function()
         local rawRep = game:GetService("ReplicatedStorage")
         local sh = rawRep:FindFirstChild("Shared") or Shared
-        local mod = sh and (sh:FindFirstChild("ItemDB") or sh:WaitForChild("ItemDB", 5))
+        local mod = sh and sh:FindFirstChild("ItemDB")
         if mod then
             local ok, res = pcall(require, mod)
             if ok and type(res) == "table" then
@@ -154,22 +140,23 @@ local function ResolveItemDB()
                     end
                     if next(ItemDB) == nil then ItemDB = res end
                 end
+                G.__ANCH_ItemDBCache = ItemDB
             end
         end
     end)
     return ItemDB
 end
 ResolveItemDB()
-local InvModOk, InventoryModule = pcall(function() return require(Shared:WaitForChild("Inventory", 5)) end)
-local NetOk, Net = pcall(function() return require(Shared:WaitForChild("Net", 5)) end)
-local RolesOk, RolesModule = pcall(function() return require(Shared:FindFirstChild("Roles")) end)
-local SfxOk, SfxModule = pcall(function() return require(Shared:FindFirstChild("Sfx")) end)
-local SpliceOk, SpliceModule = pcall(function() return require(Shared:FindFirstChild("Splice")) end)
 
-local GameGui = PlayerGui:WaitForChild("GameGui", 10)
-local ParticlesOk, ParticlesModule = pcall(function() return require(GameGui:WaitForChild("Particles", 5)) end)
-local MenuModOk, MenuModule = pcall(function() return require(GameGui:WaitForChild("WorldMenu", 5)) end)
+local InvModOk, InventoryModule = pcall(function() return Shared and require(Shared:FindFirstChild("Inventory")) end)
+local NetOk, Net = pcall(function() return Shared and require(Shared:FindFirstChild("Net")) end)
+local RolesOk, RolesModule = pcall(function() return Shared and require(Shared:FindFirstChild("Roles")) end)
+local SfxOk, SfxModule = pcall(function() return Shared and require(Shared:FindFirstChild("Sfx")) end)
+local SpliceOk, SpliceModule = pcall(function() return Shared and require(Shared:FindFirstChild("Splice")) end)
 
+local GameGui = PlayerGui and (PlayerGui:FindFirstChild("GameGui") or PlayerGui:WaitForChild("GameGui", 2))
+local ParticlesOk, ParticlesModule = pcall(function() return GameGui and require(GameGui:FindFirstChild("Particles")) end)
+local MenuModOk, MenuModule = pcall(function() return GameGui and require(GameGui:FindFirstChild("WorldMenu")) end)
 ----------------------------------------------------------------------
 -- CONFIG & STATE GLOBAL
 ----------------------------------------------------------------------
@@ -583,20 +570,23 @@ do (function()
                 G.__ANCH_TrueOrigIsDown = fn
             end
             rawset(MenuModule, "isDown", IsDownInterceptor)
+            return
         end
         if getgcFn then
-            for _, v in ipairs(getgcFn(true)) do
-                if type(v) == "table" then
-                    local fn = rawget(v, "isDown")
-                    if type(fn) == "function" then
-                        if not OrigIsDown and not (isexecutorclosure and pcall(isexecutorclosure, fn) and isexecutorclosure(fn)) then
-                            OrigIsDown = fn
-                            G.__ANCH_TrueOrigIsDown = fn
+            task.spawn(function()
+                for _, v in ipairs(getgcFn(true)) do
+                    if type(v) == "table" then
+                        local fn = rawget(v, "isDown")
+                        if type(fn) == "function" then
+                            if not OrigIsDown and not (isexecutorclosure and pcall(isexecutorclosure, fn) and isexecutorclosure(fn)) then
+                                OrigIsDown = fn
+                                G.__ANCH_TrueOrigIsDown = fn
+                            end
+                            rawset(v, "isDown", IsDownInterceptor)
                         end
-                        rawset(v, "isDown", IsDownInterceptor)
                     end
                 end
-            end
+            end)
         end
     end
     HookAllIsDownTables()
@@ -6809,14 +6799,14 @@ do (function()
     function Stats.Text()
         local hours = math.max((os.clock() - Stats.T0) / 3600, 1 / 3600)
         local function rateLine(label, val)
-            return string.format("%s: %s (%s/jam)", label, formatNum(val), formatNum(val / hours))
+            return string.format("%s: %s (%s/hr)", label, formatNum(val), formatNum(val / hours))
         end
         local gNow = Stats.GemsNow()
         if gNow and not Stats.Gems0 then Stats.Gems0 = gNow end
         local gemLine = "Gems: -"
         if gNow and Stats.Gems0 then
             local diff = gNow - Stats.Gems0
-            gemLine = string.format("Gems: %s (%s%s, %s/jam)", formatNum(gNow), diff >= 0 and "+" or "", formatNum(diff), formatNum(diff / hours))
+            gemLine = string.format("Gems: %s (%s%s, %s/hr)", formatNum(gNow), diff >= 0 and "+" or "", formatNum(diff), formatNum(diff / hours))
         end
         local topArr = {}
         for id, n in pairs(Stats.Items) do table.insert(topArr, { id = id, n = n }) end
@@ -6826,14 +6816,14 @@ do (function()
             topStr[i] = ItemName(topArr[i].id) .. " x" .. formatNum(topArr[i].n)
         end
         return table.concat({
-            "Lama Sesi: " .. formatDuration(os.clock() - Stats.T0),
+            "Session Time: " .. formatDuration(os.clock() - Stats.T0),
             gemLine,
-            rateLine("Block Pecah", Stats.Broken),
-            rateLine("Block Dipasang", Stats.Placed),
-            rateLine("Drop Diambil", Stats.Collected),
-            rateLine("Pohon Dipanen", Stats.Harvested),
-            rateLine("Seed Ditanam", Stats.Planted),
-            "Item Terbanyak: " .. (#topStr > 0 and table.concat(topStr, ", ") or "-"),
+            rateLine("Blocks Broken", Stats.Broken),
+            rateLine("Blocks Placed", Stats.Placed),
+            rateLine("Drops Collected", Stats.Collected),
+            rateLine("Trees Harvested", Stats.Harvested),
+            rateLine("Seeds Planted", Stats.Planted),
+            "Top Collected: " .. (#topStr > 0 and table.concat(topStr, ", ") or "-"),
         }, "\n")
     end
 
@@ -8104,26 +8094,26 @@ do (function()
 end)() end
 
 ----------------------------------------------------------------------
--- DAFTAR FEATURES & SESI AUTO-RELOAD
+-- FEATURES REGISTRY & AUTO-RELOAD SESSION
 ----------------------------------------------------------------------
 local Features = {
-    blink = { label = "Blink", get = function() return blinkOn end, set = function(on) return on and StartBlink() or StopBlink() end },
-    longhand = { label = "Longhand", get = function() return longhandOn end, set = function(on) return on and ApplyLonghand() or StopLonghand() end },
-    noclip = { label = "Noclip", get = function() return noclipOn end, set = function(on) return on and StartNoclip() or StopNoclip() end },
+    blink = { label = "Skin Blink", get = function() return blinkOn end, set = function(on) return on and StartBlink() or StopBlink() end },
+    longhand = { label = "Longhand Reach", get = function() return longhandOn end, set = function(on) return on and ApplyLonghand() or StopLonghand() end },
+    noclip = { label = "Noclip / ModFly", get = function() return noclipOn end, set = function(on) return on and StartNoclip() or StopNoclip() end },
     ujump = { label = "Unlimited Jump", get = function() return ujumpOn end, set = function(on) return on and StartUjump() or StopUjump() end },
     antiafk = { label = "Anti-AFK", get = function() return antiAfkOn end, set = function(on) return on and StartAntiAfk() or StopAntiAfk() end },
     autorejoin = { label = "Auto Reconnect", get = function() return Config.reconnectOn end, set = function(on) return on and StartAutoRejoin() or StopAutoRejoin() end },
     god = { label = "God Mode", get = function() return godOn end, set = function(on) return on and StartGod() or StopGod() end },
     clicktp = { label = "Click TP", get = function() return Nav.clickOn end, set = function(on) return on and Nav.StartClick() or Nav.StopClick() end },
-    lite = { label = "Mode Lite", get = function() return Config.liteMode end, set = function(on) LiteMode.Set(on); return true end },
-    guard = { label = "Penjaga Anti-Mod", get = function() return Guard.on end, set = function(on) Guard.Set(on); return true end },
+    lite = { label = "Lite Mode (FPS Boost)", get = function() return Config.liteMode end, set = function(on) LiteMode.Set(on); return true end },
+    guard = { label = "Anti-Mod Guard", get = function() return Guard.on end, set = function(on) Guard.Set(on); return true end },
     autochat = { label = "Auto Chat", noSession = true, get = function() return Spam.on end, set = function(on) Spam.on = on; if on then Spam.nextAt = 0 end; return true end },
     autoclear = { label = "Auto Clear World", noSession = true, get = function() return Clear.on end, set = function(on) return on and Clear.Start() or Clear.Stop() end },
     autoharvest = { label = "Farmer (Harvest/Plant)", noSession = true, get = function() return Farmer.on end, set = function(on) return on and Farmer.Start() or Farmer.Stop() end },
     automove = { label = "Auto Move Item", noSession = true, get = function() return AutoMove.on end, set = function(on) return on and AutoMove.Start() or AutoMove.Stop() end },
     autodf = { label = "Auto Dirt Farm", noSession = true, get = function() return DF.on end, set = function(on) return on and DF.Start() or DF.Stop() end },
     autosplice = { label = "Auto Splice", noSession = true, get = function() return SpliceBot.on end, set = function(on) return on and SpliceBot.Start() or SpliceBot.Stop() end },
-    pabrik = { label = "Pabrik Seed", noSession = true, get = function() return Pabrik.on end, set = function(on) return on and Pabrik.Start() or Pabrik.Stop() end },
+    pabrik = { label = "Seed Factory", noSession = true, get = function() return Pabrik.on end, set = function(on) return on and Pabrik.Start() or Pabrik.Stop() end },
     autofarm = { label = "Auto Farm", noSession = true, get = function() return Farm.on and not Farm.Override end, set = function(on) return on and StartFarm() or StopFarm() end },
     autoquest = { label = "Auto Quest", get = function() return questOn end, set = function(on) return on and StartQuest() or StopQuest() end },
 }
@@ -8133,7 +8123,7 @@ local function SetFeature(key, on)
     if not feature then return end
     feature.set(on)
     if feature.get() == on then
-        Notify(feature.label .. (on and " aktif." or " dimatikan."))
+        Notify(feature.label .. (on and " enabled." or " disabled."))
         if not feature.noSession then
             Config.session[key] = on or nil
         end
@@ -8202,7 +8192,7 @@ local function InstallAutoexec()
 end
 
 ----------------------------------------------------------------------
--- GUI TAMBAHAN: FLOATING GRID 5X5 (DUAL MODE: FARM / PABRIK) & FLYPAD
+-- FLOATING 5X5 GRID GUI (DUAL MODE: FARM / FACTORY) & FLYPAD
 ----------------------------------------------------------------------
 do (function()
     local guiParent = (gethui and gethui()) or game:GetService("CoreGui")
@@ -8298,14 +8288,14 @@ do (function()
     UpdateGridVisuals = function()
         local tbl = currentGridTable()
         local isPabrik = GridMode == "pabrik"
-        ModeBtn.Text = isPabrik and "Pabrik" or "Farm"
+        ModeBtn.Text = isPabrik and "Factory" or "Farm"
         ModeBtn.BackgroundColor3 = isPabrik and Color3.fromRGB(200, 120, 40) or Color3.fromRGB(60, 60, 75)
-        Title.Text = isPabrik and "Tile Break Pabrik" or "ANCH Grid (Farm)"
+        Title.Text = isPabrik and "Factory Break Tiles" or "ANCH Grid (Farm)"
         for key, btn in pairs(CellButtons) do
             btn.BackgroundColor3 = tbl[key] and COLOR_ON or COLOR_OFF
         end
         if isPabrik then
-            GridStart.Text = Pabrik.on and "STOP PABRIK" or "START PABRIK"
+            GridStart.Text = Pabrik.on and "STOP FACTORY" or "START FACTORY"
             GridStart.BackgroundColor3 = Pabrik.on and Color3.fromRGB(200, 60, 60) or COLOR_ON
         else
             local running = Farm.on and not Farm.Override
@@ -8359,7 +8349,7 @@ do (function()
     ClearBtn.Font = Enum.Font.Gotham
     ClearBtn.TextSize = 12
     ClearBtn.TextColor3 = Color3.fromRGB(180, 180, 195)
-    ClearBtn.Text = "Bersihkan pilihan"
+    ClearBtn.Text = "Clear Selection"
     ClearBtn.MouseButton1Click:Connect(function()
         if GridMode == "pabrik" then
             Config.pabrikTiles = {}
@@ -8421,15 +8411,38 @@ do (function()
 end)() end
 
 ----------------------------------------------------------------------
--- GUI UTAMA (WINDUI - STRUKTUR RILIS PUBLIK + PROTEKSI SAFEUI)
+-- MAIN GUI (WINDUI - FULL ENGLISH + LOCAL CACHE FOR INSTANT LOAD)
 ----------------------------------------------------------------------
 local Window
 do (function()
 local WindUI
 do
-    local ok, result = pcall(function() return require("./src/Init") end)
-    if ok then
-        WindUI = result
+    local WINDUI_CACHE_FILE = "ANCHHub_WindUI_Cache.lua"
+    local src = G.__ANCH_WindUISource
+    if type(src) ~= "string" or #src < 1000 then
+        if isfile and readfile then
+            local okF, exists = pcall(isfile, WINDUI_CACHE_FILE)
+            if okF and exists then
+                local okR, content = pcall(readfile, WINDUI_CACHE_FILE)
+                if okR and type(content) == "string" and #content > 1000 then
+                    src = content
+                end
+            end
+        end
+    end
+    if type(src) ~= "string" or #src < 1000 then
+        local okH, fetched = pcall(function()
+            return game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua")
+        end)
+        if okH and type(fetched) == "string" and #fetched > 1000 then
+            src = fetched
+            G.__ANCH_WindUISource = src
+            if writefile then pcall(writefile, WINDUI_CACHE_FILE, src) end
+        end
+    end
+    if type(src) == "string" and #src > 1000 then
+        G.__ANCH_WindUISource = src
+        WindUI = loadstring(src)()
     else
         WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
     end
@@ -8472,13 +8485,11 @@ Window = WindUI:CreateWindow({
     },
 })
 
-Window:DisableTopbarButtons({
-    "Fullscreen",
-})
+Window:DisableTopbarButtons({ "Fullscreen" })
 
 pcall(function()
     Window:Tag({
-        Title = "v1.1 Beta",
+        Title = "v1.2 EN",
         Icon = "github",
         Color = Color3.fromHex("#1c1c1c"),
         Border = true,
@@ -8501,7 +8512,7 @@ end
 local function SafeUI(label, fn)
     local ok, err = pcall(fn)
     if not ok then
-        warn("[ANCHHub UI] Error pada " .. tostring(label) .. ": " .. tostring(err))
+        warn("[ANCHHub UI] Error in " .. tostring(label) .. ": " .. tostring(err))
     end
 end
 
@@ -8535,18 +8546,18 @@ local function AddFeatureToggle(tab, title, desc, key)
     return toggle
 end
 
--- 5 Kategori Proporsional Standar Publik
+-- Sections
 local MainSection     = Window:Section({ Title = "Main Section", Opened = true })
-local AutoSection     = Window:Section({ Title = "Auto Section", Opened = true })
-local HelperSection     = Window:Section({ Title = "Helper Section", Opened = true })
-local BagWorldSection = Window:Section({ Title = "World Section", Opened = true })
-local SecuritySection = Window:Section({ Title = "Safety Section", Opened = true })
+local AutoSection     = Window:Section({ Title = "Automation", Opened = true })
+local HelperSection   = Window:Section({ Title = "Fast Helpers", Opened = true })
+local BagWorldSection = Window:Section({ Title = "Inventory & World", Opened = true })
+local SecuritySection = Window:Section({ Title = "Safety & Utility", Opened = true })
 local SystemSection   = Window:Section({ Title = "System & Settings", Opened = true })
 
--- 1A. Tab: Dashboard & Statistik (Utama) -----------------------------
+-- 1A. Tab: Dashboard & Statistics ------------------------------------
 SafeUI("Tab:Dashboard", function()
     local Tab = MainSection:Tab({
-        Title = "Dashboard & Statistik",
+        Title = "Dashboard & Stats",
         Icon = "solar:home-2-bold",
         IconColor = Green,
         IconShape = "Square",
@@ -8555,17 +8566,17 @@ SafeUI("Tab:Dashboard", function()
     hub.tabs.features = Tab
 
     local statusPara = Tab:Paragraph({
-        Title = "Status Karakter & Koneksi Game",
-        Desc = "Mendeteksi posisi...",
+        Title = "Character & Game Connection Status",
+        Desc = "Detecting position...",
     })
 
     local statsPara = Tab:Paragraph({
-        Title = "Statistik Sesi Real-Time",
-        Desc = "Memuat statistik...",
+        Title = "Real-Time Session Statistics",
+        Desc = "Loading stats...",
     })
 
     task.spawn(function()
-        while alive() and task.wait(0.5) do
+        while alive() and task.wait(0.6) do
             pcall(function()
                 local tx, ty = GetTile()
                 local wName = CurrentWorldName()
@@ -8581,52 +8592,51 @@ SafeUI("Tab:Dashboard", function()
                 if tx then
                     SetElementText(
                         statusPara,
-                        string.format("World: %s  |  Posisi Tile: (%d, %d)", wName ~= "" and wName or "-", tx, ty),
+                        string.format("World: %s  |  Tile Position: (%d, %d)", wName ~= "" and wName or "-", tx, ty),
                         refLine
                     )
                 else
-                    SetElementText(statusPara, "Status Karakter: Di luar world", refLine)
+                    SetElementText(statusPara, "Character Status: Outside World", refLine)
                 end
-                SetElementText(statsPara, "Statistik Sesi Real-Time", Stats.Text())
+                SetElementText(statsPara, "Real-Time Session Statistics", Stats.Text())
             end)
         end
     end)
 
     Tab:Button({
-        Title = "Hubungkan Ulang ke Game (Reconnect Refs)",
+        Title = "Rescan Game References (Reconnect Refs)",
         Color = Color3.fromHex("#305dff"),
         Justify = "Center",
         Callback = function()
-            Refs.Scan()
-            Notify("Referensi game berhasil diperbarui!")
+            Refs.Scan(true)
+            Notify("Game references refreshed!")
         end,
     })
 
     local stGrp = Tab:Group({})
     stGrp:Button({
-        Title = "Reset Statistik",
+        Title = "Reset Stats",
         Justify = "Center",
-        Callback = function() Stats.Reset(); Notify("Statistik sesi direset ke nol.") end,
+        Callback = function() Stats.Reset(); Notify("Session statistics reset.") end,
     })
     stGrp:Button({
-        Title = "Kirim Statistik ke Discord",
+        Title = "Send Stats to Discord",
         Justify = "Center",
         Callback = function()
             if not (Config.webhookOn and Webhook.Valid(Config.webhookUrl)) then
-                Notify("Aktifkan & isi URL Webhook di tab Discord & Pengaturan dulu!")
+                Notify("Enable & set your Discord Webhook URL in System & Settings first!")
             else
-                Webhook.Send("report", "Laporan Statistik Sesi\n```\n" .. Stats.Text() .. "\n```")
-                Notify("Laporan statistik masuk antrian kirim Discord!")
+                Webhook.Send("report", "Session Statistics Report\n```\n" .. Stats.Text() .. "\n```")
+                Notify("Statistics report queued for Discord!")
             end
         end,
     })
-
 end)
 
--- 1B. Tab: Karakter & Movement (Utama) -------------------------------
+-- 1B. Tab: Character & Movement --------------------------------------
 SafeUI("Tab:Character", function()
     local Tab = MainSection:Tab({
-        Title = "Character",
+        Title = "Character & Movement",
         Icon = "solar:square-transfer-horizontal-bold",
         IconColor = Blue,
         IconShape = "Square",
@@ -8634,50 +8644,50 @@ SafeUI("Tab:Character", function()
     })
     hub.tabs.nav = Tab
 
-    local navPara = Tab:Paragraph({ Title = "Status Navigasi Universal", Desc = "Terakhir: -" })
+    local navPara = Tab:Paragraph({ Title = "Universal Navigation Status", Desc = "Last: -" })
 
     Tab:Dropdown({
-        Title = "Metode Bergerak Seluruh Fitur (DF / Farmer / Pabrik / Clear)",
-        Desc = "Legit Walking = Jalan fisik A* | Teleport Mode = Pindah per-tile dengan cek posisi real-time.",
+        Title = "Universal Movement Method (DF / Farmer / Factory / Clear)",
+        Desc = "Legit Walking = Physical A* pathfinding | Teleport Mode = Tile-by-tile real-time stepper.",
         Values = { "Legit Walking", "Teleport Mode" },
         Value = Config.moveMethod or "Legit Walking",
         Callback = function(v)
             Config.moveMethod = v or "Legit Walking"
             Config.moveMode = (Config.moveMethod == "Teleport Mode") and "fly" or "legit"
             SaveConfig()
-            Notify("Metode bergerak diubah ke: " .. Config.moveMethod)
+            Notify("Movement method set to: " .. Config.moveMethod)
         end,
     })
 
     Tab:Space()
 
     task.spawn(function()
-        while alive() and task.wait(0.5) do
+        while alive() and task.wait(0.6) do
             pcall(function()
                 SetElementText(
                     navPara,
-                    "Mode Gerak: " .. Config.moveMode:upper(),
-                    "Status Click TP: " .. tostring(Nav.last) .. " | Pijakan Dipasang: " .. Nav.PlacedScaffolds
+                    "Movement Mode: " .. Config.moveMode:upper(),
+                    "Click TP Status: " .. tostring(Nav.last) .. " | Scaffolds Placed: " .. Nav.PlacedScaffolds
                 )
             end)
         end
     end)
 
-    AddFeatureToggle(Tab, "Click TP (Legit A* Pathfinding)", "Klik di layar untuk berjalan & memanjat otomatis ke tujuan.", "clicktp")
-    AddFeatureToggle(Tab, "Noclip + FlyPad (▲/▼)", "Terbang menembus blok dan munculkan tombol naik/turun di layar.", "noclip")
-    AddFeatureToggle(Tab, "Unlimited Jump (Jammer)", "Lompat di udara tanpa batas.", "ujump")
-    AddFeatureToggle(Tab, "God Mode (Kebal Hazard)", "Kebal lava, spike, api, dan rintangan tajam.", "god")
-    AddFeatureToggle(Tab, "Longhand (Jangkauan Jauh)", "Perluas jangkauan pukulan & pasang blok.", "longhand")
-    AddFeatureToggle(Tab, "Mode Lite (FPS Boost)", "Matikan partikel & efek suara pukulan agar hemat baterai & FPS tinggi.", "lite")
-    AddFeatureToggle(Tab, "Blink Skin", "Warna karakter berganti otomatis.", "blink")
-    AddFeatureToggle(Tab, "Anti-AFK", "Mencegah disconnect karena diam terlalu lama.", "antiafk")
+    AddFeatureToggle(Tab, "Click TP (Legit A* Pathfinding)", "Tap/click anywhere on screen to automatically walk & climb to that tile.", "clicktp")
+    AddFeatureToggle(Tab, "Noclip + FlyPad (▲/▼)", "Fly through blocks and display on-screen Up/Down buttons.", "noclip")
+    AddFeatureToggle(Tab, "Unlimited Jump (Air Jump)", "Jump infinitely in mid-air.", "ujump")
+    AddFeatureToggle(Tab, "God Mode (Hazard Immunity)", "Immune to lava, spikes, fire, and deadly obstacles.", "god")
+    AddFeatureToggle(Tab, "Longhand (Extended Reach)", "Extend your punch and build range.", "longhand")
+    AddFeatureToggle(Tab, "Lite Mode (FPS Boost)", "Disable particles & punch sound effects for higher FPS.", "lite")
+    AddFeatureToggle(Tab, "Skin Blink", "Automatically cycle character skin colors.", "blink")
+    AddFeatureToggle(Tab, "Anti-AFK", "Prevent idle disconnection.", "antiafk")
 
     Tab:Space()
-    Tab:Section({ Title = "Kecepatan & Radius Collect" })
+    Tab:Section({ Title = "Speed & Auto Collect Radius" })
 
     Tab:Slider({
-        Title = "Walkspeed Karakter (%)",
-        Desc = "100% = kecepatan normal.",
+        Title = "Character Walkspeed (%)",
+        Desc = "100% = normal game speed.",
         IsTooltip = true,
         Step = 10,
         Value = { Min = 50, Max = 400, Default = math.clamp(Config.walkSpeed, 50, 400) },
@@ -8689,34 +8699,21 @@ SafeUI("Tab:Character", function()
     })
 
     Tab:Toggle({
-        Title = "Collect Drop di Sekitar Karakter (Kapan Saja)",
+        Title = "Always Collect Nearby Drops",
         Value = Config.collectAround,
         Callback = function(on) Config.collectAround = on; SaveConfig() end,
     })
 
     Tab:Slider({
-        Title = "Radius Auto Collect (Tile)",
+        Title = "Auto Collect Radius (Tiles)",
         IsTooltip = true,
         Step = 1,
         Value = { Min = 1, Max = 8, Default = math.clamp(Config.collectRadius, 1, 8) },
         Callback = function(v) Config.collectRadius = math.floor(tonumber(v) or 3); SaveConfig() end,
     })
 
-    Tab:Dropdown({
-        Title = "Mode Pergerakan Universal",
-        Values = { "legit", "walk", "fly", "mix" },
-        Value = Config.moveMode,
-        Callback = function(v)
-            if type(v) == "string" then
-                Config.moveMode = v
-                SaveConfig()
-                Notify("Mode gerak diubah ke: " .. v)
-            end
-        end,
-    })
-
     Tab:Toggle({
-        Title = "Wajib Tahan Shift untuk Click TP (PC)",
+        Title = "Require Holding Shift for Click TP (PC)",
         Value = Config.clickTpShift,
         Callback = function(on) Config.clickTpShift = on; SaveConfig() end,
     })
@@ -8733,17 +8730,17 @@ SafeUI("Tab:AutoFarm", function()
     })
     hub.tabs.farm = Tab
 
-    local farmStatusPara = Tab:Paragraph({ Title = "Status Auto Farm", Desc = "Memuat..." })
+    local farmStatusPara = Tab:Paragraph({ Title = "Auto Farm Status", Desc = "Loading..." })
 
     task.spawn(function()
-        while alive() and task.wait(0.4) do
+        while alive() and task.wait(0.5) do
             pcall(function()
                 local id = Config.farmPlaceId
                 SetElementText(
                     farmStatusPara,
                     "Status: " .. Farm.stats.status .. " (" .. Config.farmMode .. ")",
                     string.format(
-                        "Block: %s [ID %d] (Stok: %d)\nPlace: %d | Break: %d | Collect: %d | Siklus: %d",
+                        "Block: %s [ID %d] (In Bag: %d)\nPlaced: %d | Broken: %d | Collected: %d | Cycles: %d",
                         ItemName(id), id, CountItem(id),
                         Farm.stats.placed, Farm.stats.broken, Farm.stats.picked, Farm.stats.cycles
                     )
@@ -8752,28 +8749,29 @@ SafeUI("Tab:AutoFarm", function()
         end
     end)
 
-    AddFeatureToggle(Tab, "Jalankan Auto Farm", "Place & break otomatis sesuai Grid 5x5.", "autofarm")
+    AddFeatureToggle(Tab, "Enable Auto Farm", "Automatically place & break blocks based on the 5x5 Grid.", "autofarm")
+
     Tab:Dropdown({
-        Title = "Mode Auto Collect (Legit Badan / Remote)",
-        Desc = "Legit = Sapu fisik & lompat kecil (tidak ditolak server). Remote = Ambil jarak jauh.",
-        Values = { "Legit", "Vacuum" },
-        Value = Config.collectMode or "Legit",
+        Title = "Auto Collect Mode (Legit Physical / Remote)",
+        Desc = "Legit = Physical sweep & small jump (anti-reject). Remote = Collect from range.",
+        Values = { "Legit", "Remote" },
+        Value = (Config.collectMode == "Remote") and "Remote" or "Legit",
         Callback = function(v)
-            Config.collectMode = v or "Legit"
+            Config.collectMode = (v == "Remote") and "Remote" or "Legit"
             SaveConfig()
-            Notify("Mode Auto Collect: " .. Config.collectMode)
+            Notify("Auto Collect Mode: " .. Config.collectMode)
         end,
     })
 
     Tab:Toggle({
-        Title = "Animasi Ayunan Tangan & Efek Place",
-        Desc = "Tampilkan gerakan tangan saat break/place di layar sendiri.",
+        Title = "Hand Swing & Place Visual Effects",
+        Desc = "Show arm swing animation and particle effects locally.",
         Value = Config.visualAnim,
         Callback = function(on) Config.visualAnim = on; SaveConfig() end,
     })
 
     Tab:Button({
-        Title = "Buka Floating Grid 5x5 (Mode Farm)",
+        Title = "Open 5x5 Floating Grid (Farm Mode)",
         Color = Color3.fromHex("#305dff"),
         Justify = "Center",
         Callback = function()
@@ -8783,18 +8781,32 @@ SafeUI("Tab:AutoFarm", function()
     })
 
     Tab:Space()
-    Tab:Section({ Title = "Mode & Kecepatan Farm" })
+    Tab:Section({ Title = "Farm Mode & Speed" })
+
+    local farmModeMap = {
+        ["Place + Break"] = "Place + Break",
+        ["Break Only"] = "Break saja",
+        ["Place Only"] = "Place saja",
+    }
+    local farmModeRev = {
+        ["Place + Break"] = "Place + Break",
+        ["Break saja"] = "Break Only",
+        ["Place saja"] = "Place Only",
+    }
 
     Tab:Dropdown({
-        Title = "Mode Auto Farm",
-        Values = { "Place + Break", "Break saja", "Place saja" },
-        Value = Config.farmMode,
-        Callback = function(v) Config.farmMode = v or "Place + Break"; SaveConfig() end,
+        Title = "Auto Farm Mode",
+        Values = { "Place + Break", "Break Only", "Place Only" },
+        Value = farmModeRev[Config.farmMode] or "Place + Break",
+        Callback = function(v)
+            Config.farmMode = farmModeMap[v] or "Place + Break"
+            SaveConfig()
+        end,
     })
 
     Tab:Slider({
-        Title = "Multi-Target Break (1 - 5 Tile)",
-        Desc = "Memukul beberapa tile bergantian. Otomatis pakai efek Rayman jika memakai Rayman's Fist!",
+        Title = "Multi-Target Break (1 - 5 Tiles)",
+        Desc = "Hit multiple tiles in rotation. Automatically uses Rayman Fist if equipped!",
         IsTooltip = true,
         Step = 1,
         Value = { Min = 1, Max = 5, Default = math.clamp(Config.farmMultiTarget, 1, 5) },
@@ -8802,15 +8814,15 @@ SafeUI("Tab:AutoFarm", function()
     })
 
     Tab:Input({
-        Title = "ID Block Farm",
+        Title = "Farm Block ID",
         Value = tostring(Config.farmPlaceId),
-        Placeholder = "Contoh: 2 (Dirt)",
+        Placeholder = "e.g. 2 (Dirt)",
         Callback = function(text)
             local v = tonumber(text)
             if v and v > 0 then
                 Config.farmPlaceId = math.floor(v)
                 SaveConfig()
-                Notify("Block Farm: " .. ItemName(Config.farmPlaceId) .. " [" .. Config.farmPlaceId .. "]")
+                Notify("Farm Block: " .. ItemName(Config.farmPlaceId) .. " [" .. Config.farmPlaceId .. "]")
             end
         end,
     })
@@ -8818,8 +8830,8 @@ SafeUI("Tab:AutoFarm", function()
     local searchMap = {}
     local searchDd
     Tab:Input({
-        Title = "Cari Block di Database",
-        Placeholder = "Ketik nama block...",
+        Title = "Search Block in Database",
+        Placeholder = "Type block name...",
         Callback = function(q)
             searchMap = {}
             local vals = {}
@@ -8830,26 +8842,26 @@ SafeUI("Tab:AutoFarm", function()
                     table.insert(vals, lbl)
                 end
             end
-            if #vals == 0 then vals = { "Tidak ada hasil" } end
+            if #vals == 0 then vals = { "No results" } end
             if searchDd and searchDd.Refresh then pcall(function() searchDd:Refresh(vals) end) end
         end,
     })
 
     searchDd = Tab:Dropdown({
-        Title = "Pilih Hasil Pencarian Block",
-        Values = { "Ketik nama di atas..." },
+        Title = "Select Search Result",
+        Values = { "Type a block name above..." },
         Callback = function(sel)
             local id = searchMap[sel]
             if id then
                 Config.farmPlaceId = id
                 SaveConfig()
-                Notify("Block diset ke: " .. ItemName(id) .. " [" .. id .. "]")
+                Notify("Block set to: " .. ItemName(id) .. " [" .. id .. "]")
             end
         end,
     })
 
     Tab:Slider({
-        Title = "Speed Place (ms)",
+        Title = "Place Delay (ms)",
         IsTooltip = true,
         Step = 10,
         Value = { Min = 50, Max = 1000, Default = math.clamp(Config.farmPlaceMs, 50, 1000) },
@@ -8857,7 +8869,7 @@ SafeUI("Tab:AutoFarm", function()
     })
 
     Tab:Input({
-        Title = "Speed Break (detik)",
+        Title = "Break Delay (seconds)",
         Value = tostring(Config.farmDelay),
         Placeholder = "0.22",
         Callback = function(text)
@@ -8867,23 +8879,23 @@ SafeUI("Tab:AutoFarm", function()
     })
 
     Tab:Toggle({
-        Title = "Auto Collect Drop",
+        Title = "Auto Collect Drops",
         Value = Config.farmTake,
         Callback = function(on) Config.farmTake = on; SaveConfig() end,
     })
 
     Tab:Space()
-    Tab:Section({ Title = "Auto Save / Drop Seed (Saat Seed >= 200)" })
+    Tab:Section({ Title = "Auto Save / Drop Seeds (When Seeds >= Threshold)" })
 
     Tab:Toggle({
-        Title = "Aktifkan Auto Drop Seed Saat Penuh",
-        Desc = "Otomatis berhenti break, drop seed di world/posisi tujuan, lalu kembali lanjut Auto Farm.",
+        Title = "Enable Auto Drop Seeds When Full",
+        Desc = "Automatically pause farming, drop seeds at target world/pos, and return to resume Auto Farm.",
         Value = Config.farmAutoDropSeed,
         Callback = function(on) Config.farmAutoDropSeed = on; SaveConfig() end,
     })
 
     Tab:Slider({
-        Title = "Drop Saat Jumlah Seed Mencapai >=",
+        Title = "Drop When Seed Count Reaches >=",
         IsTooltip = true,
         Step = 5,
         Value = { Min = 20, Max = 200, Default = math.clamp(Config.farmSeedDropAt or 200, 20, 200) },
@@ -8891,7 +8903,7 @@ SafeUI("Tab:AutoFarm", function()
     })
 
     Tab:Slider({
-        Title = "Sisakan Seed di Tas",
+        Title = "Keep Seeds in Backpack",
         IsTooltip = true,
         Step = 5,
         Value = { Min = 0, Max = 190, Default = math.clamp(Config.farmSeedKeep or 0, 0, 190) },
@@ -8899,27 +8911,27 @@ SafeUI("Tab:AutoFarm", function()
     })
 
     Tab:Input({
-        Title = "World Drop Seed (Kosong = World Ini | WORLD | WORLD:PINTU)",
+        Title = "Seed Drop World (Empty = Current World | WORLD | WORLD:DOOR)",
         Value = Config.farmDropWorld,
-        Placeholder = "Contoh: STORAGE atau STORAGE:1",
+        Placeholder = "e.g. STORAGE or STORAGE:1",
         Callback = function(t) Config.farmDropWorld = Trim(t or ""); SaveConfig() end,
     })
 
     Tab:Button({
-        Title = "SetPos Drop Seed (Simpan Posisi Sekarang)",
+        Title = "SetPos Seed Drop (Save Current Position)",
         Color = Color3.fromHex("#10C550"),
         Justify = "Center",
         Callback = function()
             local tx, ty = GetTile()
-            if not tx then Notify("Posisi belum terbaca!"); return end
+            if not tx then Notify("Character position not detected!"); return end
             Config.farmDropX, Config.farmDropY = tx, ty
             SaveConfig()
-            Notify(string.format("Posisi Drop Seed Auto Farm disimpan di (%d, %d)!", tx, ty))
+            Notify(string.format("Auto Farm Seed Drop position saved at (%d, %d)!", tx, ty))
         end,
     })
 end)
 
--- 2B. Tab: Auto Clear World (ModFly + Stand Above) -------------------
+-- 2B. Tab: Auto Clear World ------------------------------------------
 SafeUI("Tab:AutoClear", function()
     local Tab = AutoSection:Tab({
         Title = "Auto Clear",
@@ -8930,38 +8942,41 @@ SafeUI("Tab:AutoClear", function()
     })
     hub.tabs.clear = Tab
 
-    local clearPara = Tab:Paragraph({ Title = "Status Auto Clear (ModFly)", Desc = "Memuat..." })
+    local clearPara = Tab:Paragraph({ Title = "Auto Clear World Status", Desc = "Loading..." })
 
     task.spawn(function()
-        while alive() and task.wait(0.4) do
+        while alive() and task.wait(0.5) do
             pcall(function()
                 local st = Clear.stats
                 SetElementText(
                     clearPara,
-                    string.format("Status: %s (Pass %d | Baris Y=%s)", Clear.status, st.pass, st.row >= 0 and tostring(st.row) or "-"),
-                    string.format("Target: %d | Sisa: %d | Di-skip: %d\nHancur: %d | Drop Diambil: %d", st.scanned, st.left, st.skipped, st.broken, st.picked)
+                    string.format("Status: %s (Pass %d | Row Y=%s)", Clear.status, st.pass, st.row >= 0 and tostring(st.row) or "-"),
+                    string.format("Targets: %d | Remaining: %d | Skipped: %d\nBroken: %d | Drops Picked: %d", st.scanned, st.left, st.skipped, st.broken, st.picked)
                 )
             end)
         end
     end)
 
-    AddFeatureToggle(Tab, "Auto Clear World (ModFly + Berdiri di Atas Block)", "ModFly otomatis selalu menyala, karakter berdiri tepat di atas block yang akan di-break hingga hancur lalu pindah.", "autoclear")
+    AddFeatureToggle(Tab, "Auto Clear World (Legit Walk + Hover Break)", "Walks via A* pathfinding between blocks and enables ModFly hover while breaking blocks underneath.", "autoclear")
 
     Tab:Dropdown({
-        Title = "Arah Sapuan (Sweep)",
-        Values = { "Zig-zag", "Kiri → Kanan" },
-        Value = Config.clearSweep,
-        Callback = function(v) Config.clearSweep = v or "Zig-zag"; SaveConfig() end,
+        Title = "Sweep Direction",
+        Values = { "Zig-zag", "Left -> Right" },
+        Value = (Config.clearSweep == "Zig-zag") and "Zig-zag" or "Left -> Right",
+        Callback = function(v)
+            Config.clearSweep = (v == "Zig-zag") and "Zig-zag" or "Kiri → Kanan"
+            SaveConfig()
+        end,
     })
 
     Tab:Toggle({
-        Title = "Ikut Hancurkan Background",
+        Title = "Include Background Blocks",
         Value = Config.clearIncludeBg,
         Callback = function(on) Config.clearIncludeBg = on; SaveConfig() end,
     })
 
     Tab:Input({
-        Title = "Delay Pukulan Break (detik)",
+        Title = "Break Punch Delay (seconds)",
         Value = tostring(Config.clearBreakDelay),
         Callback = function(text)
             local v = tonumber(text)
@@ -8970,7 +8985,7 @@ SafeUI("Tab:AutoClear", function()
     })
 
     Tab:Input({
-        Title = "Delay Pindah Antar Blok (detik)",
+        Title = "Move Step Delay (seconds)",
         Value = tostring(Config.clearTpDelay),
         Callback = function(text)
             local v = tonumber(text)
@@ -8979,7 +8994,7 @@ SafeUI("Tab:AutoClear", function()
     })
 
     Tab:Toggle({
-        Title = "Auto Collect Drop",
+        Title = "Auto Collect Drops",
         Value = Config.clearTake,
         Callback = function(on) Config.clearTake = on; SaveConfig() end,
     })
@@ -8996,17 +9011,17 @@ SafeUI("Tab:Farmer", function()
     })
     hub.tabs.harvest = Tab
 
-    local farmerPara = Tab:Paragraph({ Title = "Status Farmer", Desc = "Memuat..." })
+    local farmerPara = Tab:Paragraph({ Title = "Farmer Status", Desc = "Loading..." })
 
     task.spawn(function()
-        while alive() and task.wait(0.4) do
+        while alive() and task.wait(0.5) do
             pcall(function()
                 local st = Farmer.stats
                 SetElementText(
                     farmerPara,
                     "Status: " .. Farmer.status,
                     string.format(
-                        "Total Pohon: %d | Siap Panen: %d | Belum Siap: %d\nDipanen: %d | Ditanam: %d | Drop Diambil: %d\nSeed Tanam: %s [ID %d] (Stok: %d)",
+                        "Total Trees: %d | Ready: %d | Growing: %d\nHarvested: %d | Planted: %d | Drops Picked: %d\nPlant Seed: %s [ID %d] (In Bag: %d)",
                         st.totalTrees, st.ready, st.skipped, st.harvested, st.planted, st.picked,
                         ItemName(Config.harvestSeedId), Config.harvestSeedId, CountItem(Config.harvestSeedId)
                     )
@@ -9015,23 +9030,23 @@ SafeUI("Tab:Farmer", function()
         end
     end)
 
-    AddFeatureToggle(Tab, "Jalankan Farmer", "Otomatis panen pohon siap & tanam seed dengan Legit Walking + Bersih Pijakan.", "autoharvest")
+    AddFeatureToggle(Tab, "Enable Farmer", "Automatically harvest ready trees & plant seeds using Zig-Zag A* walking.", "autoharvest")
 
     Tab:Toggle({
-        Title = "Auto Harvest (Panen Pohon Siap)",
+        Title = "Auto Harvest (Break Ready Trees)",
         Value = Config.harvestDoHarvest,
         Callback = function(on) Config.harvestDoHarvest = on; SaveConfig() end,
     })
 
     Tab:Toggle({
-        Title = "Auto Plant (Tanam Seed Otomatis)",
+        Title = "Auto Plant Seeds",
         Value = Config.harvestDoPlant,
         Callback = function(on) Config.harvestDoPlant = on; SaveConfig() end,
     })
 
     Tab:Input({
-        Title = "ID Seed untuk Auto Plant",
-        Desc = "Contoh: 3 = Dirt Seed, 5 = Lava Seed",
+        Title = "Seed ID for Auto Plant",
+        Desc = "e.g. 3 = Dirt Seed, 5 = Lava Seed",
         Value = tostring(Config.harvestSeedId),
         Placeholder = "3",
         Callback = function(text)
@@ -9039,19 +9054,19 @@ SafeUI("Tab:Farmer", function()
             if v and v > 0 then
                 Config.harvestSeedId = math.floor(v)
                 SaveConfig()
-                Notify("Seed diset ke: " .. ItemName(Config.harvestSeedId))
+                Notify("Plant Seed set to: " .. ItemName(Config.harvestSeedId))
             end
         end,
     })
 
     Tab:Toggle({
-        Title = "Pakai Block Pijakan Saat Memanjat",
+        Title = "Use Scaffold Blocks When Climbing",
         Value = Config.harvestUseBlock,
         Callback = function(on) Config.harvestUseBlock = on; SaveConfig() end,
     })
 
     Tab:Toggle({
-        Title = "Auto Collect Hasil Panen",
+        Title = "Auto Collect Harvest Drops",
         Value = Config.harvestTake,
         Callback = function(on) Config.harvestTake = on; SaveConfig() end,
     })
@@ -9068,10 +9083,10 @@ SafeUI("Tab:AutoDF", function()
     })
     hub.tabs.df = Tab
 
-    local dfPara = Tab:Paragraph({ Title = "Status Auto Dirt Farm (Full World)", Desc = "Memuat..." })
+    local dfPara = Tab:Paragraph({ Title = "Auto Dirt Farm Status", Desc = "Loading..." })
 
     task.spawn(function()
-        while alive() and task.wait(0.4) do
+        while alive() and task.wait(0.5) do
             pcall(function()
                 local st = DF.stats
                 local dirtId = GetDirtId()
@@ -9080,7 +9095,7 @@ SafeUI("Tab:AutoDF", function()
                     dfPara,
                     "Status: " .. DF.status .. " (" .. tostring(st.step) .. ")",
                     string.format(
-                        "Lapisan Dirt: Y=%d | Bedrock: Y=%d\nStok Dirt: %d | Stok Dirt Seed: %d\nHancur: %d | Dirt Dipasang: %d | Drop Diambil: %d",
+                        "Top Dirt Row: Y=%d | Bedrock: Y=%d\nDirt in Bag: %d | Dirt Seeds: %d\nBroken: %d | Dirt Placed: %d | Drops Picked: %d",
                         st.topDirtY, st.bedrockY, CountItem(dirtId), CountItem(seedId), st.broken, st.placed, st.picked
                     )
                 )
@@ -9088,23 +9103,23 @@ SafeUI("Tab:AutoDF", function()
         end
     end)
 
-    AddFeatureToggle(Tab, "Jalankan Auto Dirt Farm (Full World)", "Bangun DF bawah & atas otomatis + Smart Supply (tanam/panen/break Dirt otomatis saat stok habis, tanpa ModFly).", "autodf")
+    AddFeatureToggle(Tab, "Enable Auto Dirt Farm (Full World)", "Automatically build lower & upper Dirt Farm platforms + Smart Dirt Restock.", "autodf")
 
     Tab:Toggle({
-        Title = "Ganti Lava/Rock dengan Dirt di Platform",
+        Title = "Replace Lava/Rock with Dirt on Platforms",
         Value = Config.dfReplacePlatform,
         Callback = function(on) Config.dfReplacePlatform = on; SaveConfig() end,
     })
 
     Tab:Toggle({
-        Title = "Auto Collect Drop",
+        Title = "Auto Collect Drops",
         Value = Config.dfTake,
         Callback = function(on) Config.dfTake = on; SaveConfig() end,
     })
 
     Tab:Toggle({
-        Title = "Aktifkan ModFly Saat Auto DF (Anti-Lava)",
-        Desc = "Terbang & kebal lava saat menghancurkan blok agar tidak mati/respawn.",
+        Title = "Enable ModFly During Auto DF (Anti-Lava)",
+        Desc = "Hover & stay immune to lava while breaking blocks.",
         Value = Config.dfModFly,
         Callback = function(on)
             Config.dfModFly = on
@@ -9114,7 +9129,7 @@ SafeUI("Tab:AutoDF", function()
     })
 
     Tab:Input({
-        Title = "Delay Pukulan Break (detik)",
+        Title = "Break Punch Delay (seconds)",
         Value = tostring(Config.dfBreakDelay),
         Callback = function(text)
             local v = tonumber(text)
@@ -9123,7 +9138,7 @@ SafeUI("Tab:AutoDF", function()
     })
 
     Tab:Input({
-        Title = "Delay Gerak / Langkah (detik)",
+        Title = "Move Step Delay (seconds)",
         Value = tostring(Config.dfTpDelay),
         Callback = function(text)
             local v = tonumber(text)
@@ -9143,16 +9158,16 @@ SafeUI("Tab:AutoSplice", function()
     })
     hub.tabs.splice = Tab
 
-    local splicePara = Tab:Paragraph({ Title = "Status Auto Splice", Desc = "Memuat..." })
+    local splicePara = Tab:Paragraph({ Title = "Auto Splice Status", Desc = "Loading..." })
 
     task.spawn(function()
-        while alive() and task.wait(0.5) do
+        while alive() and task.wait(0.6) do
             pcall(function()
                 SetElementText(
                     splicePara,
                     "Status: " .. SpliceBot.status,
                     string.format(
-                        "%s\nSeed A: %s [%d] (x%d) | Seed B: %s [%d] (x%d)\nDitanam: %d | Berhasil Splice: %d",
+                        "%s\nSeed A: %s [%d] (x%d) | Seed B: %s [%d] (x%d)\nPlanted: %d | Spliced: %d",
                         SpliceBot.ResultText(),
                         ItemName(Config.spliceA), Config.spliceA, CountItem(Config.spliceA),
                         ItemName(Config.spliceB), Config.spliceB, CountItem(Config.spliceB),
@@ -9163,10 +9178,10 @@ SafeUI("Tab:AutoSplice", function()
         end
     end)
 
-    AddFeatureToggle(Tab, "Jalankan Auto Splice", "Tanam Seed A lalu gabungkan (splice) dengan Seed B.", "autosplice")
+    AddFeatureToggle(Tab, "Enable Auto Splice", "Plant Seed A and splice it with Seed B.", "autosplice")
 
     Tab:Input({
-        Title = "ID Seed A (Ditanam Pertama)",
+        Title = "Seed A ID (Planted First)",
         Value = tostring(Config.spliceA),
         Placeholder = "3 (Dirt Seed)",
         Callback = function(t)
@@ -9176,7 +9191,7 @@ SafeUI("Tab:AutoSplice", function()
     })
 
     Tab:Input({
-        Title = "ID Seed B (Di-splice ke Pohon A)",
+        Title = "Seed B ID (Spliced onto Seed A)",
         Value = tostring(Config.spliceB),
         Placeholder = "5 (Lava Seed)",
         Callback = function(t)
@@ -9186,14 +9201,14 @@ SafeUI("Tab:AutoSplice", function()
     })
 
     Tab:Toggle({
-        Title = "Keliling World Otomatis (A*)",
-        Desc = "Nyala = cari tempat kosong di seluruh world. Mati = hanya di kotak Grid 5x5.",
+        Title = "Roam Entire World (A*)",
+        Desc = "ON = Find empty tiles across the world. OFF = Only splice within 5x5 Grid.",
         Value = Config.spliceRoam,
         Callback = function(on) Config.spliceRoam = on; SaveConfig() end,
     })
 
     Tab:Slider({
-        Title = "Jeda Tanam / Splice (ms)",
+        Title = "Plant / Splice Delay (ms)",
         IsTooltip = true,
         Step = 10,
         Value = { Min = 140, Max = 2000, Default = math.clamp(Config.spliceMs, 140, 2000) },
@@ -9201,10 +9216,10 @@ SafeUI("Tab:AutoSplice", function()
     })
 end)
 
--- 2F. Tab: Pabrik / Factory ------------------------------------------
+-- 2F. Tab: Seed Factory (Pabrik) -------------------------------------
 SafeUI("Tab:Pabrik", function()
     local Tab = AutoSection:Tab({
-        Title = "Pabrik (Factory)",
+        Title = "Seed Factory",
         Icon = "solar:folder-with-files-bold",
         IconColor = Blue,
         IconShape = "Square",
@@ -9212,27 +9227,27 @@ SafeUI("Tab:Pabrik", function()
     })
     hub.tabs.pabrik = Tab
 
-    local pabrikPara = Tab:Paragraph({ Title = "Status Pabrik Seed", Desc = "Memuat..." })
+    local pabrikPara = Tab:Paragraph({ Title = "Seed Factory Status", Desc = "Loading..." })
 
     task.spawn(function()
-        while alive() and task.wait(0.5) do
+        while alive() and task.wait(0.6) do
             pcall(function()
                 local sid = Config.pabrikSeedId
                 local bid = BlockOfSeed(sid)
                 local wTarget, dTarget = Pabrik.ParseDropTarget()
-                local dropInfo = (wTarget ~= "" and wTarget or "World Ini")
-                    .. (dTarget and (" Pintu:" .. dTarget) or "")
+                local dropInfo = (wTarget ~= "" and wTarget or "Current World")
+                    .. (dTarget and (" Door:" .. dTarget) or "")
                     .. (Config.pabrikDropX >= 0 and string.format(" (%d,%d)", Config.pabrikDropX, Config.pabrikDropY) or "")
                 SetElementText(
                     pabrikPara,
-                    string.format("Status: %s (Fase: %s)", Pabrik.status, Pabrik.phase),
+                    string.format("Status: %s (Phase: %s)", Pabrik.status, Pabrik.phase),
                     string.format(
-                        "Seed: %s [%d] x%d | Block: %s x%d\nSetPos Break: %s\nTarget Drop: %s (Saat Seed >= %d, Drop %d Seed)\nHasil: Panen %d | Tanam %d | Di-drop %d",
+                        "Seed: %s [%d] x%d | Block: %s x%d\nBreak Pos: %s\nDrop Target: %s (Max Seed Cap: %d)\nTotals: Harvested %d | Planted %d | Dropped %d",
                         ItemName(sid), sid, CountItem(sid),
                         bid and ItemName(bid) or "-", bid and CountItem(bid) or 0,
-                        Config.pabrikBreakX >= 0 and string.format("Tile (%d, %d)", Config.pabrikBreakX, Config.pabrikBreakY) or "Belum diset!",
-                        Config.pabrikDrop and dropInfo or "Mati",
-                        Config.pabrikDropAt, Config.pabrikDropAmount or 100,
+                        Config.pabrikBreakX >= 0 and string.format("Tile (%d, %d)", Config.pabrikBreakX, Config.pabrikBreakY) or "Not set!",
+                        Config.pabrikDrop and dropInfo or "Disabled",
+                        Config.pabrikMaxSeed or 100,
                         Pabrik.harvested, Pabrik.planted, Pabrik.dropped
                     )
                 )
@@ -9240,11 +9255,11 @@ SafeUI("Tab:Pabrik", function()
         end
     end)
 
-    AddFeatureToggle(Tab, "Jalankan Pabrik", "Siklus: Break Blok -> Tanam -> Tunggu -> Panen -> Drop 100 Seed saat >= 180.", "pabrik")
+    AddFeatureToggle(Tab, "Enable Seed Factory", "Full Cycle: Break Blocks -> Drop Excess Seeds -> Plant -> Wait -> Harvest -> Repeat.", "pabrik")
 
     Tab:Input({
-        Title = "ID Seed Pabrik",
-        Desc = "Block otomatis terdeteksi (contoh: 3 = Dirt Seed -> Block ID 2 = Dirt).",
+        Title = "Factory Seed ID",
+        Desc = "Block ID is detected automatically (e.g. 3 = Dirt Seed -> Block ID 2 = Dirt).",
         Value = tostring(Config.pabrikSeedId),
         Callback = function(t)
             local v = tonumber(t)
@@ -9253,8 +9268,8 @@ SafeUI("Tab:Pabrik", function()
     })
 
     Tab:Input({
-        Title = "Max Seed Pabrik (Batas Tanam & Putaran Seed)",
-        Desc = "Contoh: 100 = Hanya menanam 100 seed. Jika setelah break seed > 100, otomatis drop sisanya dan menyisakan 100 seed.",
+        Title = "Max Seed Cap (Plant & Rotation Limit)",
+        Desc = "e.g. 100 = Only plant up to 100 seeds. Any extra seeds above 100 after breaking are automatically dropped at storage.",
         Value = tostring(Config.pabrikMaxSeed or 100),
         Placeholder = "100",
         Callback = function(t)
@@ -9262,33 +9277,33 @@ SafeUI("Tab:Pabrik", function()
             if v and v >= 1 then
                 Config.pabrikMaxSeed = math.floor(v)
                 SaveConfig()
-                Notify("Max Seed Pabrik diset ke: " .. tostring(Config.pabrikMaxSeed))
+                Notify("Factory Max Seed set to: " .. tostring(Config.pabrikMaxSeed))
             end
         end,
     })
 
     Tab:Space()
-    Tab:Section({ Title = "Posisi Break Pabrik (SetPos Break)" })
+    Tab:Section({ Title = "Factory Break Position (SetPos Break)" })
 
     local breakPosGrp = Tab:Group({})
     breakPosGrp:Button({
-        Title = "SetPos Break (Simpan Posisi)",
+        Title = "SetPos Break (Save Position)",
         Color = Color3.fromHex("#10C550"),
         Justify = "Center",
         Callback = function()
             local tx, ty = GetTile()
-            if not tx then Notify("Posisi karakter belum terbaca!"); return end
+            if not tx then Notify("Character position not detected!"); return end
             Config.pabrikBreakX, Config.pabrikBreakY = tx, ty
             SaveConfig()
-            Notify(string.format("SetPos Break Pabrik disimpan di (%d, %d)!", tx, ty))
+            Notify(string.format("Factory Break Position saved at (%d, %d)!", tx, ty))
         end,
     })
     breakPosGrp:Button({
-        Title = "Ke Pos Break",
+        Title = "Go to Break Pos",
         Justify = "Center",
         Callback = function()
             if Config.pabrikBreakX < 0 or Config.pabrikBreakY < 0 then
-                Notify("SetPos Break belum disimpan!")
+                Notify("Break Position is not set yet!")
                 return
             end
             task.spawn(function()
@@ -9298,7 +9313,7 @@ SafeUI("Tab:Pabrik", function()
     })
 
     Tab:Button({
-        Title = "Pilih Tile Break Pabrik (Buka Grid 5x5 Mode Pabrik)",
+        Title = "Select Break Tiles (Open 5x5 Grid in Factory Mode)",
         Color = Color3.fromHex("#305dff"),
         Justify = "Center",
         Callback = function()
@@ -9308,30 +9323,30 @@ SafeUI("Tab:Pabrik", function()
     })
 
     Tab:Space()
-    Tab:Section({ Title = "Pengaturan Penyimpanan / Auto Drop Seed" })
+    Tab:Section({ Title = "Seed Storage / Auto Drop Settings" })
 
     Tab:Toggle({
-        Title = "Aktifkan Auto Drop Seed ke Penyimpanan",
+        Title = "Enable Auto Drop Excess Seeds to Storage",
         Value = Config.pabrikDrop,
         Callback = function(on) Config.pabrikDrop = on; SaveConfig() end,
     })
 
     Tab:Input({
-        Title = "World Penyimpanan Seed (WORLD atau WORLD:ID_PINTU)",
+        Title = "Seed Storage World (WORLD or WORLD:DOOR_ID)",
         Value = Config.pabrikDropWorld,
-        Placeholder = "Contoh: STORAGE atau STORAGE:1",
+        Placeholder = "e.g. STORAGE or STORAGE:1",
         Callback = function(t) Config.pabrikDropWorld = Trim(t or ""); SaveConfig() end,
     })
 
     Tab:Button({
-        Title = "SetPos Drop Seed (Simpan Titik Drop Sekarang)",
+        Title = "SetPos Seed Drop (Save Current Tile)",
         Justify = "Center",
         Callback = function()
             local tx, ty = GetTile()
-            if not tx then Notify("Posisi belum terbaca!"); return end
+            if not tx then Notify("Position not detected!"); return end
             Config.pabrikDropX, Config.pabrikDropY = tx, ty
             SaveConfig()
-            Notify(string.format("Posisi Drop Seed disimpan di (%d, %d)", tx, ty))
+            Notify(string.format("Seed Drop Position saved at (%d, %d)", tx, ty))
         end,
     })
 end)
@@ -9347,21 +9362,21 @@ SafeUI("Tab:AutoMove", function()
     })
     hub.tabs.automove = Tab
 
-    local movePara = Tab:Paragraph({ Title = "Status Auto Move Item", Desc = "Memuat..." })
+    local movePara = Tab:Paragraph({ Title = "Auto Move Item Status", Desc = "Loading..." })
 
     task.spawn(function()
-        while alive() and task.wait(0.5) do
+        while alive() and task.wait(0.6) do
             pcall(function()
                 local id = tonumber(Config.moveItemId) or 0
                 SetElementText(
                     movePara,
-                    string.format("Status: %s (Fase: %s)", AutoMove.status, AutoMove.phase),
+                    string.format("Status: %s (Phase: %s)", AutoMove.status, AutoMove.phase),
                     string.format(
-                        "Item: %s [ID %d] (Di Tas: %d)\nWorld 1 (Ambil): %s  ->  World 2 (Drop): %s\nPos Drop World 2: %s\nTotal Diambil: %d | Total Di-drop: %d",
+                        "Item: %s [ID %d] (In Bag: %d)\nWorld 1 (Take): %s  ->  World 2 (Drop): %s\nWorld 2 Drop Pos: %s\nTotal Picked: %d | Total Dropped: %d",
                         ItemName(id), id, CountItem(id),
-                        Config.moveWorld1 ~= "" and Config.moveWorld1 or "(Belum diisi)",
-                        Config.moveWorld2 ~= "" and Config.moveWorld2 or "(Belum diisi)",
-                        (Config.moveDropX >= 0 and Config.moveDropY >= 0) and string.format("(%d, %d)", Config.moveDropX, Config.moveDropY) or "(Belum diset)",
+                        Config.moveWorld1 ~= "" and Config.moveWorld1 or "(Not set)",
+                        Config.moveWorld2 ~= "" and Config.moveWorld2 or "(Not set)",
+                        (Config.moveDropX >= 0 and Config.moveDropY >= 0) and string.format("(%d, %d)", Config.moveDropX, Config.moveDropY) or "(Not set)",
                         AutoMove.collected, AutoMove.dropped
                     )
                 )
@@ -9369,50 +9384,51 @@ SafeUI("Tab:AutoMove", function()
         end
     end)
 
-    AddFeatureToggle(Tab, "Jalankan Auto Move (World 1 -> World 2)", "Ambil item drop di World 1 -> Pindah & Drop di World 2 (otomatis geser kanan jika penuh) -> Ulangi sampai habis.", "automove")
+    AddFeatureToggle(Tab, "Enable Auto Move (World 1 -> World 2)", "Take dropped items in World 1 -> Warp & Drop in World 2 (steps right 1 tile if full) -> Loop until empty.", "automove")
 
     Tab:Input({
-        Title = "World 1 - Tempat Ambil Item (WORLD atau WORLD:ID_DOOR)",
+        Title = "World 1 - Source World (WORLD or WORLD:DOOR_ID)",
         Value = Config.moveWorld1,
-        Placeholder = "Contoh: FARM1 atau FARM1:PINTU1",
+        Placeholder = "e.g. FARM1 or FARM1:DOOR1",
         Callback = function(t) Config.moveWorld1 = Trim(t or ""); SaveConfig() end,
     })
 
     Tab:Input({
-        Title = "World 2 - Tempat Drop Item (WORLD atau WORLD:ID_DOOR)",
+        Title = "World 2 - Drop World (WORLD or WORLD:DOOR_ID)",
         Value = Config.moveWorld2,
-        Placeholder = "Contoh: STORAGE1 atau STORAGE1:PINTU2",
+        Placeholder = "e.g. STORAGE1 or STORAGE1:DOOR2",
         Callback = function(t) Config.moveWorld2 = Trim(t or ""); SaveConfig() end,
     })
 
     Tab:Button({
-        Title = "SetPos Drop di World 2 (Simpan Posisi Sekarang)",
+        Title = "SetPos Drop in World 2 (Save Current Position)",
         Color = Color3.fromHex("#10C550"),
         Justify = "Center",
         Callback = function()
             local tx, ty = GetTile()
-            if not tx then Notify("Posisi belum terbaca!"); return end
+            if not tx then Notify("Position not detected!"); return end
             Config.moveDropX, Config.moveDropY = tx, ty
             SaveConfig()
-            Notify(string.format("Pos Drop World 2 disimpan di (%d, %d)!", tx, ty))
+            Notify(string.format("World 2 Drop Position saved at (%d, %d)!", tx, ty))
         end,
     })
 
     Tab:Input({
-        Title = "ID Item yang Akan Di-Move",
+        Title = "Item ID to Move",
         Value = tostring(Config.moveItemId),
-        Placeholder = "Contoh: 2 (Dirt) atau 3 (Dirt Seed)",
+        Placeholder = "e.g. 2 (Dirt) or 3 (Dirt Seed)",
         Callback = function(t)
             local v = tonumber(t)
             if v and v > 0 then
                 Config.moveItemId = math.floor(v)
                 SaveConfig()
-                Notify("Item Auto Move diset ke: " .. ItemName(Config.moveItemId) .. " [" .. Config.moveItemId .. "]")
+                Notify("Auto Move Item set to: " .. ItemName(Config.moveItemId) .. " [" .. Config.moveItemId .. "]")
             end
         end,
     })
 end)
 
+-- 2H. Tab: Fast Wrench -----------------------------------------------
 SafeUI("Tab:FastWrench", function()
     local Tab = HelperSection:Tab({
         Title = "Fast Wrench",
@@ -9423,13 +9439,13 @@ SafeUI("Tab:FastWrench", function()
     })
     hub.tabs.fastwrench = Tab
 
-    Tab:Section({ Title = "Fast Wrench Action (Bypass Dialog Wrench)" })
+    Tab:Section({ Title = "Fast Wrench Actions (0ms Modal Bypass)" })
 
     local fpToggle, fkToggle, fbToggle
 
     fpToggle = Tab:Toggle({
-        Title = "Fast Pull (Wrench = Langsung Pull)",
-        Desc = "Abaikan dialog wrench & langsung kirim paket Pull saat wrench player.",
+        Title = "Fast Pull (Wrench Player = Instant Pull)",
+        Desc = "Bypass the wrench dialog and immediately pull the wrenched player.",
         Value = Config.fastPull,
         Callback = function(on)
             Config.fastPull = on
@@ -9437,15 +9453,15 @@ SafeUI("Tab:FastWrench", function()
                 Config.fastKick, Config.fastBan = false, false
                 if fkToggle and fkToggle.Set then pcall(function() fkToggle:Set(false) end) end
                 if fbToggle and fbToggle.Set then pcall(function() fbToggle:Set(false) end) end
-                Notify("Fast Pull AKTIF! Wrench player untuk langsung Pull.")
+                Notify("Fast Pull ENABLED! Wrench a player to pull them instantly.")
             end
             SaveConfig()
         end,
     })
 
     fkToggle = Tab:Toggle({
-        Title = "Fast Kick (Wrench = Langsung Kick)",
-        Desc = "Abaikan dialog wrench & langsung kirim paket Kick saat wrench player.",
+        Title = "Fast Kick (Wrench Player = Instant Kick)",
+        Desc = "Bypass the wrench dialog and immediately kick the wrenched player.",
         Value = Config.fastKick,
         Callback = function(on)
             Config.fastKick = on
@@ -9453,15 +9469,15 @@ SafeUI("Tab:FastWrench", function()
                 Config.fastPull, Config.fastBan = false, false
                 if fpToggle and fpToggle.Set then pcall(function() fpToggle:Set(false) end) end
                 if fbToggle and fbToggle.Set then pcall(function() fbToggle:Set(false) end) end
-                Notify("Fast Kick AKTIF! Wrench player untuk langsung Kick.")
+                Notify("Fast Kick ENABLED! Wrench a player to kick them instantly.")
             end
             SaveConfig()
         end,
     })
 
     fbToggle = Tab:Toggle({
-        Title = "Fast Ban (Wrench = Langsung Ban)",
-        Desc = "Abaikan dialog wrench & langsung kirim paket Ban saat wrench player.",
+        Title = "Fast Ban (Wrench Player = Instant Ban)",
+        Desc = "Bypass the wrench dialog and immediately ban the wrenched player.",
         Value = Config.fastBan,
         Callback = function(on)
             Config.fastBan = on
@@ -9469,13 +9485,14 @@ SafeUI("Tab:FastWrench", function()
                 Config.fastPull, Config.fastKick = false, false
                 if fpToggle and fpToggle.Set then pcall(function() fpToggle:Set(false) end) end
                 if fkToggle and fkToggle.Set then pcall(function() fkToggle:Set(false) end) end
-                Notify("Fast Ban AKTIF! Wrench player untuk langsung Ban.")
+                Notify("Fast Ban ENABLED! Wrench a player to ban them instantly.")
             end
             SaveConfig()
         end,
     })
 end)
 
+-- 2I. Tab: Fast Drop & Recycle ---------------------------------------
 SafeUI("Tab:FastDropRecycle", function()
     local Tab = HelperSection:Tab({
         Title = "Fast Drop & Recycle",
@@ -9486,63 +9503,63 @@ SafeUI("Tab:FastDropRecycle", function()
     })
     hub.tabs.fastdroprecycle = Tab
 
-    Tab:Section({ Title = "Fast Drop & Fast Recycle / Trash (Bypass Dialog)" })
+    Tab:Section({ Title = "Fast Drop & Fast Recycle / Trash (0ms Dialog Bypass)" })
 
     Tab:Toggle({
-        Title = "Fast Drop (Klik Drop = Langsung Drop Tanpa Dialog)",
-        Desc = "Otomatis mengabaikan dialog drop saat tombol Drop di Backpack ditekan.",
+        Title = "Fast Drop (Click Drop = Instant Drop Without Dialog)",
+        Desc = "Automatically bypass the quantity popup when clicking Drop in your Backpack.",
         Value = Config.fastDrop,
         Callback = function(on)
             Config.fastDrop = on
             SaveConfig()
-            Notify("Fast Drop " .. (on and "AKTIF!" or "DIMATIKAN."))
+            Notify("Fast Drop " .. (on and "ENABLED!" or "DISABLED."))
         end,
     })
 
     Tab:Input({
-        Title = "Jumlah Fast Drop (0 = Drop Semua / All)",
-        Desc = "Isi 0 untuk langsung drop seluruh jumlah item tersebut di tas.",
+        Title = "Fast Drop Amount (0 = Drop All)",
+        Desc = "Set to 0 to instantly drop the entire stack of the selected item.",
         Value = tostring(Config.fastDropCount or 0),
         Placeholder = "0 = All",
         Callback = function(t)
             local v = tonumber(t)
             Config.fastDropCount = (v and v >= 0) and math.floor(v) or 0
             SaveConfig()
-            Notify("Jumlah Fast Drop diset ke: " .. (Config.fastDropCount == 0 and "ALL (Semua)" or tostring(Config.fastDropCount)))
+            Notify("Fast Drop Amount set to: " .. (Config.fastDropCount == 0 and "ALL" or tostring(Config.fastDropCount)))
         end,
     })
 
     Tab:Space()
 
     Tab:Toggle({
-        Title = "Fast Recycle / Trash (Klik Recycle = Langsung Trash Tanpa Dialog)",
-        Desc = "Otomatis mengabaikan dialog konfirmasi saat tombol Recycle di Backpack ditekan.",
+        Title = "Fast Recycle / Trash (Click Recycle = Instant Trash)",
+        Desc = "Automatically bypass the confirmation popup when clicking Recycle in your Backpack.",
         Value = Config.fastRecycle,
         Callback = function(on)
             Config.fastRecycle = on
             SaveConfig()
-            Notify("Fast Recycle " .. (on and "AKTIF!" or "DIMATIKAN."))
+            Notify("Fast Recycle " .. (on and "ENABLED!" or "DISABLED."))
         end,
     })
 
     Tab:Input({
-        Title = "Jumlah Fast Recycle (0 = Recycle Semua / All)",
-        Desc = "Isi 0 untuk langsung me-recycle seluruh jumlah item tersebut di tas.",
+        Title = "Fast Recycle Amount (0 = Recycle All)",
+        Desc = "Set to 0 to instantly recycle the entire stack of the selected item.",
         Value = tostring(Config.fastRecycleCount or 0),
         Placeholder = "0 = All",
         Callback = function(t)
             local v = tonumber(t)
             Config.fastRecycleCount = (v and v >= 0) and math.floor(v) or 0
             SaveConfig()
-            Notify("Jumlah Fast Recycle diset ke: " .. (Config.fastRecycleCount == 0 and "ALL (Semua)" or tostring(Config.fastRecycleCount)))
+            Notify("Fast Recycle Amount set to: " .. (Config.fastRecycleCount == 0 and "ALL" or tostring(Config.fastRecycleCount)))
         end,
     })
 end)
 
--- 3A. Tab: Tas (Auto Recycle, Convert Lock & Drop WL) ----------------
+-- 3A. Tab: Backpack (Auto Recycle, Convert Lock & Drop WL) -----------
 SafeUI("Tab:Bag", function()
     local Tab = BagWorldSection:Tab({
-        Title = "Tas (Recycle & Lock)",
+        Title = "Backpack (Recycle & Locks)",
         Icon = "solar:check-square-bold",
         IconColor = Green,
         IconShape = "Square",
@@ -9550,7 +9567,7 @@ SafeUI("Tab:Bag", function()
     })
     hub.tabs.bag = Tab
 
-    local bagPara = Tab:Paragraph({ Title = "Status Manajemen Tas", Desc = "Memuat..." })
+    local bagPara = Tab:Paragraph({ Title = "Backpack Management Status", Desc = "Loading..." })
 
     task.spawn(function()
         while alive() and task.wait(0.8) do
@@ -9561,10 +9578,10 @@ SafeUI("Tab:Bag", function()
                 end
                 SetElementText(
                     bagPara,
-                    "Aksi Terakhir: " .. Bag.status,
+                    "Last Action: " .. Bag.status,
                     string.format(
-                        "Total Di-recycle: %d item | Convert Lock: %d kali\nDaftar Item Recycle: %s",
-                        Bag.recycled, Bag.converted, #ids > 0 and table.concat(ids, ", ") or "(Belum ada)"
+                        "Total Recycled: %d items | Locks Converted: %d times\nAuto-Recycle List: %s",
+                        Bag.recycled, Bag.converted, #ids > 0 and table.concat(ids, ", ") or "(None)"
                     )
                 )
             end)
@@ -9572,15 +9589,15 @@ SafeUI("Tab:Bag", function()
     end)
 
     Tab:Toggle({
-        Title = "Aktifkan Auto Recycle (Buang Item Otomatis)",
+        Title = "Enable Auto Recycle (Auto Trash Items)",
         Value = Config.trashOn,
         Callback = function(on) Config.trashOn = on; SaveConfig() end,
     })
 
     Tab:Input({
-        Title = "Tambah / Hapus ID Item Recycle",
-        Desc = "Ketik angka ID item (misal 2 untuk Dirt) lalu Enter untuk menambah/menghapus dari daftar.",
-        Placeholder = "Ketik ID item...",
+        Title = "Add / Remove Item ID from Auto-Recycle",
+        Desc = "Enter an Item ID (e.g. 2 for Dirt) to toggle it in the Auto-Recycle list.",
+        Placeholder = "Enter Item ID...",
         Callback = function(t)
             local id = tonumber(t)
             if not id or id <= 0 then return end
@@ -9588,17 +9605,17 @@ SafeUI("Tab:Bag", function()
             local idx = table.find(Config.trashList, id)
             if idx then
                 table.remove(Config.trashList, idx)
-                Notify(ItemName(id) .. " dihapus dari daftar Auto Recycle.")
+                Notify(ItemName(id) .. " removed from Auto-Recycle list.")
             else
                 table.insert(Config.trashList, id)
-                Notify(ItemName(id) .. " ditambahkan ke daftar Auto Recycle.")
+                Notify(ItemName(id) .. " added to Auto-Recycle list.")
             end
             SaveConfig()
         end,
     })
 
     Tab:Slider({
-        Title = "Recycle Kalau Jumlah >=",
+        Title = "Recycle When Count >=",
         IsTooltip = true,
         Step = 5,
         Value = { Min = 5, Max = 200, Default = math.clamp(Config.trashAt, 5, 200) },
@@ -9606,7 +9623,7 @@ SafeUI("Tab:Bag", function()
     })
 
     Tab:Slider({
-        Title = "Sisakan di Tas (Jangan Di-recycle)",
+        Title = "Keep Amount in Backpack",
         IsTooltip = true,
         Step = 5,
         Value = { Min = 0, Max = 195, Default = math.clamp(Config.trashKeep, 0, 195) },
@@ -9614,24 +9631,24 @@ SafeUI("Tab:Bag", function()
     })
 
     Tab:Space()
-    Tab:Section({ Title = "Lock & Drop Cepat" })
+    Tab:Section({ Title = "Locks & Quick Drop" })
 
     Tab:Toggle({
-        Title = "Auto Convert Lock (100 WL -> 1 DL, 100 DL -> 1 BGL)",
+        Title = "Auto Convert Locks (100 WL -> 1 DL, 100 DL -> 1 BGL)",
         Value = Config.convertLockOn,
         Callback = function(on) Config.convertLockOn = on; SaveConfig() end,
     })
 
     local dropAmountText = "100"
     Tab:Input({
-        Title = "Jumlah Drop World Lock",
+        Title = "World Lock Drop Amount",
         Value = "100",
-        Placeholder = "Jumlah (1-10000)",
+        Placeholder = "Amount (1-10000)",
         Callback = function(text) dropAmountText = text end,
     })
 
     Tab:Button({
-        Title = "Drop World Lock Sekarang",
+        Title = "Drop World Locks Now",
         Color = Color3.fromHex("#305dff"),
         Justify = "Center",
         Callback = function()
@@ -9639,7 +9656,7 @@ SafeUI("Tab:Bag", function()
             if amount and amount >= 1 and amount <= MAX_AMOUNT then
                 task.spawn(DropWorldLock, math.floor(amount))
             else
-                Notify("Jumlah WL tidak valid!")
+                Notify("Invalid WL amount!")
             end
         end,
     })
@@ -9656,12 +9673,12 @@ SafeUI("Tab:GrowScan", function()
     })
     hub.tabs.scan = ScanTab
 
-    local scanInfoPara = ScanTab:Paragraph({ Title = "GrowScan 9000", Desc = "Tekan tombol Scan di bawah untuk memindai isi world." })
+    local scanInfoPara = ScanTab:Paragraph({ Title = "GrowScan 9000", Desc = "Click the button below to scan all blocks, trees, and floating drops in the world." })
 
     local function RunGrowScan()
         local data = ScanWorld()
         if not data then
-            SetElementText(scanInfoPara, "GrowScan", "World belum terbaca.")
+            SetElementText(scanInfoPara, "GrowScan", "World not detected.")
             return
         end
         local function topItems(counts, maxLines)
@@ -9672,44 +9689,44 @@ SafeUI("Tab:GrowScan", function()
             for i = 1, math.min(maxLines or 12, #arr) do
                 table.insert(out, string.format("• %s [%d] x%d", ItemName(arr[i].id), arr[i].id, arr[i].n))
             end
-            return #out > 0 and table.concat(out, "\n") or "Kosong"
+            return #out > 0 and table.concat(out, "\n") or "Empty"
         end
         local treeLines = {}
         for id, t in pairs(data.trees) do
-            local nxt = t.nextIn and string.format(" (panen dlm %ds)", math.max(0, math.ceil(t.nextIn))) or ""
-            table.insert(treeLines, string.format("• %s: %d siap | %d tumbuh%s", ItemName(id), t.ready, t.growing, nxt))
+            local nxt = t.nextIn and string.format(" (ready in %ds)", math.max(0, math.ceil(t.nextIn))) or ""
+            table.insert(treeLines, string.format("• %s: %d ready | %d growing%s", ItemName(id), t.ready, t.growing, nxt))
         end
         local desc = table.concat({
             string.format("World: %s (%dx%d)", CurrentWorldName(), data.w, data.h),
-            string.format("FG: %d | BG: %d | Floating: %d (%d tumpukan)", data.totalFg, data.totalBg, data.totalDrops, data.piles),
-            string.format("Pohon: %d siap panen | %d tumbuh", data.readyTrees, data.growingTrees),
-            "\n[POHON DI WORLD]:\n" .. (#treeLines > 0 and table.concat(treeLines, "\n") or "Tidak ada pohon"),
+            string.format("FG: %d | BG: %d | Floating: %d (%d stacks)", data.totalFg, data.totalBg, data.totalDrops, data.piles),
+            string.format("Trees: %d ready | %d growing", data.readyTrees, data.growingTrees),
+            "\n[TREES IN WORLD]:\n" .. (#treeLines > 0 and table.concat(treeLines, "\n") or "No trees"),
             "\n[FLOATING DROPS]:\n" .. topItems(data.drops, 10),
             "\n[WORLD BLOCKS]:\n" .. topItems(data.fg, 12),
         }, "\n")
-        SetElementText(scanInfoPara, "Hasil GrowScan (" .. os.date("%H:%M:%S") .. ")", desc)
+        SetElementText(scanInfoPara, "GrowScan Results (" .. os.date("%H:%M:%S") .. ")", desc)
     end
 
     ScanTab:Button({
-        Title = "Scan Isi World Sekarang",
+        Title = "Scan World Now",
         Color = Color3.fromHex("#305dff"),
         Justify = "Center",
         Callback = RunGrowScan,
     })
 
     ScanTab:Button({
-        Title = "Buka UI GrowScan Bawaan Game",
+        Title = "Open Native In-Game GrowScan UI",
         Justify = "Center",
         Callback = function()
-            if not OpenNativeGrowScan() then Notify("GrowScan bawaan tidak tersedia.") end
+            if not OpenNativeGrowScan() then Notify("Native GrowScan UI is unavailable.") end
         end,
     })
 end)
 
--- 3C. Tab: Teleport & Posisi (Pos 1/2) -------------------------------
+-- 3C. Tab: Teleport & Positions (Pos 1/2) ----------------------------
 SafeUI("Tab:Pos", function()
     local PosTab = BagWorldSection:Tab({
-        Title = "Teleport & Posisi",
+        Title = "Teleport & Positions",
         Icon = "solar:hamburger-menu-bold",
         IconColor = Yellow,
         IconShape = "Square",
@@ -9719,46 +9736,118 @@ SafeUI("Tab:Pos", function()
 
     local warpTarget = ""
     PosTab:Input({
-        Title = "Nama World Tujuan Warp",
-        Placeholder = "Ketik nama world...",
+        Title = "Target World Name",
+        Placeholder = "Enter world name...",
         Callback = function(t) warpTarget = Trim(t or "") end,
     })
 
     PosTab:Button({
-        Title = "Warp ke World Tujuan",
+        Title = "Warp to World",
         Color = Color3.fromHex("#305dff"),
         Justify = "Center",
         Callback = function()
-            if warpTarget ~= "" then task.spawn(WarpToWorld, warpTarget) else Notify("Ketik nama world terlebih dahulu!") end
+            if warpTarget ~= "" then task.spawn(WarpToWorld, warpTarget) else Notify("Enter a world name first!") end
         end,
     })
 
     PosTab:Space()
-    PosTab:Section({ Title = "Simpan & Teleport Posisi (Pos 1 / Pos 2)" })
+    PosTab:Section({ Title = "Saved Positions (Pos 1 / Pos 2)" })
 
     for slot = 1, 2 do
-        local posPara = PosTab:Paragraph({ Title = "Pos " .. slot, Desc = "Belum diset" })
+        local posPara = PosTab:Paragraph({ Title = "Position " .. slot, Desc = "Not set" })
         local function refPos()
             local p = Config["pos" .. slot]
             if type(p) == "table" and type(p.x) == "number" then
-                SetElementText(posPara, "Pos " .. slot .. " Tersimpan", string.format("Tile (%d, %d) di World %s", p.x, p.y, p.world or "-"))
+                SetElementText(posPara, "Saved Pos " .. slot, string.format("Tile (%d, %d) in World %s", p.x, p.y, p.world or "-"))
             else
-                SetElementText(posPara, "Pos " .. slot, "Belum diset")
+                SetElementText(posPara, "Position " .. slot, "Not set")
             end
         end
         table.insert(hub.refreshers, refPos)
         refPos()
 
         local grp = PosTab:Group({})
-        grp:Button({ Title = "Simpan Pos " .. slot, Justify = "Center", Callback = function() SetPos(slot); RefreshHub() end })
+        grp:Button({ Title = "Save Pos " .. slot, Justify = "Center", Callback = function() SetPos(slot); RefreshHub() end })
         grp:Button({ Title = "Teleport (win" .. slot .. ")", Justify = "Center", Callback = function() task.spawn(GoToPos, slot) end })
     end
 end)
 
--- 4A. Tab: Penjaga (Anti-Mod) & Auto Reconnect -----------------------
+-- 3D. Tab: Vending Machine Bot ---------------------------------------
+SafeUI("Tab:Vending", function()
+    local Tab = BagWorldSection:Tab({
+        Title = "Vending Machine",
+        Icon = "solar:folder-with-files-bold",
+        IconColor = Purple,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.vending = Tab
+
+    local vendPara = Tab:Paragraph({ Title = "Vending Bot Status", Desc = "Loading..." })
+
+    task.spawn(function()
+        while alive() and task.wait(0.8) do
+            pcall(function()
+                SetElementText(
+                    vendPara,
+                    "Status: " .. Vend.status,
+                    string.format("Mode: %s\nStocked: %d | Emptied: %d", Config.vendMode, Vend.stocked, Vend.taken)
+                )
+            end)
+        end
+    end)
+
+    Tab:Toggle({
+        Title = "Enable Vending Machine Bot",
+        Value = Vend.on,
+        Callback = function(on)
+            if on then Vend.Start() else Vend.Stop() end
+        end,
+    })
+
+    local vendModeMap = {
+        ["Restock from Backpack/Drops"] = "Isi stock dari drop",
+        ["Empty Until Depleted"] = "Kosongkan sampai habis",
+    }
+    local vendModeRev = {
+        ["Isi stock dari drop"] = "Restock from Backpack/Drops",
+        ["Kosongkan sampai habis"] = "Empty Until Depleted",
+    }
+
+    Tab:Dropdown({
+        Title = "Vending Mode",
+        Values = { "Restock from Backpack/Drops", "Empty Until Depleted" },
+        Value = vendModeRev[Config.vendMode] or "Restock from Backpack/Drops",
+        Callback = function(v)
+            Config.vendMode = vendModeMap[v] or "Isi stock dari drop"
+            SaveConfig()
+        end,
+    })
+
+    Tab:Input({
+        Title = "Drop World When Emptying (WORLD or WORLD:DOOR)",
+        Value = Config.vendPoint,
+        Placeholder = "e.g. STORAGE or STORAGE:1",
+        Callback = function(t) Config.vendPoint = Trim(t or ""); SaveConfig() end,
+    })
+
+    Tab:Button({
+        Title = "SetPos Drop for Emptied Vending Items",
+        Justify = "Center",
+        Callback = function()
+            local tx, ty = GetTile()
+            if not tx then Notify("Position not detected!"); return end
+            Config.vendDropX, Config.vendDropY = tx, ty
+            SaveConfig()
+            Notify(string.format("Vending Drop Position saved at (%d, %d)", tx, ty))
+        end,
+    })
+end)
+
+-- 4A. Tab: Anti-Mod Guard & Auto Reconnect ---------------------------
 SafeUI("Tab:Guard", function()
     local Tab = SecuritySection:Tab({
-        Title = "Penjaga & Reconnect",
+        Title = "Guard & Reconnect",
         Icon = "solar:info-square-bold",
         IconColor = Red,
         IconShape = "Square",
@@ -9766,16 +9855,16 @@ SafeUI("Tab:Guard", function()
     })
     hub.tabs.guard = Tab
 
-    local guardPara = Tab:Paragraph({ Title = "Status Penjaga & Reconnect", Desc = "Mati" })
+    local guardPara = Tab:Paragraph({ Title = "Guard & Reconnect Status", Desc = "Idle" })
 
     task.spawn(function()
-        while alive() and task.wait(0.5) do
+        while alive() and task.wait(0.6) do
             pcall(function()
                 SetElementText(
                     guardPara,
-                    "Penjaga: " .. Guard.status .. " | Reconnect: " .. Reconnect.status,
+                    "Guard: " .. Guard.status .. " | Reconnect: " .. Reconnect.status,
                     string.format(
-                        "Pemain di World: %s\nStaff Online di Server: %s\nTerdeteksi: %d kali | Berhasil Rejoin: %d kali",
+                        "Players in World: %s\nStaff in Server: %s\nDetections: %d | Rejoins: %d",
                         Guard.hereText, Guard.staffServerText, Guard.detected, Reconnect.count
                     )
                 )
@@ -9783,35 +9872,47 @@ SafeUI("Tab:Guard", function()
         end
     end)
 
-    AddFeatureToggle(Tab, "Aktifkan Penjaga (Anti-Mod)", "Pantau Moderator / Developer (termasuk undercover) atau pemain yang masuk ke world.", "guard")
+    AddFeatureToggle(Tab, "Enable Anti-Mod Guard", "Monitor Moderators / Developers (including undercover) or other players entering the world.", "guard")
+
+    local guardWhoMap = {
+        ["Staff Only (Mod/Dev)"] = "Staff (Mod/Dev)",
+        ["All Players"] = "Semua pemain",
+    }
+    local guardWhoRev = {
+        ["Staff (Mod/Dev)"] = "Staff Only (Mod/Dev)",
+        ["Semua pemain"] = "All Players",
+    }
 
     Tab:Dropdown({
-        Title = "Target Deteksi",
-        Values = { "Staff (Mod/Dev)", "Semua pemain" },
-        Value = Config.guardWho,
-        Callback = function(v) Config.guardWho = v or "Staff (Mod/Dev)"; SaveConfig() end,
+        Title = "Detection Target",
+        Values = { "Staff Only (Mod/Dev)", "All Players" },
+        Value = guardWhoRev[Config.guardWho] or "Staff Only (Mod/Dev)",
+        Callback = function(v)
+            Config.guardWho = guardWhoMap[v] or "Staff (Mod/Dev)"
+            SaveConfig()
+        end,
     })
 
     Tab:Toggle({
-        Title = "Hentikan Semua Aktivitas Bot",
+        Title = "Pause All Active Bots on Detection",
         Value = Config.guardStopAll,
         Callback = function(on) Config.guardStopAll = on; SaveConfig() end,
     })
 
     Tab:Toggle({
-        Title = "Langsung Keluar World (Leave World)",
+        Title = "Immediately Leave World on Detection",
         Value = Config.guardLeave,
         Callback = function(on) Config.guardLeave = on; SaveConfig() end,
     })
 
     Tab:Toggle({
-        Title = "Lanjut Otomatis Setelah Aman",
+        Title = "Auto Resume When Safe",
         Value = Config.guardAutoBack,
         Callback = function(on) Config.guardAutoBack = on; SaveConfig() end,
     })
 
     Tab:Slider({
-        Title = "Waktu Tunggu Masuk Lagi (detik)",
+        Title = "Return Wait Time (seconds)",
         IsTooltip = true,
         Step = 5,
         Value = { Min = 15, Max = 300, Default = math.clamp(Config.guardBackSec, 15, 300) },
@@ -9819,45 +9920,45 @@ SafeUI("Tab:Guard", function()
     })
 
     Tab:Button({
-        Title = "Whitelist Pemain yang Ada di World Sekarang",
+        Title = "Whitelist Players Currently in World",
         Justify = "Center",
         Callback = function()
             local n = Guard.AllowCurrentPlayers()
-            Notify(n .. " pemain di world ini dimasukkan ke whitelist.")
+            Notify(n .. " players in this world added to whitelist.")
         end,
     })
 
     Tab:Space()
     Tab:Section({ Title = "Auto Reconnect (World Closed & Server Disconnect)" })
 
-    AddFeatureToggle(Tab, "Aktifkan Auto Reconnect", "Masuk kembali & lanjutkan aktivitas bot jika terlempar atau disconnect.", "autorejoin")
+    AddFeatureToggle(Tab, "Enable Auto Reconnect", "Re-enter the world & resume bot activities if kicked or disconnected.", "autorejoin")
 
     Tab:Toggle({
-        Title = "Masuk Lagi Saat World Ditutup / Di-kick",
+        Title = "Re-Enter When World Closes / Kicked",
         Value = Config.reconnectWorld,
         Callback = function(on) Config.reconnectWorld = on; SaveConfig() end,
     })
 
     Tab:Toggle({
-        Title = "Selalu Kembali ke World (Jika Berada di Menu)",
+        Title = "Always Stay in World (Auto Enter from Menu)",
         Value = Config.reconnectKeep,
         Callback = function(on) Config.reconnectKeep = on; SaveConfig() end,
     })
 
     Tab:Toggle({
-        Title = "Teleport Ulang Saat Disconnect dari Server",
+        Title = "Auto Teleport on Server Disconnect",
         Value = Config.reconnectServer,
         Callback = function(on) Config.reconnectServer = on; SaveConfig() end,
     })
 
     Tab:Input({
-        Title = "World Tujuan Reconnect (Kosong = World Terakhir)",
-        Placeholder = "NAMAWORLD",
+        Title = "Reconnect Target World (Empty = Last World)",
+        Placeholder = "WORLDNAME",
         Callback = function(t) Config.targetWorld = Trim(t or ""); SaveConfig() end,
     })
 end)
 
--- 4B. Tab: Auto Chat (1 Pesan) & Bonus -------------------------------
+-- 4B. Tab: Auto Chat & Bonus -----------------------------------------
 SafeUI("Tab:Bonus", function()
     local Tab = SecuritySection:Tab({
         Title = "Auto Chat & Bonus",
@@ -9868,27 +9969,28 @@ SafeUI("Tab:Bonus", function()
     })
     hub.tabs.bonus = Tab
 
-    local bonusPara = Tab:Paragraph({ Title = "Status Auto Chat & Bonus", Desc = "Memuat..." })
+    local bonusPara = Tab:Paragraph({ Title = "Auto Chat & Bonus Status", Desc = "Loading..." })
 
     task.spawn(function()
-        while alive() and task.wait(0.6) do
+        while alive() and task.wait(0.8) do
             pcall(function()
                 SetElementText(
                     bonusPara,
-                    string.format("Auto Chat: %s (Terkirim: %d)", Spam.on and "AKTIF" or "MATI", Spam.sent),
-                    string.format("Pesan Disetting: %s\nTerakhir Terkirim: %s\nQuest: %s\nRedeem: %s", Config.chatText ~= "" and Config.chatText or "(Belum diisi)", Spam.last, Bonus.questText, Bonus.codeText)
+                    string.format("Auto Chat: %s (Sent: %d)", Spam.on and "ACTIVE" or "OFF", Spam.sent),
+                    string.format("Configured Message: %s\nLast Sent: %s\nQuests: %s\nRedeem: %s", Config.chatText ~= "" and Config.chatText or "(Not set)", Spam.last, Bonus.questText, Bonus.codeText)
                 )
             end)
         end
     end)
 
-    Tab:Section({ Title = "Auto Chat / Spammer (1 Pesan)" })
+    Tab:Section({ Title = "Auto Chat / Spammer (Single Message)" })
 
-    AddFeatureToggle(Tab, "Aktifkan Auto Chat", "Kirim 1 pesan yang telah disetting secara otomatis ke channel world.", "autochat")
+    AddFeatureToggle(Tab, "Enable Auto Chat", "Automatically send your configured message to the world chat channel.", "autochat")
 
     Tab:Input({
-        Title = "Pesan Auto Chat",
-        Placeholder = "Ketik 1 pesan yang akan dikirim otomatis...",
+        Title = "Auto Chat Message",
+        Value = Config.chatText,
+        Placeholder = "Type the message to send...",
         Callback = function(text)
             Config.chatText = Trim(text or "")
             SaveConfig()
@@ -9896,34 +9998,26 @@ SafeUI("Tab:Bonus", function()
     })
 
     Tab:Slider({
-        Title = "Interval Chat (detik)",
+        Title = "Chat Interval (seconds)",
         IsTooltip = true,
         Step = 1,
         Value = { Min = 3, Max = 120, Default = math.clamp(Config.chatInterval, 3, 120) },
         Callback = function(v) Config.chatInterval = tonumber(v) or 6; SaveConfig() end,
     })
 
-    Tab:Space()
-    Tab:Section({ Title = "Bonus: Auto Claim Quest & Auto Redeem Code" })
-
-    Tab:Toggle({
-        Title = "Auto Claim Quest Harian (Server Net.call)",
-        Value = Config.bonusAutoQuest,
-        Callback = function(on)
-            Config.bonusAutoQuest = on
-            if on then Bonus.nextQuest = 0 end
-            SaveConfig()
-        end,
-    })
-
     Tab:Button({
-        Title = "Cek & Klaim Quest Sekarang",
+        Title = "Send Chat Message Once Now",
         Justify = "Center",
-        Callback = function() task.spawn(Bonus.CheckQuests) end,
+        Callback = function() Spam.SendNext() end,
     })
 
+    Tab:Space()
+    Tab:Section({ Title = "Quests & Promo Codes" })
+
+    AddFeatureToggle(Tab, "Auto Claim Completed Quests", "Automatically check and claim finished quests every 30s.", "autoquest")
+
     Tab:Toggle({
-        Title = "Auto Redeem Active Codes",
+        Title = "Auto Redeem Active Promo Codes",
         Value = Config.bonusAutoRedeem,
         Callback = function(on)
             Config.bonusAutoRedeem = on
@@ -9932,435 +10026,294 @@ SafeUI("Tab:Bonus", function()
         end,
     })
 
-    Tab:Input({
-        Title = "Redeem Code Manual",
-        Placeholder = "Ketik kode lalu Enter...",
-        Callback = function(text)
-            local code = Trim(text)
-            if code == "" then return end
+    local qGrp = Tab:Group({})
+    qGrp:Button({
+        Title = "Check Quests Now",
+        Justify = "Center",
+        Callback = function() task.spawn(QuestReport) end,
+    })
+    qGrp:Button({
+        Title = "Redeem All Active Codes",
+        Justify = "Center",
+        Callback = function()
             task.spawn(function()
-                local ok, msg = Bonus.RedeemSingle(code)
-                Notify(code .. ": " .. tostring(msg), ok and "Redeem Sukses" or "Redeem Gagal")
+                Bonus.CheckCodes()
+                Notify(Bonus.codeText, "Promo Codes")
             end)
         end,
     })
 end)
 
--- 5A. Tab: Visual, Role & Watermark ----------------------------------
+-- 4C. Tab: Visual Cosmetics & Roles ----------------------------------
 SafeUI("Tab:Visual", function()
-    local VisTab = SystemSection:Tab({
-        Title = "Visual",
-        Icon = "solar:password-minimalistic-input-bold",
-        IconColor = Purple,
-        IconShape = "Square",
-        Border = true,
-    })
-    hub.tabs.visual = VisTab
-
-    VisTab:Toggle({
-        Title = "Visual Nama Beranimasi",
-        Desc = "Ubah tampilan nama di atas karakter & HUD kiri atas dengan efek gradient.",
-        Value = Config.customWatermark,
-        Callback = function(on) Config.customWatermark = on; SaveConfig() end,
-    })
-
-    VisTab:Input({
-        Title = "Teks Visual Nama",
-        Value = Config.watermarkText ~= "" and Config.watermarkText or "ANCH HUB",
-        Placeholder = "ANCH HUB",
-        Callback = function(text)
-            if Trim(text) ~= "" then
-                Config.watermarkText = Trim(text)
-                SaveConfig()
-            end
-        end,
-    })
-
-    VisTab:Space()
-    VisTab:Section({ Title = "Visual Item Lokal" })
-
-    local activeFilter, searchQ = "Semua", ""
-    local wearMap = {}
-    local wearDd
-
-    local function rebuildWear()
-        local list = GetWearables()
-        wearMap = {}
-        local vals = {}
-        local q = Trim(searchQ):lower()
-        for _, e in ipairs(list) do
-            if (activeFilter == "Semua" or table.find(e.tags, activeFilter)) and (q == "" or e.lower:find(q, 1, true)) then
-                local lbl = string.format("%s (%s)%s #%d", e.name, e.slot, IsVisualWorn(e.id) and " [ON]" or "", e.id)
-                wearMap[lbl] = e.id
-                table.insert(vals, lbl)
-                if #vals >= 80 then break end
-            end
-        end
-        if #vals == 0 then vals = { "Tidak ada item" } end
-        if wearDd and wearDd.Refresh then pcall(function() wearDd:Refresh(vals) end) end
-    end
-
-    VisTab:Input({
-        Title = "Cari Item Visual",
-        Placeholder = "Ketik nama item...",
-        Callback = function(t) searchQ = t or ""; rebuildWear() end,
-    })
-
-    wearDd = VisTab:Dropdown({
-        Title = "Pilih Item Visual (Tap untuk Pakai/Lepas)",
-        Values = { "Memuat..." },
-        Callback = function(sel)
-            local id = wearMap[sel]
-            if id and ToggleVisual(id) then
-                Notify("Visual item diubah: " .. ItemName(id))
-                rebuildWear()
-            end
-        end,
-    })
-
-    VisTab:Button({
-        Title = "Reset Semua Visual Item",
-        Color = Color3.fromHex("#ff4830"),
-        Justify = "Center",
-        Callback = function() ResetVisuals(); rebuildWear() end,
-    })
-
-    VisTab:Space()
-    VisTab:Section({ Title = "Role / Title & Staff UI" })
-
-    local roleDd = VisTab:Dropdown({
-        Title = "Pilih Role / Title",
-        Values = { "none" },
-        Callback = function(v) Config.selectedRole = v or "none"; SaveConfig() end,
-    })
-
-    VisTab:Button({
-        Title = "Refresh & Pasang Role Sekarang",
-        Justify = "Center",
-        Callback = function()
-            if roleDd and roleDd.Refresh then pcall(function() roleDd:Refresh(GetOwnedRoles()) end) end
-            ApplyRole(Config.selectedRole)
-        end,
-    })
-
-    -- VisTab:Button({
-    --     Title = "Buka Staff Backpack",
-    --     Justify = "Center",
-    --     Callback = function()
-    --         if Refs.Menu and type(Refs.Menu.openBackpack) == "function" then
-    --             pcall(Refs.Menu.openBackpack, { name = Player.DisplayName or Player.Name, userId = Player.UserId })
-    --         else
-    --             Notify("Menu Staff belum ditemukan.")
-    --         end
-    --     end,
-    -- })
-
-    task.defer(rebuildWear)
-end)
-
--- 5B. Tab: Discord Webhook & Pengaturan Sistem -----------------------
-SafeUI("Tab:Settings", function()
-    local SesiTab = SystemSection:Tab({
-        Title = "Discord & Pengaturan",
-        Icon = "solar:folder-with-files-bold",
+    local Tab = SecuritySection:Tab({
+        Title = "Cosmetics & Roles",
+        Icon = "solar:check-square-bold",
         IconColor = Blue,
         IconShape = "Square",
         Border = true,
     })
-    hub.tabs.session = SesiTab
-    hub.tabs.settings = SesiTab
+    hub.tabs.visual = Tab
 
-    local whPara = SesiTab:Paragraph({ Title = "Status Discord Webhook", Desc = "-" })
-    task.spawn(function()
-        while alive() and task.wait(1) do
-            pcall(function()
-                SetElementText(whPara, "Status Webhook: " .. Webhook.Status, "Antrian Pesan: " .. #Webhook.Queue)
-            end)
-        end
-    end)
+    Tab:Section({ Title = "Client-Side Visual Wearables" })
 
-    SesiTab:Toggle({
-        Title = "Aktifkan Notifikasi Discord Webhook",
-        Value = Config.webhookOn,
-        Callback = function(on) Config.webhookOn = on; SaveConfig() end,
+    local wearMap = {}
+    local wearDd
+    Tab:Input({
+        Title = "Search Wearable / Cosmetic",
+        Placeholder = "e.g. Rayman, Wings,Katana...",
+        Callback = function(q)
+            wearMap = {}
+            local vals = {}
+            local query = Trim(q):lower()
+            for _, w in ipairs(GetWearables()) do
+                if query == "" or w.lower:find(query, 1, true) then
+                    local lbl = string.format("%s [%d] (%s)", w.name, w.id, w.slot)
+                    wearMap[lbl] = w.id
+                    table.insert(vals, lbl)
+                    if #vals >= 30 then break end
+                end
+            end
+            if #vals == 0 then vals = { "No matching items" } end
+            if wearDd and wearDd.Refresh then pcall(function() wearDd:Refresh(vals) end) end
+        end,
     })
 
-    SesiTab:Input({
-        Title = "URL Webhook Discord",
-        Placeholder = "https://discord.com/api/webhooks/...",
-        Callback = function(t)
-            Config.webhookUrl = Trim(t or "")
-            SaveConfig()
-            if Config.webhookUrl ~= "" and not Webhook.Valid(Config.webhookUrl) then
-                Notify("Format URL Webhook Discord tidak valid!")
+    wearDd = Tab:Dropdown({
+        Title = "Equip / Unequip Visual Item",
+        Values = { "Search for an item above..." },
+        Callback = function(sel)
+            local id = wearMap[sel]
+            if id then
+                ToggleVisual(id)
+                Notify("Toggled visual item: " .. ItemName(id))
             end
         end,
     })
 
-    SesiTab:Button({
-        Title = "Tes Kirim Webhook Discord",
+    Tab:Button({
+        Title = "Reset All Visual Wearables",
+        Justify = "Center",
+        Callback = ResetVisuals,
+    })
+
+    Tab:Space()
+    Tab:Section({ Title = "Watermark & Title Role" })
+
+    Tab:Toggle({
+        Title = "Custom Animated NameTag Watermark",
+        Value = Config.customWatermark,
+        Callback = function(on) Config.customWatermark = on; SaveConfig() end,
+    })
+
+    Tab:Input({
+        Title = "Custom Watermark Text",
+        Value = Config.watermarkText,
+        Placeholder = "ANCH HUB",
+        Callback = function(t)
+            local v = Trim(t or "")
+            if v ~= "" then Config.watermarkText = v; SaveConfig() end
+        end,
+    })
+
+    local roleDd = Tab:Dropdown({
+        Title = "Select Owned Title / Role",
+        Values = GetOwnedRoles(),
+        Value = Config.selectedRole or "none",
+        Callback = function(v)
+            Config.selectedRole = v or "none"
+            SaveConfig()
+            ApplyRole(Config.selectedRole)
+        end,
+    })
+
+    Tab:Button({
+        Title = "Refresh Owned Roles",
         Justify = "Center",
         Callback = function()
-            if not Webhook.Valid(Config.webhookUrl) then
-                Notify("Isi URL Webhook Discord yang valid terlebih dahulu!")
-                return
+            if roleDd and roleDd.Refresh then
+                pcall(function() roleDd:Refresh(GetOwnedRoles()) end)
+                Notify("Owned roles list refreshed!")
             end
-            local prev = Config.webhookOn
-            Config.webhookOn = true
-            Webhook.Send("test", "Tes notifikasi dari ANCH Hub v1.1 Ultimate!")
-            Config.webhookOn = prev
-            Notify("Pesan tes masuk antrian kirim Discord.")
         end,
-    })
-
-    SesiTab:Slider({
-        Title = "Interval Laporan Statistik ke Discord (Menit, 0 = Mati)",
-        IsTooltip = true,
-        Step = 5,
-        Value = { Min = 0, Max = 180, Default = math.clamp(Config.webhookReportMin, 0, 180) },
-        Callback = function(v) Config.webhookReportMin = math.floor(tonumber(v) or 0); SaveConfig() end,
-    })
-
-    SesiTab:Space()
-    SesiTab:Section({ Title = "Sesi, Kalibrasi & Autoexec" })
-
-    SesiTab:Toggle({
-        Title = "Pulihkan Fitur Otomatis Saat Masuk",
-        Value = Config.autoRestore,
-        Callback = function(on) Config.autoRestore = on; SaveConfig() end,
-    })
-
-    SesiTab:Toggle({
-        Title = "Auto-Reload Skrip Saat Teleport",
-        Value = Config.autoReload,
-        Callback = function(on) Config.autoReload = on; SaveConfig(); if on then QueueReload() end end,
-    })
-
-    SesiTab:Input({
-        Title = "URL Script (Untuk Auto-Reload Teleport)",
-        Placeholder = "https://...",
-        Callback = function(t) Config.scriptUrl = Trim(t or ""); SaveConfig() end,
-    })
-
-    SesiTab:Input({
-        Title = "Prefix Command Chat",
-        Value = Config.prefix ~= "" and Config.prefix or "/",
-        Callback = function(t) Config.prefix = Trim(t); SaveConfig() end,
-    })
-
-    SesiTab:Input({
-        Title = "Kalibrasi Posisi X",
-        Value = tostring(Config.calibX),
-        Callback = function(t) Config.calibX = tonumber(t) or 0; SaveConfig() end,
-    })
-
-    SesiTab:Input({
-        Title = "Kalibrasi Posisi Y",
-        Value = tostring(Config.calibY),
-        Callback = function(t) Config.calibY = tonumber(t) or 0; SaveConfig() end,
-    })
-
-    SesiTab:Keybind({
-        Title = "Keybind Buka/Tutup UI",
-        Value = "RightControl",
-        Callback = function(v) pcall(function() Window:SetToggleKey(Enum.KeyCode[v]) end) end,
-    })
-
-    SesiTab:Button({
-        Title = "Pasang Auto-Execute (autoexec)",
-        Justify = "Center",
-        Callback = InstallAutoexec,
     })
 end)
 
--- 5C. Tab: Bantuan & Daftar Command ----------------------------------
-SafeUI("Tab:Help", function()
-    local HelpTab = SystemSection:Tab({
-        Title = "Panduan Command",
-        Icon = "solar:info-square-bold",
+-- 5A. Tab: Discord Webhook & System Settings -------------------------
+SafeUI("Tab:Settings", function()
+    local Tab = SystemSection:Tab({
+        Title = "Webhook & Settings",
+        Icon = "solar:folder-with-files-bold",
         IconColor = Green,
         IconShape = "Square",
         Border = true,
     })
-    hub.tabs.help = HelpTab
+    hub.tabs.settings = Tab
 
-    HelpTab:Paragraph({
-        Title = "Daftar Perintah Chat ANCH Hub v1.1 Beta",
-        Desc = table.concat({
-            "/af [on/off]  —  Auto Farm (Multi-Target + Rayman)",
-            "/ac [on/off]  —  Auto Clear World (ModFly + Berdiri di Atas Blok)",
-            "/ah [on/off]  —  Farmer (Auto Harvest + Auto Plant)",
-            "/adf [on/off] —  Auto Dirt Farm (Full World + Smart Supply)",
-            "/as [on/off]  —  Auto Splice (Seed A + Seed B)",
-            "/pabrik [on/off] — Pabrik Seed (Panen -> Tanam -> Break -> Drop)",
-            "/guard [on/off] — Penjaga Anti-Mod / Staff Detector",
-            "/chat [on/off]  — Auto Chat / Spammer (1 Pesan)",
-            "/ctp [on/off] —  Click TP (Legit A* / Pillar)",
-            "/move <legit|walk|fly|mix> — Ubah mode gerak",
-            "/noclip | /uj | /god | /lite | /blink | /lh [n|off] | /aq [on|off|scan]",
-            "/wld <jumlah> | /tp <world> | /pos1 | /pos2 | /win1 | /win2",
-        }, "\n"),
+    local whPara = Tab:Paragraph({ Title = "Discord Webhook Status", Desc = "Last Status: -" })
+
+    task.spawn(function()
+        while alive() and task.wait(1) do
+            pcall(function()
+                SetElementText(whPara, "Discord Webhook: " .. (Config.webhookOn and "ENABLED" or "DISABLED"), "Delivery Status: " .. tostring(Webhook.Status))
+            end)
+        end
+    end)
+
+    Tab:Toggle({
+        Title = "Enable Discord Webhook Notifications",
+        Value = Config.webhookOn,
+        Callback = function(on) Config.webhookOn = on; SaveConfig() end,
+    })
+
+    Tab:Input({
+        Title = "Discord Webhook URL",
+        Value = Config.webhookUrl,
+        Placeholder = "https://discord.com/api/webhooks/...",
+        Callback = function(t) Config.webhookUrl = Trim(t or ""); SaveConfig() end,
+    })
+
+    Tab:Slider({
+        Title = "Periodic Session Report Interval (minutes, 0 = Off)",
+        IsTooltip = true,
+        Step = 5,
+        Value = { Min = 0, Max = 120, Default = math.clamp(Config.webhookReportMin, 0, 120) },
+        Callback = function(v) Config.webhookReportMin = tonumber(v) or 0; SaveConfig() end,
+    })
+
+    Tab:Button({
+        Title = "Send Test Webhook",
+        Color = Color3.fromHex("#305dff"),
+        Justify = "Center",
+        Callback = function()
+            if not Webhook.Valid(Config.webhookUrl) then
+                Notify("Invalid Discord Webhook URL!")
+            else
+                local old = Config.webhookOn
+                Config.webhookOn = true
+                Webhook.Send("test", "Test connection from **ANCH Hub | GrowBlox**! World: `" .. CurrentWorldName() .. "`")
+                Config.webhookOn = old
+                Notify("Test message queued!")
+            end
+        end,
+    })
+
+    Tab:Space()
+    Tab:Section({ Title = "Session & Auto-Execute on Teleport" })
+
+    Tab:Toggle({
+        Title = "Auto-Restore Enabled Features on Startup",
+        Value = Config.autoRestore,
+        Callback = function(on) Config.autoRestore = on; SaveConfig() end,
+    })
+
+    Tab:Toggle({
+        Title = "Auto-Reload Script on World Teleport",
+        Value = Config.autoReload,
+        Callback = function(on) Config.autoReload = on; SaveConfig() end,
+    })
+
+    Tab:Input({
+        Title = "Script Reload URL (Optional for queue_on_teleport)",
+        Value = Config.scriptUrl,
+        Placeholder = "https://raw.githubusercontent.com/...",
+        Callback = function(t) Config.scriptUrl = Trim(t or ""); SaveConfig() end,
+    })
+
+    local sysGrp = Tab:Group({})
+    sysGrp:Button({
+        Title = "Install Loader to Autoexec",
+        Justify = "Center",
+        Callback = InstallAutoexec,
+    })
+    sysGrp:Button({
+        Title = "Rejoin Current Server",
+        Justify = "Center",
+        Callback = Rejoin,
     })
 end)
 
+pcall(function()
+    Window:SetToggleKey(Enum.KeyCode.RightControl)
+end)
+
 ----------------------------------------------------------------------
--- COMMAND HANDLER & CHAT HOOK
+-- CHAT COMMAND HANDLER
 ----------------------------------------------------------------------
-local function ToggleHub(tabId)
-    local target = hub.tabs[tabId or "features"]
-    if target and target.Select then pcall(function() target:Select() end) end
-    if Window.Open then pcall(function() Window:Open() end) end
-end
-
-local function WantedState(args, current)
-    if args == "on" or args == "start" then return true
-    elseif args == "off" or args == "stop" then return false end
-    return not current
-end
-
-local function HandleMessage(text)
-    text = Trim(text)
-    if text == "" then return false end
-    local prefix = Config.prefix
-    local bodyText
-    if prefix == "" then
-        bodyText = text
-    elseif text:sub(1, #prefix) == prefix then
-        bodyText = text:sub(#prefix + 1)
-    elseif text:sub(1, 1) == "/" then
-        local w = text:sub(2):lower()
-        if w == "settingsgb" or w == "sgb" or w == "anch" then bodyText = text:sub(2) end
-    end
-    if not bodyText then return false end
-    local command, args = bodyText:match("^(%S+)%s*(.-)%s*$")
-    if not command then return false end
-    command, args = command:lower(), (args or ""):lower()
-
-    if command == "wld" or command == "wd" then
-        local n = tonumber(args:match("^(%d+)$"))
-        if n and n >= 1 and n <= MAX_AMOUNT then task.spawn(DropWorldLock, n) else Notify("Jumlah WL tidak valid!") end
-        return true
-    elseif command == "tp" or command == "warp" then
-        task.spawn(WarpToWorld, args); return true
-    elseif command == "pos1" or command == "pos2" then
-        SetPos(tonumber(command:sub(4))); RefreshHub(); return true
-    elseif command == "pos" then
-        ShowPos(); return true
-    elseif command == "win1" or command == "w1" or command == "win2" or command == "w2" then
-        local slot = tonumber(command:match("%d$"))
-        local n = tonumber(args:match("^(%d+)$"))
-        task.spawn(GoToPos, slot, n); return true
-    elseif command == "rejoin" or command == "rj" then
-        task.spawn(Rejoin); return true
-    elseif command == "noclip" then
-        SetFeature("noclip", WantedState(args, noclipOn)); return true
-    elseif command == "unlimitedjump" or command == "uj" or command == "infjump" then
-        SetFeature("ujump", WantedState(args, ujumpOn)); return true
-    elseif command == "afk" or command == "antiafk" then
-        SetFeature("antiafk", WantedState(args, antiAfkOn)); return true
-    elseif command == "autorejoin" or command == "arj" then
-        SetFeature("autorejoin", WantedState(args, Config.reconnectOn)); return true
-    elseif command == "blink" then
-        SetFeature("blink", WantedState(args, blinkOn)); return true
-    elseif command == "longhand" or command == "lh" then
-        local rangeNum = tonumber(args)
-        if rangeNum and rangeNum > 0 then
-            Config.longhandRange = rangeNum
-            SaveConfig()
-            SetFeature("longhand", true)
-        else
-            SetFeature("longhand", WantedState(args, longhandOn))
-        end
-        return true
-    elseif command == "autoquest" or command == "aq" then
-        if args == "scan" then
-            task.spawn(QuestReport)
-        else
-            SetFeature("autoquest", WantedState(args, questOn))
-        end
-        return true
-    elseif command == "god" or command == "godmode" then
-        SetFeature("god", WantedState(args, godOn)); return true
-    elseif command == "lite" then
-        SetFeature("lite", WantedState(args, Config.liteMode)); return true
-    elseif command == "guard" or command == "penjaga" then
-        SetFeature("guard", WantedState(args, Guard.on)); return true
-    elseif command == "chat" or command == "autochat" then
-        SetFeature("autochat", WantedState(args, Spam.on)); return true
-    elseif command == "autofarm" or command == "af" then
-        if args == "" then ToggleHub("farm") else SetFeature("autofarm", WantedState(args, Farm.on)) end
-        return true
-    elseif command == "autoclear" or command == "ac" or command == "clear" then
-        if args == "" then ToggleHub("clear") else SetFeature("autoclear", WantedState(args, Clear.on)) end
-        return true
-    elseif command == "autoharvest" or command == "ah" or command == "harvest" or command == "farmer" then
-        if args == "" then ToggleHub("harvest") else SetFeature("autoharvest", WantedState(args, Farmer.on)) end
-        return true
-    elseif command == "autodf" or command == "adf" or command == "df" then
-        if args == "" then ToggleHub("df") else SetFeature("autodf", WantedState(args, DF.on)) end
-        return true
-    elseif command == "autosplice" or command == "as" or command == "splice" then
-        if args == "" then ToggleHub("splice") else SetFeature("autosplice", WantedState(args, SpliceBot.on)) end
-        return true
-    elseif command == "pabrik" or command == "factory" then
-        if args == "" then ToggleHub("pabrik") else SetFeature("pabrik", WantedState(args, Pabrik.on)) end
-        return true
-    elseif command == "clicktp" or command == "ctp" then
-        SetFeature("clicktp", WantedState(args, Nav.clickOn)); return true
-    elseif command == "move" or command == "mv" then
-        local map = { legit = "legit", walk = "walk", jalan = "walk", fly = "fly", terbang = "fly", mix = "mix", campur = "mix" }
-        if map[args] then
-            Config.moveMode = map[args]
-            SaveConfig()
-            Notify("Mode gerak: " .. map[args])
-        else
-            Notify("Mode aktif: " .. Config.moveMode .. " (pilihan: legit | walk | fly | mix)")
-        end
-        return true
-    elseif command == "growscan" or command == "gs" then
-        ToggleHub("scan"); return true
-    elseif command == "visualitem" or command == "vi" then
-        ToggleHub("visual"); return true
-    elseif command == "settingsgb" or command == "sgb" or command == "session" or command == "sesi" then
-        ToggleHub("session"); return true
-    elseif command == "blockid" or command == "bid" then
-        local found = SearchItems(args, 5)
-        local parts = {}
-        for _, e in ipairs(found) do table.insert(parts, e.name .. " = " .. e.id) end
-        Notify(#parts > 0 and table.concat(parts, " | ") or "Block tidak ditemukan.")
-        return true
-    elseif command == "anch" then
-        ToggleHub("help"); return true
-    end
-    return false
-end
-
 do (function()
-    local hooked, lastMsg, lastTime = {}, nil, 0
-    local function processText(t)
-        if type(t) ~= "string" then return end
-        local norm = Trim(t):lower()
-        if norm == lastMsg and os.clock() - lastTime < 1.5 then return end
-        if HandleMessage(Trim(t)) then
-            lastMsg, lastTime = norm, os.clock()
-        end
+    local function parseToggle(arg, current)
+        if not arg or arg == "" then return not current end
+        arg = arg:lower()
+        if arg == "on" or arg == "1" or arg == "true" then return true end
+        if arg == "off" or arg == "0" or arg == "false" then return false end
+        return not current
     end
-    local function hookBox(box)
-        if hooked[box] or not box:IsA("TextBox") then return end
-        local sg = box:FindFirstAncestorOfClass("ScreenGui")
-        if sg and (sg.Name:find("ANCH", 1, true) or sg.Name:lower():find("windui", 1, true)) then return end
-        hooked[box] = true
-        local last = ""
-        box:GetPropertyChangedSignal("Text"):Connect(function()
-            if box.Text ~= "" then last = box.Text end
-        end)
-        box.FocusLost:Connect(function(enter)
-            if enter then
-                local txt = box.Text ~= "" and box.Text or last
-                last = ""
-                processText(txt)
+
+    local function processText(raw)
+        if type(raw) ~= "string" then return false end
+        local p = Config.prefix or "/"
+        if raw:sub(1, #p) ~= p then return false end
+        local body = Trim(raw:sub(#p + 1))
+        if body == "" then return false end
+        local cmd, rest = body:match("^(%S+)%s*(.*)$")
+        if not cmd then return false end
+        cmd = cmd:lower()
+
+        if cmd == "wld" or cmd == "wd" then
+            task.spawn(DropWorldLock, tonumber(rest))
+            return true
+        elseif cmd == "tp" or cmd == "warp" then
+            task.spawn(WarpToWorld, rest)
+            return true
+        elseif cmd == "pos1" then SetPos(1); return true
+        elseif cmd == "pos2" then SetPos(2); return true
+        elseif cmd == "win1" or cmd == "w1" then task.spawn(GoToPos, 1, tonumber(rest)); return true
+        elseif cmd == "win2" or cmd == "w2" then task.spawn(GoToPos, 2, tonumber(rest)); return true
+        elseif cmd == "pos" then ShowPos(); return true
+        elseif cmd == "rejoin" or cmd == "rj" then Rejoin(); return true
+        elseif cmd == "noclip" then SetFeature("noclip", parseToggle(rest, noclipOn)); return true
+        elseif cmd == "unlimitedjump" or cmd == "uj" then SetFeature("ujump", parseToggle(rest, ujumpOn)); return true
+        elseif cmd == "blink" then SetFeature("blink", parseToggle(rest, blinkOn)); return true
+        elseif cmd == "longhand" or cmd == "lh" then
+            local n = tonumber(rest)
+            if n then Config.longhandRange = n; SaveConfig(); SetFeature("longhand", true)
+            else SetFeature("longhand", parseToggle(rest, longhandOn)) end
+            return true
+        elseif cmd == "afk" then SetFeature("antiafk", parseToggle(rest, antiAfkOn)); return true
+        elseif cmd == "autorejoin" or cmd == "arj" then SetFeature("autorejoin", parseToggle(rest, Config.reconnectOn)); return true
+        elseif cmd == "af" or cmd == "autofarm" then SetFeature("autofarm", parseToggle(rest, Farm.on)); return true
+        elseif cmd == "ac" or cmd == "autoclear" then SetFeature("autoclear", parseToggle(rest, Clear.on)); return true
+        elseif cmd == "ah" or cmd == "autoharvest" then SetFeature("autoharvest", parseToggle(rest, Farmer.on)); return true
+        elseif cmd == "adf" or cmd == "autodf" then SetFeature("autodf", parseToggle(rest, DF.on)); return true
+        elseif cmd == "as" or cmd == "autosplice" then SetFeature("autosplice", parseToggle(rest, SpliceBot.on)); return true
+        elseif cmd == "pabrik" or cmd == "factory" then SetFeature("pabrik", parseToggle(rest, Pabrik.on)); return true
+        elseif cmd == "guard" or cmd == "penjaga" then SetFeature("guard", parseToggle(rest, Guard.on)); return true
+        elseif cmd == "chat" or cmd == "autochat" then SetFeature("autochat", parseToggle(rest, Spam.on)); return true
+        elseif cmd == "ctp" or cmd == "clicktp" then SetFeature("clicktp", parseToggle(rest, Nav.clickOn)); return true
+        elseif cmd == "god" then SetFeature("god", parseToggle(rest, godOn)); return true
+        elseif cmd == "lite" then SetFeature("lite", parseToggle(rest, Config.liteMode)); return true
+        elseif cmd == "gs" or cmd == "growscan" then OpenNativeGrowScan(); return true
+        elseif cmd == "blockid" or cmd == "bid" then
+            local res = SearchItems(rest, 5)
+            if #res == 0 then Notify("No blocks matching: " .. tostring(rest))
+            else
+                local out = {}
+                for _, e in ipairs(res) do table.insert(out, e.name .. " [" .. e.id .. "]") end
+                Notify(table.concat(out, ", "), "Block ID Search")
             end
-        end)
+            return true
+        end
+        return false
+    end
+
+    local hookedBoxes = {}
+    local function hookBox(d)
+        if d:IsA("TextBox") and not hookedBoxes[d] then
+            hookedBoxes[d] = true
+            trackConn(d.FocusLost:Connect(function(enterPressed)
+                if enterPressed and alive() then processText(d.Text) end
+            end))
+        end
     end
     for _, d in ipairs(PlayerGui:GetDescendants()) do hookBox(d) end
     trackConn(PlayerGui.DescendantAdded:Connect(hookBox))
@@ -10369,52 +10322,56 @@ end)() end
 end)() end
 
 ----------------------------------------------------------------------
--- INISIALISASI & CLEANUP HANDLER
+-- INITIALIZATION & CLEANUP HANDLER
 ----------------------------------------------------------------------
 Session.Cleanup = function()
     Session.Alive = false
-    StopFarm()
-    Clear.Stop()
-    Farmer.Stop()
-    DF.Stop()
-    SpliceBot.Stop()
-    Pabrik.Stop()
-    Nav.StopClick()
-    Guard.Set(false)
-    Spam.on = false
-    StopBlink()
-    StopLonghand()
-    StopNoclip()
-    StopUjump()
-    StopGod()
-    if AutoMove and AutoMove.Stop then AutoMove.Stop() end
-    if Session.RestoreFastBackpack then pcall(Session.RestoreFastBackpack) end
-    if Session.RestoreFastWrench then
-        pcall(Session.RestoreFastWrench)
-    end
-    LiteMode.Set(false)
+    ReleaseInput()
+    AutoInput.active = false
+    if Farm.on then pcall(StopFarm) end
+    if Clear.on then pcall(Clear.Stop) end
+    if Farmer.on then pcall(Farmer.Stop) end
+    if DF.on then pcall(DF.Stop) end
+    if SpliceBot.on then pcall(SpliceBot.Stop) end
+    if Pabrik.on then pcall(Pabrik.Stop) end
+    if AutoMove and AutoMove.Stop then pcall(AutoMove.Stop) end
+    if Vend and Vend.Stop then pcall(Vend.Stop) end
+    if Nav.clickOn then pcall(Nav.StopClick) end
+    if blinkOn then pcall(StopBlink) end
+    if longhandOn then pcall(StopLonghand) end
+    if noclipOn then pcall(StopNoclip) end
+    if ujumpOn then pcall(StopUjump) end
+    if godOn then pcall(StopGod) end
+    if antiAfkOn then pcall(StopAntiAfk) end
+    if Config.liteMode then pcall(LiteMode.Set, false) end
     if Session.RestoreWatermark then pcall(Session.RestoreWatermark) end
-    if OrigIsDown and MenuModOk and rawget(MenuModule, "isDown") ~= OrigIsDown then
-        MenuModule.isDown = OrigIsDown
+    if Session.RestoreFastWrench then pcall(Session.RestoreFastWrench) end
+    if Session.RestoreFastBackpack then pcall(Session.RestoreFastBackpack) end
+    for _, conn in ipairs(Session.Connections) do
+        pcall(function() conn:Disconnect() end)
     end
-    for _, c in ipairs(Session.Connections) do pcall(function() c:Disconnect() end) end
+    table.clear(Session.Connections)
     if GridGui then pcall(function() GridGui:Destroy() end) end
     if FlyPadGui then pcall(function() FlyPadGui:Destroy() end) end
-    if Window then pcall(function() Window:Destroy() end) end
+    if Window and Window.Destroy then pcall(function() Window:Destroy() end) end
 end
 
 task.spawn(function()
-    task.wait(0.4)
+    G.__ANCHHub_LoadingAt = nil
+    UIInitializing = false
+    Notify("ANCH HUB v1.2 Loaded! All features are ready.", "ANCH HUB", 4, true)
+
     StartAntiAfk()
     Refs.Scan(true)
     Stats.Reset()
     if Config.liteMode then LiteMode.Set(true) end
-    G.__ANCHHub_LoadingAt = nil
+
     trackConn(Player.OnTeleport:Connect(function()
         UIInitializing = false
         SaveConfig()
         pcall(QueueReload)
     end))
+
     if Config.autoRestore then
         for key, feature in pairs(Features) do
             if Config.session[key] and not feature.noSession and not feature.get() then
@@ -10424,15 +10381,10 @@ task.spawn(function()
         if RefreshHub then RefreshHub() end
     end
 
-    -- Matikan guard inisialisasi setelah semua UI selesai dibuat agar tidak ada spam notifikasi di awal
-    UIInitializing = false
-    Notify("ANCH HUB v1.1 Beta Loaded! Semua tab & fitur siap digunakan.", "ANCH HUB", 4, true)
-
     task.spawn(Reconnect.CheckStartup)
     task.spawn(Pabrik.CheckStartup)
     task.spawn(AutoMove.CheckStartup)
 
-    -- Pantau perpindahan world di dalam server yang sama agar Refs selalu otomatis ter-update
     local lastSeenWorld = CurrentWorldName()
     while alive() do
         task.wait(1.5)
