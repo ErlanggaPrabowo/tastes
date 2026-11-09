@@ -1,5 +1,5 @@
 --[[
-    ANCH HUB | GrowBlox  (v1.2 Ultimate - All-in-One WindUI)
+    ANCH HUB | GrowBlox  (v1.1 Ultimate - All-in-One WindUI)
 
     Daftar Perintah Chat (Prefix default "/"):
       wld|wd <jumlah>             Drop World Lock
@@ -979,7 +979,7 @@ local function CountItem(id)
     if type(bag.slots) == "table" then
         for _, slot in pairs(bag.slots) do
             if type(slot) == "table" and slot.id == id then
-                total = total + ((slot.n or 0))
+                total += (slot.n or 0)
             end
         end
     end
@@ -1176,7 +1176,7 @@ local function PlaceCell(id, cell, facing)
     if Refs.Inv and type(Refs.Inv.remove) == "function" then
         pcall(function() Refs.Inv:remove(id, 1) end)
     end
-    Stats.Placed = Stats.Placed + (1)
+    Stats.Placed += 1
     return true
 end
 
@@ -1231,7 +1231,7 @@ local function TryBreakOnce(x, y, includeBg)
         if not ok then return nil end
         Anim.Swing(x, y, "punch")
         if TileValue(w, layer, x, y) ~= id then
-            Stats.Broken = Stats.Broken + (1)
+            Stats.Broken += 1
             Drops.brokeAt[x .. "," .. y] = os.clock()
             return "broke", id, layer
         end
@@ -1419,7 +1419,7 @@ do (function()
         local s = PlayerPhysicsState()
         if s and not stateReaches(s, x, y, BuildReach() + 0.5) then return false end
         if PlaceCell(id, { x = x, y = y }, 1) then
-            Nav.PlacedScaffolds = Nav.PlacedScaffolds + (1)
+            Nav.PlacedScaffolds += 1
             return true
         end
         return false
@@ -1465,10 +1465,10 @@ do (function()
     end
 
     local function heapPush(hf, hi, n, f, i)
-        n = n + (1)
+        n += 1
         local k = n
         while k > 1 do
-            local p = math.floor(k / 2)
+            local p = k // 2
             if hf[p] <= f then break end
             hf[k], hi[k] = hf[p], hi[p]
             k = p
@@ -1481,13 +1481,13 @@ do (function()
         local top = hi[1]
         local lf, li = hf[n], hi[n]
         hf[n], hi[n] = nil, nil
-        n = n - (1)
+        n -= 1
         if n > 0 then
             local k = 1
             while true do
                 local c = k * 2
                 if c > n then break end
-                if c < n and hf[c + 1] < hf[c] then c = c + (1) end
+                if c < n and hf[c + 1] < hf[c] then c += 1 end
                 if lf <= hf[c] then break end
                 hf[k], hi[k] = hf[c], hi[c]
                 k = c
@@ -1561,7 +1561,7 @@ do (function()
         local ex, ey, ek, ec, eb = {}, {}, {}, {}, {}
         local n = 0
         local function add(x, y, kind, cost, build)
-            n = n + (1)
+            n += 1
             ex[n], ey[n], ek[n], ec[n], eb[n] = x, y, kind, cost, build
         end
 
@@ -1578,7 +1578,7 @@ do (function()
                         end
                         local fy = y + 1
                         while fy < H and fy - y <= 40 and open(ax, fy) and not sup(ax, fy) do
-                            fy = fy + (1)
+                            fy += 1
                         end
                         if fy < H and open(ax, fy) and sup(ax, fy) then
                             add(ax, fy, "fall", 1 + 0.5 * (fy - y), false)
@@ -1634,21 +1634,21 @@ do (function()
             cur, hn = heapPop(hf, hi, hn)
             if not closed[cur] then
                 closed[cur] = true
-                local cx, cy = cur % W, math.floor(cur / W)
+                local cx, cy = cur % W, cur // W
                 if isGoal(cx, cy) then
                     local path = {}
                     local i = cur
                     while i ~= startI do
                         local p = came[i]
                         table.insert(path, 1, {
-                            fx = p % W, fy = math.floor(p / W), x = i % W, y = math.floor(i / W),
+                            fx = p % W, fy = p // W, x = i % W, y = i // W,
                             kind = kind[i], build = buildOf[i], key = p * WH + i,
                         })
                         i = p
                     end
                     return path, false, closed
                 end
-                expanded = expanded + (1)
+                expanded += 1
                 if expanded > 6500 then return nil, false, closed end
                 if expanded % 400 == 0 then
                     task.wait()
@@ -1975,7 +1975,7 @@ do (function()
             if e.kind == "walk" then
                 local dir = e.x - e.fx
                 while path[last + 1] and path[last + 1].kind == "walk" and (path[last + 1].x - path[last + 1].fx) == dir do
-                    last = last + (1)
+                    last += 1
                 end
                 local anyBuild = false
                 for j = i, last do
@@ -2394,7 +2394,7 @@ do (function()
             Notify("Click TP: posisi klik tidak terbaca.")
             return
         end
-        Nav.token = Nav.token + (1)
+        Nav.token += 1
         local token = Nav.token
         task.spawn(function()
             local started = os.clock()
@@ -2425,7 +2425,7 @@ do (function()
     function Nav.StopClick()
         if not Nav.clickOn then return false end
         Nav.clickOn = false
-        Nav.token = Nav.token + (1)
+        Nav.token += 1
         if Nav.conn then
             Nav.conn:Disconnect()
             Nav.conn = nil
@@ -2858,96 +2858,132 @@ do (function()
         return true
     end
 
-    -- Jalan fisik lurus ke titik tengah tile X (menggunakan Hook isDown + VirtualInputManager A/D)
+    -- Jalan fisik presisi dengan pengereman (braking) agar TIDAK tergelincir/overshoot & tidak bolak-balik
     function Drops.walkToX(targetCenterX, maxSec)
         local s0 = PlayerPhysicsState()
         if not s0 or s0.dead then return false end
-        local dx0 = targetCenterX - s0.x
-        if math.abs(dx0) <= 0.14 then
+        if math.abs(targetCenterX - s0.x) <= 0.18 and math.abs(s0.vx or 0) < 2.0 then
             ReleaseInput()
             return true
         end
-        local dir = (dx0 > 0) and 1 or -1
-        AutoInput.active = true
-        AutoInput.left = (dir < 0)
-        AutoInput.right = (dir > 0)
-        SyncVimKeys()
 
+        AutoInput.active = true
+        local tol = 0.14
         local t0 = os.clock()
-        while alive() and (Farm.on or Farm.Override ~= nil) and (os.clock() - t0) < (maxSec or 1.8) do
+
+        while alive() and (Farm.on or Farm.Override ~= nil) and (os.clock() - t0) < (maxSec or 1.6) do
             local s = PlayerPhysicsState()
             if not s or s.dead then break end
-            local rem = (targetCenterX - s.x) * dir
-            if rem <= 0.10 then
+
+            local dx = targetCenterX - s.x
+            local vx = s.vx or 0
+            local decel = s.grounded and 48 or 17
+            local dir = 0
+
+            if math.abs(dx) > tol then
+                dir = (dx > 0) and 1 or -1
+                -- Pengereman: lepas tombol sebelum sampai jika laju karakter sudah cukup untuk meluncur ke target
+                if vx * dir > 0 and (vx * vx) / (2 * decel) >= math.abs(dx) - tol * 0.5 then
+                    dir = 0
+                end
+            end
+
+            AutoInput.left = (dir < 0)
+            AutoInput.right = (dir > 0)
+
+            if math.abs(dx) <= 0.18 and s.grounded and math.abs(vx) < 2.2 then
                 ReleaseInput()
                 return true
             end
-            AutoInput.left = (dir < 0)
-            AutoInput.right = (dir > 0)
-            SyncVimKeys()
             task.wait()
         end
+
         ReleaseInput()
         return false
     end
 
-    -- Setelah break selesai, karakter langsung jalan ke setiap tile yang di-break untuk collect lalu balik ke (hx, hy)
+    -- Sekali Sapu (Single Sweep): Kiri terjauh -> Kanan terjauh -> Kembali ke tengah (Tanpa mutar 2-3x!)
     function Drops.touchAll(brokenTiles, hx, hy)
         if type(brokenTiles) ~= "table" or #brokenTiles == 0 then return false end
         local w = FindWorld()
         if not w then return false end
 
-        -- Urutkan tile yang habis di-break dari yang terdekat ke terjauh dari (hx, hy)
-        local list = {}
+        local minX, maxX = hx, hx
+        local jumpCols = {}
+
         for _, t in ipairs(brokenTiles) do
             if not Nav.SolidAt(t.x, t.y) then
-                table.insert(list, { x = t.x, y = t.y })
+                if t.y == hy and math.abs(t.x - hx) <= 3 then
+                    if t.x < minX then minX = t.x end
+                    if t.x > maxX then maxX = t.x end
+                elseif t.y < hy and math.abs(t.x - hx) <= 2 then
+                    if not jumpCols[t.x] or t.y < jumpCols[t.x] then
+                        jumpCols[t.x] = t.y
+                    end
+                end
             end
         end
-        if #list == 0 then return false end
-
-        table.sort(list, function(a, b)
-            local da = math.abs(a.x - hx) + math.abs(a.y - hy)
-            local db = math.abs(b.x - hx) + math.abs(b.y - hy)
-            return da < db
-        end)
 
         local wasActive = AutoInput.active
         AutoInput.active = true
         Drops.collecting = true
         w.speedScale = 1
 
-        pcall(function()
-            for _, t in ipairs(list) do
-                if not alive() or not (Farm.on or Farm.Override ~= nil) then break end
-                if not Nav.SolidAt(t.x, t.y) then
-                    -- 1. Jalan ke kolom X tile yang telah di-break
-                    Drops.walkToX(t.x + 0.5, 1.8)
-
-                    -- 2. Jika tile yang di-break berada di atas kepala (t.y < hy), lompat untuk mengambil drop-nya
-                    if t.y < hy then
-                        AutoInput.jump = true
-                        SyncVimKeys()
-                        task.wait(0.18)
+        local function jumpOnce(topY)
+            ReleaseInput()
+            local isHigh = (topY <= hy - 2)
+            AutoInput.jump = true
+            local jt0 = os.clock()
+            local air = false
+            while alive() and (Farm.on or Farm.Override ~= nil) and (os.clock() - jt0) < 1.1 do
+                local s = PlayerPhysicsState()
+                if not s or s.dead then break end
+                if not s.grounded then
+                    air = true
+                    if not isHigh or s.y <= (topY + 0.6) or (s.vy or 0) >= 0 then
                         AutoInput.jump = false
-                        SyncVimKeys()
-                        local jt0 = os.clock()
-                        while alive() and (os.clock() - jt0) < 0.8 do
-                            local s = PlayerPhysicsState()
-                            if not s or s.grounded then break end
-                            task.wait()
-                        end
-                    else
-                        -- Berhenti sejenak di tile tersebut agar dropped item terambil sempurna
-                        task.wait(0.18)
                     end
+                end
+                if air and s.grounded then break end
+                if not air and (os.clock() - jt0) > 0.32 then break end
+                task.wait()
+            end
+            ReleaseInput()
+        end
+
+        pcall(function()
+            -- 1. Jika ada tile pecah di sebelah kiri, sapu lurus 1x ke ujung kiri (minX)
+            if minX < hx then
+                Drops.walkToX(minX + 0.5, 1.5)
+                if jumpCols[minX] then
+                    jumpOnce(jumpCols[minX])
+                    jumpCols[minX] = nil
+                else
+                    task.wait(0.06)
                 end
             end
 
-            -- 3. Jalan kembali ke posisi tengah Auto Farm (hx + 0.5)
+            -- 2. Jika ada tile pecah di sebelah kanan, sapu lurus 1x ke ujung kanan (maxX)
+            if maxX > hx then
+                Drops.walkToX(maxX + 0.5, 1.8)
+                if jumpCols[maxX] then
+                    jumpOnce(jumpCols[maxX])
+                    jumpCols[maxX] = nil
+                else
+                    task.wait(0.06)
+                end
+            end
+
+            -- 3. Jika masih ada tile atas (misal tepat di atas kepala x == hx) yang belum dilompati
+            for colX, topY in pairs(jumpCols) do
+                if not alive() or not (Farm.on or Farm.Override ~= nil) then break end
+                Drops.walkToX(colX + 0.5, 1.4)
+                jumpOnce(topY)
+            end
+
+            -- 4. Kembali lurus 1x ke titik tengah Auto Farm (hx + 0.5) dengan pengereman
             if alive() and (Farm.on or Farm.Override ~= nil) then
-                Drops.walkToX(hx + 0.5, 2.0)
-                task.wait(0.08)
+                Drops.walkToX(hx + 0.5, 1.6)
             end
         end)
 
@@ -3154,14 +3190,16 @@ do (function()
                 break
             end
 
+            local sNow = PlayerPhysicsState()
             local px, py = GetTile()
             if not px then break end
-            if not Farm.Override and (px ~= anchor.x or py ~= anchor.y) then
+            local offAnchor = (py ~= anchor.y) or (not sNow) or (math.abs(sNow.x - (anchor.x + 0.5)) > 0.38)
+            if not Farm.Override and offAnchor then
                 if py == anchor.y and math.abs(px - anchor.x) <= 4 and Drops.walkToX then
                     local wasA = AutoInput.active
                     AutoInput.active = true
                     Drops.collecting = true
-                    Drops.walkToX(anchor.x + 0.5, 2.0)
+                    Drops.walkToX(anchor.x + 0.5, 1.5)
                     Drops.collecting = false
                     AutoInput.active = wasA
                 else
@@ -3193,7 +3231,7 @@ do (function()
                             break
                         end
                         if PlaceCell(id, t, anchor.facing) then
-                            Farm.stats.placed = Farm.stats.placed + (1)
+                            Farm.stats.placed += 1
                             acted = true
                             task.wait(math.max(0.05, Config.farmPlaceMs / 1000))
                         end
@@ -3213,7 +3251,7 @@ do (function()
                 while Farm.on and Farm.token == token and alive() do
                     while #active < K and nextI <= #tiles do
                         local t = tiles[nextI]
-                        nextI = nextI + (1)
+                        nextI += 1
                         if breakableAt(w, t.x, t.y) then
                             active[#active + 1] = { x = t.x, y = t.y, n = 0 }
                             local bKey = t.x .. "," .. t.y
@@ -3241,10 +3279,10 @@ do (function()
                         if not Farm.on or Farm.token ~= token then break end
                         if i > 1 then task.wait(0.05) end
                         local r = TryBreakOnce(a.x, a.y, Config.farmBreakBg)
-                        a.n = a.n + (1)
+                        a.n += 1
                         if r then hitAny, acted = true, true end
                         if r == "broke" then
-                            Farm.stats.broken = Farm.stats.broken + (1)
+                            Farm.stats.broken += 1
                             brokeAny = true
                         end
                         if r == nil or a.n > 80 or not breakableAt(w, a.x, a.y) then
@@ -3296,7 +3334,7 @@ do (function()
                 task.wait(math.max(0.1, Config.farmDelay))
             end
 
-            Farm.stats.cycles = Farm.stats.cycles + (1)
+            Farm.stats.cycles += 1
         end
     end
 
@@ -3339,7 +3377,7 @@ do (function()
         }
         Farm.Override = nil
         Farm.Quiet = false
-        Farm.token = Farm.token + (1)
+        Farm.token += 1
         local token = Farm.token
         Farm.on = true
         Farm.stats.status = "Berjalan"
@@ -3425,7 +3463,7 @@ do (function()
         local pass = 0
 
         while Clear.on and Clear.token == token and alive() do
-            pass = pass + (1)
+            pass += 1
             local w = FindWorld()
             if not w or CurrentWorldName() ~= home.world then
                 Clear.status = "World berubah, berhenti"
@@ -3495,7 +3533,7 @@ do (function()
                         local r = TryBreakOnce(target.x, target.y, Config.clearIncludeBg)
                         if r == "broke" then
                             brokeAny = true
-                            Clear.stats.broken = Clear.stats.broken + (1)
+                            Clear.stats.broken += 1
                             started = os.clock()
                         end
                         task.wait(math.max(0.04, Config.clearBreakDelay))
@@ -3505,7 +3543,7 @@ do (function()
                         Clear.stats.left = math.max(0, Clear.stats.left - 1)
                     elseif timedOut then
                         skippedSet[target.key] = true
-                        Clear.stats.skipped = Clear.stats.skipped + (1)
+                        Clear.stats.skipped += 1
                         Clear.stats.left = math.max(0, Clear.stats.left - 1)
                         Clear.status = string.format("Skip (%d,%d) > 5 dtk", target.x, target.y)
                     end
@@ -3528,7 +3566,7 @@ do (function()
 
     function Clear.Stop()
         if not Clear.on then return false end
-        Clear.token = Clear.token + (1)
+        Clear.token += 1
         Clear.on = false
         SetAutoFly("autoclear", false)
         ReleaseInput()
@@ -3548,7 +3586,7 @@ do (function()
         local x, y = GetGridState()
         if not x then Notify("Posisi belum terdeteksi."); return false end
         local home = { x = math.floor(x), y = math.floor(y - 0.475), world = CurrentWorldName() }
-        Clear.token = Clear.token + (1)
+        Clear.token += 1
         local token = Clear.token
         Clear.on = true
         Clear.status = "Mulai"
@@ -3583,7 +3621,7 @@ do (function()
         local pass = 0
 
         while Farmer.on and Farmer.token == token and alive() do
-            pass = pass + (1)
+            pass += 1
             local w = FindWorld()
             if not w or CurrentWorldName() ~= home.world then
                 Farmer.status = "World berubah, berhenti"
@@ -3733,7 +3771,7 @@ do (function()
 
     function Farmer.Stop()
         if not Farmer.on then return false end
-        Farmer.token = Farmer.token + (1)
+        Farmer.token += 1
         Farmer.on = false
         SetAutoFly("autoharvest", false)
         ReleaseInput()
@@ -3753,7 +3791,7 @@ do (function()
         local x, y = GetGridState()
         if not x then Notify("Posisi belum terdeteksi."); return false end
         local home = { x = math.floor(x), y = math.floor(y - 0.475), world = CurrentWorldName() }
-        Farmer.token = Farmer.token + (1)
+        Farmer.token += 1
         local token = Farmer.token
         Farmer.on = true
         Farmer.status = "Mulai"
@@ -3795,9 +3833,9 @@ do (function()
                 local fg = TileValue(w, "fg", x, y) or 0
                 if fg ~= 0 then
                     if IsBedrockId(fg) then
-                        bedrockCount = bedrockCount + (1)
+                        bedrockCount += 1
                     elseif fg == dirtId or CanBreakId(fg) then
-                        groundCount = groundCount + (1)
+                        groundCount += 1
                     end
                 end
             end
@@ -3857,7 +3895,7 @@ do (function()
 
             local r = TryBreakOnce(tx, ty, true)
             if r == "broke" then
-                DF.stats.broken = DF.stats.broken + (1)
+                DF.stats.broken += 1
                 startT = os.clock()
             end
             task.wait(math.max(0.04, Config.dfBreakDelay))
@@ -3897,9 +3935,9 @@ do (function()
             if (TileValue(w, "fg", x, platformY) or 0) == dirtId and (TileValue(w, "fg", x, plantY) or 0) == 0 then
                 WalkOrClimbTo(x, plantY, token)
                 if PlaceCell(seedId, { x = x, y = plantY }, 1) then
-                    Stats.Planted = Stats.Planted + (1)
+                    Stats.Planted += 1
                     table.insert(plantedSpots, { x = x, y = plantY, plantedTime = os.clock() })
-                    count = count + (1)
+                    count += 1
                     task.wait(0.18)
                 end
             end
@@ -3941,7 +3979,7 @@ do (function()
                 local t0 = os.clock()
                 while DF.on and DF.token == token and (TileValue(w, "fg", spot.x, spot.y) or 0) == seedId and os.clock() - t0 < 3.5 do
                     local r = TryBreakOnce(spot.x, spot.y, false)
-                    if r == "broke" then Stats.Harvested = Stats.Harvested + (1) end
+                    if r == "broke" then Stats.Harvested += 1 end
                     task.wait(math.max(0.05, Config.dfBreakDelay))
                 end
                 task.wait(0.25)
@@ -3956,7 +3994,7 @@ do (function()
             local dirtCount = 0
             for x = 3, w.w - 4 do
                 if (TileValue(w, "fg", x, y) or 0) == dirtId and (TileValue(w, "fg", x, y - 1) or 0) == 0 then
-                    dirtCount = dirtCount + (1)
+                    dirtCount += 1
                     if dirtCount >= 12 then return y end
                 end
             end
@@ -4025,7 +4063,7 @@ do (function()
                     if (TileValue(w, "fg", item.x, item.y) or 0) == 0 and CountItem(dirtId) > 0 then
                         WalkOrClimbTo(item.standX, item.standY, token)
                         if PlaceCell(dirtId, { x = item.x, y = item.y }, 1) then
-                            DF.stats.placed = DF.stats.placed + (1)
+                            DF.stats.placed += 1
                             task.wait(0.14)
                         end
                     end
@@ -4066,7 +4104,7 @@ do (function()
             local t0 = os.clock()
             while DF.on and DF.token == token and (TileValue(w, "fg", tx, ty) or 0) ~= 0 and os.clock() - t0 < DF_BREAK_TIMEOUT do
                 local r = TryBreakOnce(tx, ty, false)
-                if r == "broke" then DF.stats.broken = DF.stats.broken + (1) end
+                if r == "broke" then DF.stats.broken += 1 end
                 task.wait(math.max(0.04, Config.dfBreakDelay))
             end
         end
@@ -4077,7 +4115,7 @@ do (function()
             end
             if CountItem(dirtId) > 0 then
                 if PlaceCell(dirtId, { x = tx, y = ty }, (tx >= standX) and 1 or -1) then
-                    DF.stats.placed = DF.stats.placed + (1)
+                    DF.stats.placed += 1
                     task.wait(0.14)
                 end
             end
@@ -4312,7 +4350,7 @@ do (function()
 
     function DF.Stop()
         if not DF.on then return false end
-        DF.token = DF.token + (1)
+        DF.token += 1
         DF.on = false
         SetAutoFly("autodf", false)
         ReleaseInput()
@@ -4333,7 +4371,7 @@ do (function()
         local x, y = GetGridState()
         if not x then Notify("Posisi belum terdeteksi."); return false end
         local home = { x = math.floor(x), y = math.floor(y - 0.475), world = CurrentWorldName() }
-        DF.token = DF.token + (1)
+        DF.token += 1
         local token = DF.token
         DF.on = true
         DF.status = "Mulai"
@@ -4393,7 +4431,7 @@ do (function()
             if Refs.SetTile then
                 pcall(Refs.SetTile, "fg", x, y, newId, true)
             end
-            SpliceBot.made = SpliceBot.made + (1)
+            SpliceBot.made += 1
             SpliceBot.status = string.format("Splice jadi %s (%d,%d)", ItemName(newId), x, y)
             return true
         end
@@ -4457,8 +4495,8 @@ do (function()
 
                     if (TileValue(w, "fg", t.x, t.y) or 0) == 0 and CountItem(seedA) > 0 then
                         if PlaceCell(seedA, { x = t.x, y = t.y }, 1) then
-                            SpliceBot.planted = SpliceBot.planted + (1)
-                            Stats.Planted = Stats.Planted + (1)
+                            SpliceBot.planted += 1
+                            Stats.Planted += 1
                             acted = true
                             task.wait(math.max(0.14, Config.spliceMs / 1000))
                         end
@@ -4490,8 +4528,8 @@ do (function()
                                 local fg = TileValue(w, "fg", tx, ty) or 0
                                 if fg == 0 and CountItem(seedA) > 0 and CountItem(seedB) > 0 and CanPlantAt(w, tx, ty, seedA) then
                                     if PlaceCell(seedA, { x = tx, y = ty }, 1) then
-                                        SpliceBot.planted = SpliceBot.planted + (1)
-                                        Stats.Planted = Stats.Planted + (1)
+                                        SpliceBot.planted += 1
+                                        Stats.Planted += 1
                                         acted = true
                                         task.wait(math.max(0.14, Config.spliceMs / 1000))
                                     end
@@ -4526,7 +4564,7 @@ do (function()
 
     function SpliceBot.Stop()
         if not SpliceBot.on then return false end
-        SpliceBot.token = SpliceBot.token + (1)
+        SpliceBot.token += 1
         SpliceBot.on = false
         SpliceBot.roaming = false
         ReleaseInput()
@@ -4556,7 +4594,7 @@ do (function()
         local home = { x = math.floor(x), y = math.floor(y - 0.475), world = CurrentWorldName() }
         table.clear(SpliceBot.fail)
         table.clear(SpliceBot.skip)
-        SpliceBot.token = SpliceBot.token + (1)
+        SpliceBot.token += 1
         local token = SpliceBot.token
         SpliceBot.on = true
         SpliceBot.roaming = Config.spliceRoam
@@ -5305,7 +5343,7 @@ do (function()
         pcall(function() Refs.Inv:remove(id, count) end)
         local ok = worldCall("Recycle", id, count)
         if ok then
-            Bag.recycled = Bag.recycled + (count)
+            Bag.recycled += count
             Bag.status = string.format("Recycle %s x%d", ItemName(id), count)
         end
         return ok
@@ -5321,7 +5359,7 @@ do (function()
         end)
         local ok = worldCall("ConvertLock", rule.from, rule.to)
         if ok then
-            Bag.converted = Bag.converted + (1)
+            Bag.converted += 1
             Bag.status = "Convert ke " .. rule.name
         end
         return ok
@@ -5673,7 +5711,7 @@ do (function()
         for _, p in ipairs(playersHere()) do
             if not p.role then
                 Guard.allow[p.id] = true
-                n = n + (1)
+                n += 1
             end
         end
         return n
@@ -5681,7 +5719,7 @@ do (function()
 
     function Guard.Set(on)
         Guard.on = on
-        Guard.token = Guard.token + (1)
+        Guard.token += 1
         Guard.mode, Guard.saved, Guard.calmAt = "idle", nil, nil
         table.clear(Guard.alerted)
         table.clear(Guard.allow)
@@ -5739,7 +5777,7 @@ do (function()
                             Webhook.Send("penjaga", "World " .. name .. " aman, lanjut aktivitas")
                             local sv = Guard.saved
                             Guard.mode, Guard.saved = "idle", nil
-                            Guard.token = Guard.token + (1)
+                            Guard.token += 1
                             local tk = Guard.token
                             task.spawn(resumeSaved, sv, tk)
                         end
@@ -5765,13 +5803,13 @@ do (function()
                 end
 
                 if #fresh > 0 then
-                    Guard.detected = Guard.detected + (#fresh)
+                    Guard.detected += #fresh
                     local alertMsg = "Terdeteksi masuk world " .. CurrentWorldName() .. ": " .. namesList(fresh)
                     Notify(alertMsg, "PERINGATAN PENJAGA", 6)
                     Webhook.Send("penjaga", alertMsg)
                     if Config.guardStopAll or Config.guardLeave then
                         if not Guard.saved then Guard.saved = snapshot() end
-                        Guard.token = Guard.token + (1)
+                        Guard.token += 1
                         stopAllBots()
                         Guard.calmAt = nil
                         if Config.guardLeave then
@@ -5800,7 +5838,7 @@ do (function()
                         Guard.mode, Guard.saved = "idle", nil
                         if Config.guardAutoBack and sv then
                             Notify("World aman, melanjutkan aktivitas!", "Penjaga ANCH")
-                            Guard.token = Guard.token + (1)
+                            Guard.token += 1
                             local tk = Guard.token
                             task.spawn(resumeSaved, sv, tk)
                         end
@@ -5850,7 +5888,7 @@ do (function()
                 if enterWorld(snap.world) then
                     Refs.Scan()
                     task.wait(1.5)
-                    Reconnect.count = Reconnect.count + (1)
+                    Reconnect.count += 1
                     Reconnect.status = "Berhasil masuk lagi ke " .. snap.world
                     Webhook.Send("rejoin", "Berhasil masuk kembali ke " .. snap.world)
                     resumeSaved(snap, nil)
@@ -5889,7 +5927,7 @@ do (function()
                     if enterWorld(target) then
                         Refs.Scan()
                         task.wait(1.5)
-                        Reconnect.count = Reconnect.count + (1)
+                        Reconnect.count += 1
                         Reconnect.status = "Kembali otomatis ke " .. target
                         if Reconnect.last and Reconnect.last.world == target then
                             resumeSaved(Reconnect.last, nil)
@@ -5950,7 +5988,7 @@ do (function()
             if alive() and CurrentWorldName() == snap.world then
                 Refs.Scan()
                 task.wait(1.5)
-                Reconnect.count = Reconnect.count + (1)
+                Reconnect.count += 1
                 Webhook.Send("rejoin", "Berhasil rejoin server ke world " .. snap.world .. ", melanjutkan bot!")
                 resumeSaved(snap, nil)
             end
@@ -5986,7 +6024,7 @@ do (function()
 
     local function formatDuration(sec)
         sec = math.max(0, math.floor(sec or 0))
-        return string.format("%dj %dm %dd", math.floor(sec / 3600), math.floor((sec % 3600) / 60), sec % 60)
+        return string.format("%dj %dm %dd", sec // 3600, (sec % 3600) // 60, sec % 60)
     end
 
     function Stats.GemsNow()
@@ -6088,7 +6126,7 @@ do (function()
         end
         local ok, err = pcall(ch.SendAsync, ch, msg)
         if ok then
-            Spam.sent = Spam.sent + (1)
+            Spam.sent += 1
             Spam.last = msg
         else
             Spam.last = "Gagal: " .. tostring(err)
@@ -6123,15 +6161,15 @@ do (function()
         local total, done = 0, 0
         local now = os.clock()
         for _, q in ipairs(data.quests) do
-            total = total + (1)
+            total += 1
             local have, need = tonumber(q.have) or 0, tonumber(q.need) or math.huge
             if q.claimed then
-                done = done + (1)
+                done += 1
             elseif have >= need and not ((Bonus.questFail[q.id] or 0) > now) then
                 local okC, success, _, _, gems = netCall("Quests", "claim", q.id)
                 if okC and success then
-                    done = done + (1)
-                    Bonus.claimed = Bonus.claimed + (1)
+                    done += 1
+                    Bonus.claimed += 1
                     local qName = stripColor(q.text or q.id)
                     Notify("Quest diklaim: " .. qName, "Bonus ANCH")
                     Webhook.Send("bonus", "Quest diklaim: " .. qName)
@@ -6170,16 +6208,16 @@ do (function()
         end
         local total, have = 0, 0
         for _, c in ipairs(list) do
-            total = total + (1)
+            total += 1
             local code = c.code and tostring(c.code)
             if c.done then
-                have = have + (1)
+                have += 1
             elseif code and not Bonus.tried[code] and not (type(c.uses) == "number" and c.uses == 0) then
                 local success, msg = Bonus.RedeemSingle(code)
                 if success ~= nil then Bonus.tried[code] = true end
                 if success then
-                    have = have + (1)
-                    Bonus.redeemed = Bonus.redeemed + (1)
+                    have += 1
+                    Bonus.redeemed += 1
                     Notify(code .. " -> " .. tostring(msg), "Redeem Berhasil!")
                     Webhook.Send("bonus", "Redeem berhasil " .. code .. ": " .. tostring(msg))
                 end
@@ -6527,9 +6565,10 @@ do (function()
     end
 
     -- ====================================================================
-    -- FAST PULL / FAST KICK / FAST BAN (TAHAN RE-EXECUTE & AMAN BAGI UI)
+    -- FAST PULL / FAST KICK / FAST BAN (AUTO CLOSE MENUGUI.PLAYER 0ms)
     -- ====================================================================
     local lastClickTileX, lastClickTileY = nil, nil
+    local cachedWrenchModal = nil
 
     trackConn(UserInputService.InputBegan:Connect(function(inp)
         if not alive() then return end
@@ -6548,27 +6587,74 @@ do (function()
         return nil, nil
     end
 
-    local function ResolveWrenchedTargetUid(arg1)
-        -- 1. Cek jika arg1 langsung berupa UserId atau Nama
-        if arg1 ~= nil then
-            local numId = tonumber(arg1) or (type(arg1) == "string" and tonumber(arg1:match("(%d+)")))
-            if type(arg1) == "table" then
-                numId = tonumber(arg1.userId or arg1.uid or arg1.id or arg1[1])
+    -- Tutup dialog Wrench (Upval[6] / PlayerGui.MenuGui.Player) menggunakan fungsi close() asli milik game
+    local function CloseWrenchPlayerModal(modalTbl)
+        local m = modalTbl or cachedWrenchModal
+        if type(m) == "table" then
+            cachedWrenchModal = m
+            local closeFn = rawget(m, "close")
+            if type(closeFn) == "function" then
+                pcall(closeFn)
             end
-            for _, plr in ipairs(Players:GetPlayers()) do
-                if plr ~= Player then
-                    if (numId and plr.UserId == numId)
-                        or (type(arg1) == "string" and (plr.Name:lower() == arg1:lower() or plr.DisplayName:lower() == arg1:lower())) then
-                        return plr.UserId, plr.DisplayName or plr.Name
+            local box = rawget(m, "box")
+            if typeof(box) == "Instance" and box:IsA("GuiObject") then
+                pcall(function() box.Visible = false end)
+            end
+        end
+        pcall(function()
+            local menuGui = PlayerGui:FindFirstChild("MenuGui")
+            local playerModal = menuGui and menuGui:FindFirstChild("Player")
+            if playerModal and playerModal:IsA("GuiObject") then
+                playerModal.Visible = false
+            end
+        end)
+    end
+
+    -- Ambil target {userId, name} dan tabel kontroler dialog (Upval[6]) langsung dari Call Stack Stack[6]
+    local function InspectWrenchCallStack(arg1)
+        local foundUid, foundName, foundModal = nil, nil, nil
+        if not (debug and debug.info and getupvalueFn) then
+            return nil, nil, nil
+        end
+
+        for stackLvl = 2, 10 do
+            local okF, callerFn = pcall(debug.info, stackLvl, "f")
+            if not okF or type(callerFn) ~= "function" then break end
+            for upIdx = 1, 20 do
+                local okU, uv = pcall(getupvalueFn, callerFn, upIdx)
+                if not okU then break end
+                if type(uv) == "table" then
+                    -- Deteksi Upval[6]: {close:function, isOpen:function, setHeight:function, box:Instance, area:Instance}
+                    if not foundModal and type(rawget(uv, "close")) == "function"
+                        and type(rawget(uv, "isOpen")) == "function"
+                        and rawget(uv, "box") ~= nil then
+                        foundModal = uv
+                        cachedWrenchModal = uv
+                    end
+                    -- Deteksi Upval[2] / Upval[5]: {id:number, userId:number, name:string}
+                    local uid = tonumber(rawget(uv, "userId"))
+                    local pid = tonumber(rawget(uv, "id"))
+                    local pname = rawget(uv, "name")
+                    if uid and uid > 1000 and uid ~= Player.UserId then
+                        if not foundUid or (arg1 ~= nil and pid == tonumber(arg1)) then
+                            foundUid = uid
+                            foundName = type(pname) == "string" and pname:gsub("`.", "") or tostring(uid)
+                        end
                     end
                 end
             end
-            if numId and numId > 1000 and numId ~= Player.UserId then
-                return numId, tostring(numId)
-            end
+        end
+        return foundUid, foundName, foundModal
+    end
+
+    local function ResolveWrenchedTargetUid(arg1)
+        -- 1. Prioritas Utama: Baca langsung dari Upvalue Stack[6] (100% akurat sesuai hasil Spy)
+        local stackUid, stackName, stackModal = InspectWrenchCallStack(arg1)
+        if stackUid then
+            return stackUid, stackName, stackModal
         end
 
-        -- 2. Cek melalui Refs.Others (posisi klik tile, indeks slot arg1, dan jarak terdekat)
+        -- 2. Fallback: Cek melalui Refs.Others (list, playerAt, where)
         local o = Refs.Others
         if not o then Refs.Scan(); o = Refs.Others end
         local candidates = {}
@@ -6581,64 +6667,62 @@ do (function()
                         local uid = tonumber(e[1] or e.userId)
                         local name = tostring(e[2] or e.name or uid or ""):gsub("`.", "")
                         if uid and uid ~= Player.UserId then
-                            if arg1 ~= nil and (idx == arg1 or e.id == arg1 or e.pid == arg1 or e.netId == arg1 or e[3] == arg1) then
-                                return uid, name
+                            if arg1 ~= nil and (idx == arg1 or e.id == arg1 or e.pid == arg1) then
+                                return uid, name, stackModal
                             end
-                            table.insert(candidates, { uid = uid, name = name, idx = idx })
+                            table.insert(candidates, { uid = uid, name = name })
                         end
                     end
                 end
             end
         end
 
-        if o and lastClickTileX and lastClickTileY then
-            if type(rawget(o, "playerAt")) == "function" then
-                local okP, pAt = pcall(o.playerAt, lastClickTileX, lastClickTileY)
-                if okP and pAt then
-                    local uid = (type(pAt) == "table" and tonumber(pAt[1] or pAt.userId)) or tonumber(pAt)
-                    if uid and uid ~= Player.UserId then
-                        return uid, tostring(uid)
+        if o and lastClickTileX and lastClickTileY and type(rawget(o, "where")) == "function" and #candidates > 0 then
+            local bestUid, bestName, bestDist = nil, nil, math.huge
+            for _, c in ipairs(candidates) do
+                local okW, wx, wy = pcall(o.where, c.uid)
+                if okW and type(wx) == "table" then wx, wy = wx.x or wx[1], wx.y or wx[2] end
+                if okW and type(wx) == "number" and type(wy) == "number" then
+                    local dist = math.abs(wx - lastClickTileX) + math.abs(wy - lastClickTileY)
+                    if dist < bestDist then
+                        bestUid, bestName, bestDist = c.uid, c.name, dist
                     end
                 end
             end
-            if type(rawget(o, "where")) == "function" and #candidates > 0 then
-                local bestUid, bestName, bestDist = nil, nil, math.huge
-                for _, c in ipairs(candidates) do
-                    local okW, wx, wy = pcall(o.where, c.uid)
-                    if okW and type(wx) == "table" then wx, wy = wx.x or wx[1], wx.y or wx[2] end
-                    if okW and type(wx) == "number" and type(wy) == "number" then
-                        local dist = math.abs(wx - lastClickTileX) + math.abs(wy - lastClickTileY)
-                        if dist < bestDist then
-                            bestUid, bestName, bestDist = c.uid, c.name, dist
-                        end
-                    end
-                end
-                if bestUid and bestDist <= 6 then
-                    return bestUid, bestName
-                end
+            if bestUid and bestDist <= 6 then
+                return bestUid, bestName, stackModal
             end
-        end
-
-        -- Di GrowBlox, slot 1 adalah LocalPlayer sehingga slot 2 di GetPlayerLevel seringkali adalah candidates[arg1 - 1]
-        if tonumber(arg1) and candidates[tonumber(arg1) - 1] then
-            local c = candidates[tonumber(arg1) - 1]
-            return c.uid, c.name
         end
 
         if #candidates >= 1 then
-            return candidates[1].uid, candidates[1].name
+            return candidates[1].uid, candidates[1].name, stackModal
         end
 
         for _, plr in ipairs(Players:GetPlayers()) do
             if plr ~= Player then
-                return plr.UserId, plr.DisplayName or plr.Name
+                return plr.UserId, plr.DisplayName or plr.Name, stackModal
             end
         end
 
-        return nil, nil
+        return nil, nil, stackModal
     end
 
-    -- Pulihkan fungsi asli Net.call walaupun sudah pernah ter-hook oleh eksekusi script sebelumnya!
+    -- Pantau juga MenuGui.Player secara langsung agar tidak sempat berkedip saat Fast Wrench aktif
+    pcall(function()
+        local menuGui = PlayerGui:FindFirstChild("MenuGui")
+        local playerFrame = menuGui and menuGui:FindFirstChild("Player")
+        if playerFrame and playerFrame:IsA("GuiObject") then
+            trackConn(playerFrame:GetPropertyChangedSignal("Visible"):Connect(function()
+                if alive() and playerFrame.Visible and GetActiveFastWrenchCmd() then
+                    if os.clock() - (G.__ANCH_LastFastWrench or 0) < 0.8 then
+                        CloseWrenchPlayerModal(cachedWrenchModal)
+                    end
+                end
+            end))
+        end
+    end)
+
+    -- Pulihkan fungsi asli Net.call walaupun sudah pernah ter-hook oleh eksekusi script sebelumnya
     if not G.__ANCH_TrueOrigNetCall and NetOk and type(Net) == "table" and type(Net.call) == "function" then
         local curCall = Net.call
         if isexecutorclosure and pcall(isexecutorclosure, curCall) and isexecutorclosure(curCall) then
@@ -6658,28 +6742,24 @@ do (function()
     local lastFastWrenchClock = 0
     local wrapperFn
 
-    local function ResetCallerBusyUpvalues()
-        if not (debug and debug.info and getupvalueFn and setupvalueFn) then return end
-        for stackLvl = 2, 7 do
-            local okF, callerFn = pcall(debug.info, stackLvl, "f")
-            if not okF or type(callerFn) ~= "function" then break end
-            if callerFn ~= wrapperFn and not (isexecutorclosure and pcall(isexecutorclosure, callerFn) and isexecutorclosure(callerFn)) then
-                for upIdx = 1, 20 do
-                    local okU, upVal = pcall(getupvalueFn, callerFn, upIdx)
-                    if not okU then break end
-                    if upVal == true then
-                        pcall(setupvalueFn, callerFn, upIdx, false)
-                    end
-                end
-            end
-        end
-    end
-
-    local function ExecuteFastWrenchOn(callFn, fastCmd, fastLabel, targetUid, targetName)
+    local function ExecuteFastWrenchOn(callFn, fastCmd, fastLabel, targetUid, targetName, modalTbl)
         lastFastWrenchClock = os.clock()
+        G.__ANCH_LastFastWrench = lastFastWrenchClock
+
+        -- 1. Langsung tutup dialog MenuGui.Player saat ini juga (0ms)
+        CloseWrenchPlayerModal(modalTbl)
+
+        -- 2. Tutup lagi pada task.defer (setelah Stack[6] selesai di frame yang sama, sebelum layar di-render)
+        task.defer(function()
+            CloseWrenchPlayerModal(modalTbl)
+        end)
+
+        -- 3. Kirim paket WorldCommand pull/kick/ban #<UserId> & pastikan status busy = 0
         task.spawn(function()
             pcall(callFn, "WorldCommand", fastCmd, "#" .. tostring(targetUid))
             pcall(callFn, "SetBusy", 0)
+            task.wait(0.04)
+            CloseWrenchPlayerModal(modalTbl)
             Notify(string.format("%s -> %s (#%s)", fastLabel, tostring(targetName or "Player"), tostring(targetUid)), fastLabel, 2)
         end)
     end
@@ -6688,17 +6768,19 @@ do (function()
         local fastCmd, fastLabel = GetActiveFastWrenchCmd()
         if fastCmd then
             if cmdName == "GetPlayerLevel" or cmdName == "WrenchPlayer" or cmdName == "PlayerInfo" then
-                local targetUid, targetName = ResolveWrenchedTargetUid(arg1)
+                local targetUid, targetName, modalTbl = ResolveWrenchedTargetUid(arg1)
                 if targetUid then
                     if os.clock() - lastFastWrenchClock > 0.15 then
-                        ExecuteFastWrenchOn(callFn, fastCmd, fastLabel, targetUid, targetName)
+                        ExecuteFastWrenchOn(callFn, fastCmd, fastLabel, targetUid, targetName, modalTbl)
+                    else
+                        CloseWrenchPlayerModal(modalTbl)
                     end
-                    ResetCallerBusyUpvalues()
-                    return coroutine.yield()
+                    -- Kembalikan nil secara instan tanpa menghubungi server & tanpa membekukan thread
+                    return nil
                 end
             elseif cmdName == "SetBusy" and arg1 == 2 then
                 if os.clock() - lastFastWrenchClock < 1.0 then
-                    ResetCallerBusyUpvalues()
+                    CloseWrenchPlayerModal(cachedWrenchModal)
                     return false
                 end
             end
@@ -6717,7 +6799,6 @@ do (function()
             rawset(Refs.World, "call", wrapperFn)
         end
 
-        -- Ganti semua upvalue lokal `local call = Net.call` di fungsi game (termasuk yang terlanjur memakai wrapper lama)
         if getgcFn and getupvalueFn and setupvalueFn then
             task.spawn(function()
                 for _, fn in ipairs(getgcFn(false)) do
@@ -6939,7 +7020,7 @@ do (function()
                 local f = rFg and rFg[x] or 0
                 if f ~= 0 then
                     result.fg[f] = (result.fg[f] or 0) + 1
-                    result.totalFg = result.totalFg + (1)
+                    result.totalFg += 1
                     if IsSeedId(f) then
                         local rAt = TreeReadyAt(w, x, y, f)
                         local tEntry = result.trees[f]
@@ -6948,11 +7029,11 @@ do (function()
                             result.trees[f] = tEntry
                         end
                         if rAt and nowSrv >= rAt then
-                            tEntry.ready = tEntry.ready + (1)
-                            result.readyTrees = result.readyTrees + (1)
+                            tEntry.ready += 1
+                            result.readyTrees += 1
                         else
-                            tEntry.growing = tEntry.growing + (1)
-                            result.growingTrees = result.growingTrees + (1)
+                            tEntry.growing += 1
+                            result.growingTrees += 1
                             if rAt then
                                 local rem = rAt - nowSrv
                                 if not tEntry.nextIn or rem < tEntry.nextIn then
@@ -6963,7 +7044,7 @@ do (function()
                     end
                 end
                 local b = rBg and rBg[x] or 0
-                if b ~= 0 then result.bg[b] = (result.bg[b] or 0) + 1; result.totalBg = result.totalBg + (1) end
+                if b ~= 0 then result.bg[b] = (result.bg[b] or 0) + 1; result.totalBg += 1 end
             end
         end
         local dList = Drops.list
@@ -6975,8 +7056,8 @@ do (function()
             for _, d in pairs(dList) do
                 if type(d) == "table" and type(d.id) == "number" and (d.n or 0) > 0 then
                     result.drops[d.id] = (result.drops[d.id] or 0) + (d.n or 1)
-                    result.totalDrops = result.totalDrops + ((d.n or 1))
-                    result.piles = result.piles + (1)
+                    result.totalDrops += (d.n or 1)
+                    result.piles += 1
                 end
             end
         end
@@ -7407,7 +7488,7 @@ Window:DisableTopbarButtons({
 
 pcall(function()
     Window:Tag({
-        Title = "v1.2 Beta",
+        Title = "v1.1 Beta",
         Icon = "github",
         Color = Color3.fromHex("#1c1c1c"),
         Border = true,
@@ -8919,7 +9000,7 @@ SafeUI("Tab:Settings", function()
             end
             local prev = Config.webhookOn
             Config.webhookOn = true
-            Webhook.Send("test", "Tes notifikasi dari ANCH Hub v1.2 Ultimate!")
+            Webhook.Send("test", "Tes notifikasi dari ANCH Hub v1.1 Ultimate!")
             Config.webhookOn = prev
             Notify("Pesan tes masuk antrian kirim Discord.")
         end,
@@ -8997,7 +9078,7 @@ SafeUI("Tab:Help", function()
     hub.tabs.help = HelpTab
 
     HelpTab:Paragraph({
-        Title = "Daftar Perintah Chat ANCH Hub v1.2 Beta",
+        Title = "Daftar Perintah Chat ANCH Hub v1.1 Beta",
         Desc = table.concat({
             "/af [on/off]  —  Auto Farm (Multi-Target + Rayman)",
             "/ac [on/off]  —  Auto Clear World (ModFly + Berdiri di Atas Blok)",
@@ -9232,5 +9313,5 @@ task.spawn(function()
     end
     task.spawn(Reconnect.CheckStartup)
     task.spawn(Pabrik.CheckStartup)
-    Notify("ANCH HUB v1.2 Beta Loaded! Semua tab & fitur siap digunakan.")
+    Notify("ANCH HUB v1.1 Beta Loaded! Semua tab & fitur siap digunakan.")
 end)
