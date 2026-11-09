@@ -7548,6 +7548,7 @@ end
 -- 5 Kategori Proporsional Standar Publik
 local MainSection     = Window:Section({ Title = "Main Section", Opened = true })
 local AutoSection     = Window:Section({ Title = "Auto Section", Opened = true })
+local HelperSection     = Window:Section({ Title = "Helper Section", Opened = true })
 local BagWorldSection = Window:Section({ Title = "World Section", Opened = true })
 local SecuritySection = Window:Section({ Title = "Safety Section", Opened = true })
 local SystemSection   = Window:Section({ Title = "System & Settings", Opened = true })
@@ -8392,6 +8393,69 @@ SafeUI("Tab:Pabrik", function()
             Config.pabrikDropX, Config.pabrikDropY = tx, ty
             SaveConfig()
             Notify(string.format("Posisi Drop Seed disimpan di (%d, %d)", tx, ty))
+        end,
+    })
+end)
+
+SafeUI("Tab:FastWrench", function()
+    local Tab = HelperSection:Tab({
+        Title = "Fast Wrench",
+        Icon = "solar:square-transfer-horizontal-bold",
+        IconColor = Purple,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.fastwrench = Tab
+
+    Tab:Section({ Title = "Fast Wrench Action (Bypass Dialog Wrench)" })
+
+    local fpToggle, fkToggle, fbToggle
+
+    fpToggle = Tab:Toggle({
+        Title = "Fast Pull (Wrench = Langsung Pull)",
+        Desc = "Abaikan dialog wrench & langsung kirim paket Pull saat wrench player.",
+        Value = Config.fastPull,
+        Callback = function(on)
+            Config.fastPull = on
+            if on then
+                Config.fastKick, Config.fastBan = false, false
+                if fkToggle and fkToggle.Set then pcall(function() fkToggle:Set(false) end) end
+                if fbToggle and fbToggle.Set then pcall(function() fbToggle:Set(false) end) end
+                Notify("Fast Pull AKTIF! Wrench player untuk langsung Pull.")
+            end
+            SaveConfig()
+        end,
+    })
+
+    fkToggle = Tab:Toggle({
+        Title = "Fast Kick (Wrench = Langsung Kick)",
+        Desc = "Abaikan dialog wrench & langsung kirim paket Kick saat wrench player.",
+        Value = Config.fastKick,
+        Callback = function(on)
+            Config.fastKick = on
+            if on then
+                Config.fastPull, Config.fastBan = false, false
+                if fpToggle and fpToggle.Set then pcall(function() fpToggle:Set(false) end) end
+                if fbToggle and fbToggle.Set then pcall(function() fbToggle:Set(false) end) end
+                Notify("Fast Kick AKTIF! Wrench player untuk langsung Kick.")
+            end
+            SaveConfig()
+        end,
+    })
+
+    fbToggle = Tab:Toggle({
+        Title = "Fast Ban (Wrench = Langsung Ban)",
+        Desc = "Abaikan dialog wrench & langsung kirim paket Ban saat wrench player.",
+        Value = Config.fastBan,
+        Callback = function(on)
+            Config.fastBan = on
+            if on then
+                Config.fastPull, Config.fastKick = false, false
+                if fpToggle and fpToggle.Set then pcall(function() fpToggle:Set(false) end) end
+                if fkToggle and fkToggle.Set then pcall(function() fkToggle:Set(false) end) end
+                Notify("Fast Ban AKTIF! Wrench player untuk langsung Ban.")
+            end
+            SaveConfig()
         end,
     })
 end)
