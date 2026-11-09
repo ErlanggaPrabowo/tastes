@@ -107,6 +107,19 @@ end
 local cloneref = (cloneref or clonereference or function(instance)
     return instance
 end)
+
+local Players = cloneref(game:GetService("Players"))
+local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
+local StarterGui = cloneref(game:GetService("StarterGui"))
+local GuiService = cloneref(game:GetService("GuiService"))
+local UserInputService = cloneref(game:GetService("UserInputService"))
+local HttpService = cloneref(game:GetService("HttpService"))
+local RunService = cloneref(game:GetService("RunService"))
+local TeleportService = cloneref(game:GetService("TeleportService"))
+local VirtualUser = cloneref(game:GetService("VirtualUser"))
+local TextChatService = cloneref(game:GetService("TextChatService"))
+local TextService = cloneref(game:GetService("TextService"))
+
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui", 5)
 
