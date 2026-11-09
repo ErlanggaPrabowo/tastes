@@ -138,6 +138,7 @@ local MenuModOk, MenuModule = pcall(function() return require(GameGui:WaitForChi
 local CONFIG_FILE = "ANCHHub_GrowBlox.json"
 local REJOIN_FILE = "ANCHHub_Rejoin_" .. tostring(Player.UserId) .. ".json"
 local PABRIK_STATE_FILE = "ANCHHub_Pabrik_" .. tostring(Player.UserId) .. ".json"
+local AUTOMOVE_STATE_FILE = "ANCHHub_AutoMove_" .. tostring(Player.UserId) .. ".json"
 local SCRIPT_FILE = "ANCHHub_GrowBlox.lua"
 local MAX_AMOUNT = 10000
 local COOLDOWN = 0.3
@@ -156,6 +157,11 @@ local Config = {
     fastPull = false,
     fastKick = false,
     fastBan = false,
+    -- Fast Drop & Fast Recycle/Trash (0 = All)
+    fastDrop = false,
+    fastDropCount = 0,
+    fastRecycle = false,
+    fastRecycleCount = 0,
     -- Sesi & Reconnect
     autoRestore = true,
     autoReload = true,
@@ -277,6 +283,12 @@ local Config = {
     scanAuto = false,
     scanLayer = "Semua",
     scanFilter = "",
+    -- Auto Move Item (World 1 -> World 2)
+    moveWorld1 = "",
+    moveWorld2 = "",
+    moveDropX = -1,
+    moveDropY = -1,
+    moveItemId = 2,
     -- Discord Webhook
     webhookOn = false,
     webhookUrl = "",
@@ -2605,6 +2617,16 @@ local Pabrik = {
     Zone = nil,
     skip = {},
 }
+local AutoMove = {
+    on = false,
+    token = 0,
+    phase = "-",
+    status = "Mati",
+    collected = 0,
+    dropped = 0,
+    traveling = false,
+    pauseCollect = false,
+}
 local Bag = {
     recycled = 0,
     converted = 0,
@@ -2999,6 +3021,7 @@ do (function()
     local nextDropScan = 0
     trackConn(RunService.Heartbeat:Connect(function()
         if not alive() then return end
+        if AutoMove and AutoMove.pauseCollect then return end
         local activeGrid = (Farm.Override and Farm.Override.offsets) or Config.farmGrid
         local farmArea = (Farm.on and Config.farmTake) or (Farm.Override ~= nil)
         local nearArea = Config.collectAround
@@ -5315,6 +5338,455 @@ do (function()
 end)() end
 
 ----------------------------------------------------------------------
+-- 6B. AUTO MOVE ITEM (WORLD 1 -> WORLD 2 +GESER KANAN + AUTO RESUME)
+----------------------------------------------------------------------
+do (function()
+    local function SaveMoveState(st)
+        if writefile then
+            st.updatedAt = os.time()
+            pcall(writefile, AUTOMOVE_STATE_FILE, HttpService:JSONEncode(st))
+        end
+    end
+
+    local function ClearMoveState()
+        if isfile and delfile and isfile(AUTOMOVE_STATE_FILE) then
+            pcall(delfile, AUTOMOVE_STATE_FILE)
+        end
+    end
+
+    function AutoMove.ParseWorld(rawStr)
+        local raw = tostring(rawStr or ""):gsub("%s", "")
+        local wName, doorId = string.match(raw, "^([^:]*):(.+)$")
+        if not wName then wName = raw end
+        wName = string.upper(wName):gsub("[^A-Z0-9]", "")
+        if doorId == "" then doorId = nil end
+        return wName, doorId
+    end
+
+    local function LeaveWorldNow()
+        local m = Refs.Menu
+        if m and type(rawget(m, "openPicker")) == "function" and pcall(m.openPicker) then
+            return true
+        end
+        local w = FindWorld()
+        if w and type(rawget(w, "call")) == "function" then
+            return pcall(w.call, "LeaveWorld")
+        end
+        return false
+    end
+
+    local function WarpToTarget(wName, doorId)
+        wName = Trim(wName):upper()
+        if wName == "" then return false, "nama world kosong" end
+        if CurrentWorldName():upper() == wName and not doorId then return true end
+
+        if QueueReload then pcall(QueueReload) end
+
+        if CurrentWorldName() ~= "" then
+            LeaveWorldNow()
+            task.wait(1.8)
+        end
+
+        local w = FindWorld()
+        if doorId and w then
+            rawset(w, "arriveDoor", doorId)
+        end
+
+        local oldFg = w and rawget(w, "fg")
+        local m = Refs.Menu
+        if m and type(rawget(m, "enter")) == "function" then
+            pcall(m.enter, wName)
+        elseif w and type(rawget(w, "enter")) == "function" then
+            pcall(w.enter, wName)
+        else
+            return false, "fungsi enter world tidak ditemukan"
+        end
+
+        local t0 = os.clock()
+        while alive() and (os.clock() - t0) < 12 do
+            local cw = FindWorld()
+            if cw and rawget(cw, "fg") ~= oldFg and CurrentWorldName():upper() == wName then
+                Refs.Scan()
+                task.wait(1.2)
+                return true
+            end
+            task.wait(0.25)
+        end
+        return false, "timeout masuk world " .. wName
+    end
+
+    -- Cari dropped item terdekat dengan ID sesuai pilihan user di World 1
+    local function FindTargetDropInWorld(itemId)
+        if not Drops.list and Drops.findRefs then Drops.findRefs() end
+        local list = Drops.list
+        if type(list) ~= "table" then return nil, 0 end
+        local px, py = GetTile()
+        px, py = px or 50, py or 30
+        local best, bestDist = nil, math.huge
+        local totalCount = 0
+
+        for _, d in ipairs(list) do
+            if type(d) == "table" and d.id == itemId and (d.n or 0) > 0 and not d.display and type(d.x) == "number" then
+                totalCount = totalCount + (d.n or 0)
+                local dist = math.abs(d.x - px) + math.abs(d.y - py)
+                if dist < bestDist then
+                    best, bestDist = d, dist
+                end
+            end
+        end
+        return best, totalCount
+    end
+
+    -- Langkah 11-13: Drop item di World 2; jika masih tersisa di tas (tile penuh), geser ke kanan 1 langkah & ulangi
+    local function DropWithStepRight(itemId, startX, startY, liveFn)
+        local hud = Refs.Hud or FindInventory()
+        local onDrop = hud and rawget(hud, "onDrop")
+        local curX, curY = startX, startY
+        local stepAttempts = 0
+
+        while liveFn() and CountItem(itemId) > 0 and stepAttempts < 25 do
+            local before = CountItem(itemId)
+            local dropNow = math.min(before, 200)
+
+            AutoMove.status = string.format("Drop %s x%d di (%d,%d)...", ItemName(itemId), dropNow, curX, curY)
+            if type(onDrop) == "function" then
+                pcall(onDrop, itemId, dropNow)
+            elseif DropEvent then
+                pcall(function() DropEvent:FireServer(itemId, dropNow) end)
+            elseif NetOk and type(Net) == "table" and Net.drop then
+                pcall(Net.drop.send, { id = itemId, n = dropNow })
+            end
+
+            task.wait(0.85)
+            local after = CountItem(itemId)
+            local droppedDiff = before - after
+            if droppedDiff > 0 then
+                AutoMove.dropped = AutoMove.dropped + droppedDiff
+            end
+
+            -- Langkah 12 & 13: Cek inventory apakah item sudah hilang; jika masih ada, gerak ke kanan 1 langkah & ulangi!
+            if CountItem(itemId) > 0 and liveFn() then
+                stepAttempts = stepAttempts + 1
+                curX = curX + 1
+                local w = FindWorld()
+                if w and curX >= w.w - 1 then
+                    return false, "Mentok ujung kanan world!"
+                end
+                AutoMove.status = string.format("Tile penuh! Geser kanan 1 langkah ke (%d,%d)...", curX, curY)
+                if not Nav.SolidAt(curX, curY) and Drops.walkToX then
+                    local wasA = AutoInput.active
+                    AutoInput.active = true
+                    Drops.collecting = true
+                    Drops.walkToX(curX + 0.5, 1.5)
+                    Drops.collecting = false
+                    AutoInput.active = wasA
+                else
+                    Nav.To(curX, curY, function() return not liveFn() end, 0.3, false)
+                end
+                task.wait(0.25)
+            end
+        end
+
+        return CountItem(itemId) == 0, nil
+    end
+
+    local function AutoMoveLoop(token)
+        local function liveFn()
+            return AutoMove.on and AutoMove.token == token and alive()
+        end
+
+        local itemId = tonumber(Config.moveItemId) or 0
+        local w1Name, w1Door = AutoMove.ParseWorld(Config.moveWorld1)
+        local w2Name, w2Door = AutoMove.ParseWorld(Config.moveWorld2)
+
+        while liveFn() do
+            local haveInBag = CountItem(itemId)
+
+            -- Jika di tas belum penuh (< 200), kita ambil dulu di World 1 (Langkah 6 - 8)
+            if haveInBag < 200 then
+                AutoMove.pauseCollect = false
+                AutoMove.phase = "TAKE (WORLD 1)"
+
+                SaveMoveState({
+                    active = true,
+                    stage = "taking",
+                    w1 = Config.moveWorld1,
+                    w2 = Config.moveWorld2,
+                    dropX = Config.moveDropX,
+                    dropY = Config.moveDropY,
+                    itemId = itemId,
+                })
+
+                -- Langkah 6: Pindah ke World 1
+                if CurrentWorldName():upper() ~= w1Name then
+                    AutoMove.traveling = true
+                    AutoMove.status = "Pindah ke World 1: " .. w1Name .. (w1Door and (":" .. w1Door) or "") .. "..."
+                    local okW1, errW1 = WarpToTarget(w1Name, w1Door)
+                    AutoMove.traveling = false
+                    if not okW1 then
+                        AutoMove.status = "Gagal masuk World 1 (" .. tostring(errW1) .. "), coba lagi..."
+                        task.wait(4)
+                        continue
+                    end
+                end
+
+                if not liveFn() then break end
+                Refs.Scan()
+                if Drops.findRefs then Drops.findRefs() end
+                task.wait(0.8)
+
+                -- Langkah 7: Deteksi dropped items di World 1
+                local drop, totalInW1 = FindTargetDropInWorld(itemId)
+
+                -- Langkah 15: Jika di World 1 item tersebut sudah habis/kosong
+                if not drop then
+                    if CountItem(itemId) > 0 then
+                        -- Masih ada sisa item di tas yang belum di-drop ke World 2, lanjut ke fase Drop!
+                        AutoMove.status = "Drop di World 1 habis, mengantar sisa tas ke World 2..."
+                    else
+                        -- Di World 1 kosong DAN di tas sudah 0 -> Selesai (Langkah 15-16)!
+                        ClearMoveState()
+                        AutoMove.pauseCollect = false
+                        AutoMove.phase = "SELESAI"
+                        local msg = string.format("Auto Move Selesai! %s habis di %s. Total dipindahkan: %d", ItemName(itemId), w1Name, AutoMove.dropped)
+                        AutoMove.status = msg
+                        Notify(msg, "Auto Move Selesai", 6)
+                        Webhook.Send("pabrik", msg)
+                        break
+                    end
+                else
+                    -- Langkah 8: Bergerak menuju dropped items & ambil sampai tas penuh (200) atau drop di World 1 habis
+                    while liveFn() and CountItem(itemId) < 200 do
+                        local targetDrop = FindTargetDropInWorld(itemId)
+                        if not targetDrop then break end
+
+                        local tx, ty = math.floor(targetDrop.x), math.floor(targetDrop.y)
+                        AutoMove.status = string.format("Ambil %s di (%d,%d) [Tas: %d/200]...", ItemName(itemId), tx, ty, CountItem(itemId))
+
+                        local beforeTake = CountItem(itemId)
+                        Nav.To(tx, ty, function() return not liveFn() end, 0.35, false)
+
+                        -- Pastikan tersentuh fisik badan
+                        if Drops.walkToX then
+                            local wasA = AutoInput.active
+                            AutoInput.active = true
+                            Drops.collecting = true
+                            Drops.walkToX(targetDrop.x, 1.0)
+                            Drops.collecting = false
+                            AutoInput.active = wasA
+                        end
+
+                        -- Bantu juga dengan takeDrop jika berada dalam jangkauan
+                        local w = FindWorld()
+                        local worldTake = w and rawget(w, "takeDrop")
+                        if type(worldTake) == "function" and targetDrop.uid then
+                            local room = 200 - CountItem(itemId)
+                            if room > 0 then
+                                pcall(worldTake, targetDrop.uid, math.min(targetDrop.n or 1, room))
+                            end
+                        end
+
+                        task.wait(0.35)
+                        local afterTake = CountItem(itemId)
+                        if afterTake > beforeTake then
+                            AutoMove.collected = AutoMove.collected + (afterTake - beforeTake)
+                        end
+                    end
+                end
+            end
+
+            if not liveFn() then break end
+
+            -- Langkah 9 - 13: Jika kita sudah membawa item di tas, pindah ke World 2 dan Drop!
+            if CountItem(itemId) > 0 then
+                AutoMove.phase = "DROP (WORLD 2)"
+
+                -- Langkah 10: Matikan Auto Collect sebelum drop di World 2
+                AutoMove.pauseCollect = true
+
+                SaveMoveState({
+                    active = true,
+                    stage = "dropping",
+                    w1 = Config.moveWorld1,
+                    w2 = Config.moveWorld2,
+                    dropX = Config.moveDropX,
+                    dropY = Config.moveDropY,
+                    itemId = itemId,
+                })
+
+                -- Langkah 9: Move ke World 2
+                if CurrentWorldName():upper() ~= w2Name or w2Door then
+                    AutoMove.traveling = true
+                    AutoMove.status = "Pindah ke World 2: " .. w2Name .. (w2Door and (":" .. w2Door) or "") .. "..."
+                    local okW2, errW2 = WarpToTarget(w2Name, w2Door)
+                    AutoMove.traveling = false
+                    if not okW2 then
+                        AutoMove.status = "Gagal masuk World 2 (" .. tostring(errW2) .. "), coba lagi..."
+                        task.wait(4)
+                        continue
+                    end
+                end
+
+                if not liveFn() then break end
+
+                -- Tuju Pos Drop di World 2 yang telah ditentukan user
+                local dropX, dropY = tonumber(Config.moveDropX) or -1, tonumber(Config.moveDropY) or -1
+                if dropX >= 0 and dropY >= 0 then
+                    AutoMove.status = string.format("Menuju Pos Drop (%d,%d) di %s...", dropX, dropY, w2Name)
+                    local reached = false
+                    for try = 1, 3 do
+                        if not liveFn() then break end
+                        if Nav.To(dropX, dropY, function() return not liveFn() end, 0.35, false) then
+                            reached = true
+                            break
+                        end
+                        task.wait(0.3)
+                    end
+                    if not reached then
+                        AutoMove.status = "Gagal jalan ke Pos Drop di World 2, coba ulang..."
+                        task.wait(2)
+                        continue
+                    end
+                else
+                    local cx, cy = GetTile()
+                    dropX, dropY = cx or 50, cy or 30
+                end
+
+                -- Pastikan menghadap kanan agar arah drop konsisten
+                local s = PlayerPhysicsState()
+                if s and (s.facing or 1) < 0 then
+                    AutoInput.active = true
+                    AutoInput.right = true
+                    task.wait(0.06)
+                    ReleaseInput()
+                    AutoInput.active = false
+                end
+
+                -- Langkah 11, 12, 13: Drop(itemId), cek inventory, kalau masih ada geser kanan 1 langkah & ulangi
+                local okDrop, dropErr = DropWithStepRight(itemId, dropX, dropY, liveFn)
+                if not okDrop and dropErr then
+                    AutoMove.status = "Peringatan Drop: " .. tostring(dropErr)
+                    task.wait(2)
+                end
+
+                -- Langkah 14: Kembali ke World 1 untuk mengecek/mengambil item berikutnya
+                SaveMoveState({
+                    active = true,
+                    stage = "taking",
+                    w1 = Config.moveWorld1,
+                    w2 = Config.moveWorld2,
+                    dropX = Config.moveDropX,
+                    dropY = Config.moveDropY,
+                    itemId = itemId,
+                })
+            end
+
+            task.wait(0.3)
+        end
+
+        AutoMove.pauseCollect = false
+    end
+
+    function AutoMove.Stop()
+        ClearMoveState()
+        if not AutoMove.on then return false end
+        AutoMove.token = AutoMove.token + 1
+        AutoMove.on = false
+        AutoMove.traveling = false
+        AutoMove.pauseCollect = false
+        ReleaseInput()
+        AutoInput.active = false
+        AutoMove.phase = "-"
+        AutoMove.status = "Mati"
+        if RefreshHub then RefreshHub() end
+        return true
+    end
+
+    function AutoMove.Start()
+        if AutoMove.on then return true end
+        local w1Name = AutoMove.ParseWorld(Config.moveWorld1)
+        local w2Name = AutoMove.ParseWorld(Config.moveWorld2)
+        local itemId = tonumber(Config.moveItemId) or 0
+
+        if w1Name == "" or w2Name == "" then
+            Notify("Auto Move: Isi nama World 1 dan World 2 terlebih dahulu!")
+            return false
+        end
+        if Config.moveDropX < 0 or Config.moveDropY < 0 then
+            Notify("Auto Move: SetPos Drop di World 2 terlebih dahulu!")
+            return false
+        end
+        if itemId <= 0 or not ItemDB[itemId] then
+            Notify("Auto Move: ID Item tidak valid!")
+            return false
+        end
+
+        if Farm.on then StopFarm() end
+        if Clear.on then Clear.Stop() end
+        if Farmer.on then Farmer.Stop() end
+        if DF.on then DF.Stop() end
+        if SpliceBot.on then SpliceBot.Stop() end
+        if Pabrik.on then Pabrik.Stop() end
+
+        AutoMove.token = AutoMove.token + 1
+        local token = AutoMove.token
+        AutoMove.on = true
+        AutoMove.phase = "MULAI"
+        AutoMove.status = "Inisialisasi Auto Move..."
+
+        if RefreshHub then RefreshHub() end
+
+        task.spawn(function()
+            local ok, err = pcall(AutoMoveLoop, token)
+            if not ok then warn("[ANCHHub] AutoMove error: " .. tostring(err)) end
+            AutoMove.pauseCollect = false
+            ReleaseInput()
+            AutoInput.active = false
+            if AutoMove.token == token then
+                AutoMove.on = false
+                AutoMove.traveling = false
+                if AutoMove.phase ~= "SELESAI" then AutoMove.status = "Mati" end
+                if RefreshHub then RefreshHub() end
+            end
+        end)
+        return true
+    end
+
+    -- Auto-Resume saat script ke-reload sehabis pindah world / teleport
+    function AutoMove.CheckStartup()
+        pcall(function()
+            if not (isfile and readfile and isfile(AUTOMOVE_STATE_FILE)) then return end
+            local raw = readfile(AUTOMOVE_STATE_FILE)
+            local st = HttpService:JSONDecode(raw)
+            if type(st) ~= "table" or not st.active then return end
+            if os.time() - (tonumber(st.updatedAt) or 0) > 1800 then
+                ClearMoveState()
+                return
+            end
+
+            local t0 = os.clock()
+            while alive() and (os.clock() - t0) < 30 do
+                if CurrentWorldName() ~= "" and GetTile() then break end
+                task.wait(1)
+            end
+            if not alive() or CurrentWorldName() == "" then return end
+
+            Refs.Scan()
+            task.wait(1.2)
+
+            if st.w1 then Config.moveWorld1 = st.w1 end
+            if st.w2 then Config.moveWorld2 = st.w2 end
+            if st.dropX then Config.moveDropX = st.dropX end
+            if st.dropY then Config.moveDropY = st.dropY end
+            if st.itemId then Config.moveItemId = st.itemId end
+
+            Notify("Melanjutkan progres Auto Move (" .. tostring(st.stage or "aktif") .. ")...", "Auto Move ANCH")
+            AutoMove.Start()
+        end)
+    end
+end)() end
+
+----------------------------------------------------------------------
 -- 7. MANAJEMEN TAS: AUTO RECYCLE & AUTO CONVERT LOCK (WL -> DL -> BGL)
 ----------------------------------------------------------------------
 do (function()
@@ -6845,6 +7317,240 @@ do (function()
         table.clear(hookedUpvalues)
     end
 
+    -- ====================================================================
+    -- FAST DROP & FAST RECYCLE/TRASH (INTERCEPT UPVAL[5] openDialog 0ms)
+    -- ====================================================================
+    local bpInvRef = nil
+    local bpActionsTbl = nil
+    local bpGridCells = nil
+    local dropHandlerFn = nil
+    local recycleHandlerFn = nil
+    local hookedDialogUpvalues = {}
+    local lastClickedBpAction = nil
+    local lastClickedBpClock = 0
+
+    local function CloseBackpackInfoDialog()
+        pcall(function()
+            local invGui = PlayerGui:FindFirstChild("InventoryGui")
+            local infoDlg = invGui and invGui:FindFirstChild("InfoDialog")
+            if infoDlg and infoDlg:IsA("GuiObject") then
+                infoDlg.Visible = false
+            end
+        end)
+    end
+
+    -- Ambil ID item yang sedang dipilih di Backpack (dari Upval[1].selected atau Upval[3] cell.sel.Visible)
+    local function GetSelectedBackpackItemId()
+        local inv = bpInvRef or Refs.Inv
+        if inv then
+            local sel = rawget(inv, "selected")
+            if type(sel) == "number" and sel > 0 then
+                if CountItem(sel) > 0 then
+                    return sel
+                end
+                local slots = rawget(inv, "slots")
+                if type(slots) == "table" and type(slots[sel]) == "table" and tonumber(slots[sel].id) then
+                    return tonumber(slots[sel].id)
+                end
+                if ItemDB[sel] then
+                    return sel
+                end
+            end
+        end
+        if type(bpGridCells) == "table" then
+            for _, cell in pairs(bpGridCells) do
+                if type(cell) == "table" and typeof(cell.sel) == "Instance" and cell.sel.Visible and tonumber(cell.id) then
+                    return tonumber(cell.id)
+                end
+            end
+        end
+        return nil
+    end
+
+    local function ExecuteFastDropNow()
+        CloseBackpackInfoDialog()
+        local itemId = GetSelectedBackpackItemId()
+        if not itemId then
+            Notify("Pilih item di Backpack terlebih dahulu!", "Fast Drop", 2)
+            return
+        end
+        local have = CountItem(itemId)
+        if have <= 0 then
+            Notify("Item sudah habis di tas!", "Fast Drop", 2)
+            return
+        end
+        local cfgCount = math.floor(tonumber(Config.fastDropCount) or 0)
+        local dropAmt = (cfgCount <= 0) and have or math.min(cfgCount, have)
+
+        task.spawn(function()
+            local hud = Refs.Hud or FindInventory()
+            local onDrop = hud and rawget(hud, "onDrop")
+            if type(onDrop) == "function" then
+                pcall(onDrop, itemId, dropAmt)
+            elseif DropEvent then
+                pcall(function() DropEvent:FireServer(itemId, dropAmt) end)
+            elseif NetOk and type(Net) == "table" and Net.drop then
+                pcall(Net.drop.send, { id = itemId, n = dropAmt })
+            end
+            CloseBackpackInfoDialog()
+            Notify(string.format("Fast Drop: %s x%d", ItemName(itemId), dropAmt), "Fast Drop", 2)
+        end)
+    end
+
+    local function ExecuteFastRecycleNow()
+        CloseBackpackInfoDialog()
+        local itemId = GetSelectedBackpackItemId()
+        if not itemId then
+            Notify("Pilih item di Backpack terlebih dahulu!", "Fast Recycle", 2)
+            return
+        end
+        local have = CountItem(itemId)
+        if have <= 0 then
+            Notify("Item sudah habis di tas!", "Fast Recycle", 2)
+            return
+        end
+        local cfgCount = math.floor(tonumber(Config.fastRecycleCount) or 0)
+        local recAmt = (cfgCount <= 0) and have or math.min(cfgCount, have)
+
+        task.spawn(function()
+            if Bag and type(Bag.Recycle) == "function" then
+                local ok = Bag.Recycle(itemId, recAmt)
+                CloseBackpackInfoDialog()
+                if ok then
+                    local invTbl = FindInventory()
+                    if invTbl and type(rawget(invTbl, "refresh")) == "function" then
+                        pcall(invTbl.refresh)
+                    end
+                    Notify(string.format("Fast Recycle: %s x%d", ItemName(itemId), recAmt), "Fast Recycle", 2)
+                else
+                    Notify(ItemName(itemId) .. " tidak bisa di-recycle!", "Fast Recycle", 2)
+                end
+            end
+        end)
+    end
+
+    local function HookFastBackpackActions()
+        local invGui = PlayerGui:FindFirstChild("InventoryGui")
+        local holder = invGui and invGui:FindFirstChild("Holder")
+        local bp = holder and holder:FindFirstChild("Backpack")
+        local actions = bp and bp:FindFirstChild("Actions")
+        if not actions or not getconnections or not getupvalueFn or not setupvalueFn then return end
+
+        -- Cari Upval[1] (inv), Upval[2] (buttonsTbl), Upval[3] (gridCells), dan Upval[5] (openDialog) dari tombol di Actions
+        for _, child in ipairs(actions:GetChildren()) do
+            if child:IsA("GuiButton") then
+                for _, sig in ipairs({ child.Activated, child.MouseButton1Click }) do
+                    local okC, conns = pcall(getconnections, sig)
+                    if okC and type(conns) == "table" then
+                        for _, c in ipairs(conns) do
+                            local fn = c.Function
+                            if type(fn) == "function" and not (isexecutorclosure and pcall(isexecutorclosure, fn) and isexecutorclosure(fn)) then
+                                local ok1, u1 = pcall(getupvalueFn, fn, 1)
+                                local ok2, u2 = pcall(getupvalueFn, fn, 2)
+                                local ok3, u3 = pcall(getupvalueFn, fn, 3)
+                                local ok5, u5 = pcall(getupvalueFn, fn, 5)
+                                if ok2 and type(u2) == "table" and rawget(u2, "drop") and rawget(u2, "recycle") and ok5 and type(u5) == "function" then
+                                    bpInvRef = ok1 and type(u1) == "table" and u1 or bpInvRef
+                                    bpActionsTbl = u2
+                                    bpGridCells = ok3 and type(u3) == "table" and u3 or bpGridCells
+
+                                    if child == rawget(u2, "drop") then
+                                        dropHandlerFn = fn
+                                    elseif child == rawget(u2, "recycle") then
+                                        recycleHandlerFn = fn
+                                    end
+
+                                    -- Simpan fungsi asli openDialog walaupun sudah pernah ter-hook sesi sebelumnya
+                                    if not G.__ANCH_TrueOrigOpenDialog then
+                                        if isexecutorclosure and pcall(isexecutorclosure, u5) and isexecutorclosure(u5) then
+                                            for _, uu in pairs(GetUpvalues(u5)) do
+                                                if type(uu) == "function" and not (pcall(isexecutorclosure, uu) and isexecutorclosure(uu)) then
+                                                    G.__ANCH_TrueOrigOpenDialog = uu
+                                                    break
+                                                end
+                                            end
+                                        else
+                                            G.__ANCH_TrueOrigOpenDialog = u5
+                                        end
+                                    end
+
+                                    local origOpenDlg = G.__ANCH_TrueOrigOpenDialog
+                                    if origOpenDlg and u5 ~= Session.OpenDialogWrapper then
+                                        Session.OpenDialogWrapper = Session.OpenDialogWrapper or function(...)
+                                            if not alive() then
+                                                return origOpenDlg(...)
+                                            end
+                                            local caller = (debug and debug.info and debug.info(2, "f")) or nil
+                                            local isDropCall = (caller and caller == dropHandlerFn)
+                                                or (lastClickedBpAction == "drop" and (os.clock() - lastClickedBpClock) < 0.25)
+                                            local isRecycleCall = (caller and caller == recycleHandlerFn)
+                                                or (lastClickedBpAction == "recycle" and (os.clock() - lastClickedBpClock) < 0.25)
+
+                                            if isDropCall and Config.fastDrop then
+                                                lastClickedBpAction = nil
+                                                ExecuteFastDropNow()
+                                                return
+                                            elseif isRecycleCall and Config.fastRecycle then
+                                                lastClickedBpAction = nil
+                                                ExecuteFastRecycleNow()
+                                                return
+                                            end
+                                            return origOpenDlg(...)
+                                        end
+
+                                        pcall(setupvalueFn, fn, 5, Session.OpenDialogWrapper)
+                                        table.insert(hookedDialogUpvalues, { fn = fn, idx = 5, orig = origOpenDlg })
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        -- Pasang penanda tombol Drop & Recycle saat ditekan
+        if bpActionsTbl then
+            local dropBtn = rawget(bpActionsTbl, "drop")
+            local recBtn = rawget(bpActionsTbl, "recycle")
+            if typeof(dropBtn) == "Instance" and dropBtn:IsA("GuiButton") and not dropBtn:GetAttribute("ANCHHooked") then
+                dropBtn:SetAttribute("ANCHHooked", true)
+                trackConn(dropBtn.InputBegan:Connect(function(inp)
+                    if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                        lastClickedBpAction = "drop"
+                        lastClickedBpClock = os.clock()
+                    end
+                end))
+            end
+            if typeof(recBtn) == "Instance" and recBtn:IsA("GuiButton") and not recBtn:GetAttribute("ANCHHooked") then
+                recBtn:SetAttribute("ANCHHooked", true)
+                trackConn(recBtn.InputBegan:Connect(function(inp)
+                    if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                        lastClickedBpAction = "recycle"
+                        lastClickedBpClock = os.clock()
+                    end
+                end))
+            end
+        end
+    end
+
+    HookFastBackpackActions()
+    task.spawn(function()
+        while alive() do
+            pcall(HookFastBackpackActions)
+            task.wait(2)
+        end
+    end)
+
+    function Session.RestoreFastBackpack()
+        if setupvalueFn then
+            for _, h in ipairs(hookedDialogUpvalues) do
+                pcall(setupvalueFn, h.fn, h.idx, h.orig)
+            end
+        end
+        table.clear(hookedDialogUpvalues)
+    end
+
     function StartAutoRejoin()
         arjOn = true
         Config.reconnectOn = true
@@ -7141,6 +7847,7 @@ local Features = {
     autochat = { label = "Auto Chat", noSession = true, get = function() return Spam.on end, set = function(on) Spam.on = on; if on then Spam.nextAt = 0 end; return true end },
     autoclear = { label = "Auto Clear World", noSession = true, get = function() return Clear.on end, set = function(on) return on and Clear.Start() or Clear.Stop() end },
     autoharvest = { label = "Farmer (Harvest/Plant)", noSession = true, get = function() return Farmer.on end, set = function(on) return on and Farmer.Start() or Farmer.Stop() end },
+    automove = { label = "Auto Move Item", noSession = true, get = function() return AutoMove.on end, set = function(on) return on and AutoMove.Start() or AutoMove.Stop() end },
     autodf = { label = "Auto Dirt Farm", noSession = true, get = function() return DF.on end, set = function(on) return on and DF.Start() or DF.Stop() end },
     autosplice = { label = "Auto Splice", noSession = true, get = function() return SpliceBot.on end, set = function(on) return on and SpliceBot.Start() or SpliceBot.Stop() end },
     pabrik = { label = "Pabrik Seed", noSession = true, get = function() return Pabrik.on end, set = function(on) return on and Pabrik.Start() or Pabrik.Stop() end },
@@ -7660,57 +8367,6 @@ SafeUI("Tab:Character", function()
     })
 
     Tab:Space()
-    Tab:Section({ Title = "Fast Wrench Action (Bypass Dialog Wrench)" })
-
-    local fpToggle, fkToggle, fbToggle
-
-    fpToggle = Tab:Toggle({
-        Title = "Fast Pull (Wrench = Langsung Pull)",
-        Desc = "Abaikan dialog wrench & langsung kirim paket Pull saat wrench player.",
-        Value = Config.fastPull,
-        Callback = function(on)
-            Config.fastPull = on
-            if on then
-                Config.fastKick, Config.fastBan = false, false
-                if fkToggle and fkToggle.Set then pcall(function() fkToggle:Set(false) end) end
-                if fbToggle and fbToggle.Set then pcall(function() fbToggle:Set(false) end) end
-                Notify("Fast Pull AKTIF! Wrench player untuk langsung Pull.")
-            end
-            SaveConfig()
-        end,
-    })
-
-    fkToggle = Tab:Toggle({
-        Title = "Fast Kick (Wrench = Langsung Kick)",
-        Desc = "Abaikan dialog wrench & langsung kirim paket Kick saat wrench player.",
-        Value = Config.fastKick,
-        Callback = function(on)
-            Config.fastKick = on
-            if on then
-                Config.fastPull, Config.fastBan = false, false
-                if fpToggle and fpToggle.Set then pcall(function() fpToggle:Set(false) end) end
-                if fbToggle and fbToggle.Set then pcall(function() fbToggle:Set(false) end) end
-                Notify("Fast Kick AKTIF! Wrench player untuk langsung Kick.")
-            end
-            SaveConfig()
-        end,
-    })
-
-    fbToggle = Tab:Toggle({
-        Title = "Fast Ban (Wrench = Langsung Ban)",
-        Desc = "Abaikan dialog wrench & langsung kirim paket Ban saat wrench player.",
-        Value = Config.fastBan,
-        Callback = function(on)
-            Config.fastBan = on
-            if on then
-                Config.fastPull, Config.fastKick = false, false
-                if fpToggle and fpToggle.Set then pcall(function() fpToggle:Set(false) end) end
-                if fkToggle and fkToggle.Set then pcall(function() fkToggle:Set(false) end) end
-                Notify("Fast Ban AKTIF! Wrench player untuk langsung Ban.")
-            end
-            SaveConfig()
-        end,
-    })
 
     task.spawn(function()
         while alive() and task.wait(0.5) do
@@ -8397,6 +9053,83 @@ SafeUI("Tab:Pabrik", function()
     })
 end)
 
+-- 2G. Tab: Auto Move Item (World 1 -> World 2) -----------------------
+SafeUI("Tab:AutoMove", function()
+    local Tab = AutoSection:Tab({
+        Title = "Auto Move Item",
+        Icon = "solar:square-transfer-horizontal-bold",
+        IconColor = Green,
+        IconShape = "Square",
+        Border = true,
+    })
+    hub.tabs.automove = Tab
+
+    local movePara = Tab:Paragraph({ Title = "Status Auto Move Item", Desc = "Memuat..." })
+
+    task.spawn(function()
+        while alive() and task.wait(0.5) do
+            pcall(function()
+                local id = tonumber(Config.moveItemId) or 0
+                SetElementText(
+                    movePara,
+                    string.format("Status: %s (Fase: %s)", AutoMove.status, AutoMove.phase),
+                    string.format(
+                        "Item: %s [ID %d] (Di Tas: %d)\nWorld 1 (Ambil): %s  ->  World 2 (Drop): %s\nPos Drop World 2: %s\nTotal Diambil: %d | Total Di-drop: %d",
+                        ItemName(id), id, CountItem(id),
+                        Config.moveWorld1 ~= "" and Config.moveWorld1 or "(Belum diisi)",
+                        Config.moveWorld2 ~= "" and Config.moveWorld2 or "(Belum diisi)",
+                        (Config.moveDropX >= 0 and Config.moveDropY >= 0) and string.format("(%d, %d)", Config.moveDropX, Config.moveDropY) or "(Belum diset)",
+                        AutoMove.collected, AutoMove.dropped
+                    )
+                )
+            end)
+        end
+    end)
+
+    AddFeatureToggle(Tab, "Jalankan Auto Move (World 1 -> World 2)", "Ambil item drop di World 1 -> Pindah & Drop di World 2 (otomatis geser kanan jika penuh) -> Ulangi sampai habis.", "automove")
+
+    Tab:Input({
+        Title = "World 1 - Tempat Ambil Item (WORLD atau WORLD:ID_DOOR)",
+        Value = Config.moveWorld1,
+        Placeholder = "Contoh: FARM1 atau FARM1:PINTU1",
+        Callback = function(t) Config.moveWorld1 = Trim(t or ""); SaveConfig() end,
+    })
+
+    Tab:Input({
+        Title = "World 2 - Tempat Drop Item (WORLD atau WORLD:ID_DOOR)",
+        Value = Config.moveWorld2,
+        Placeholder = "Contoh: STORAGE1 atau STORAGE1:PINTU2",
+        Callback = function(t) Config.moveWorld2 = Trim(t or ""); SaveConfig() end,
+    })
+
+    Tab:Button({
+        Title = "SetPos Drop di World 2 (Simpan Posisi Sekarang)",
+        Color = Color3.fromHex("#10C550"),
+        Justify = "Center",
+        Callback = function()
+            local tx, ty = GetTile()
+            if not tx then Notify("Posisi belum terbaca!"); return end
+            Config.moveDropX, Config.moveDropY = tx, ty
+            SaveConfig()
+            Notify(string.format("Pos Drop World 2 disimpan di (%d, %d)!", tx, ty))
+        end,
+    })
+
+    Tab:Input({
+        Title = "ID Item yang Akan Di-Move",
+        Value = tostring(Config.moveItemId),
+        Placeholder = "Contoh: 2 (Dirt) atau 3 (Dirt Seed)",
+        Callback = function(t)
+            local v = tonumber(t)
+            if v and v > 0 then
+                Config.moveItemId = math.floor(v)
+                SaveConfig()
+                Notify("Item Auto Move diset ke: " .. ItemName(Config.moveItemId) .. " [" .. Config.moveItemId .. "]")
+            end
+        end,
+    })
+end)
+
 SafeUI("Tab:FastWrench", function()
     local Tab = HelperSection:Tab({
         Title = "Fast Wrench",
@@ -8456,6 +9189,59 @@ SafeUI("Tab:FastWrench", function()
                 Notify("Fast Ban AKTIF! Wrench player untuk langsung Ban.")
             end
             SaveConfig()
+        end,
+    })
+
+    Tab:Space()
+    Tab:Section({ Title = "Fast Drop & Fast Recycle / Trash (Bypass Dialog)" })
+
+    Tab:Toggle({
+        Title = "Fast Drop (Klik Drop = Langsung Drop Tanpa Dialog)",
+        Desc = "Otomatis mengabaikan dialog drop saat tombol Drop di Backpack ditekan.",
+        Value = Config.fastDrop,
+        Callback = function(on)
+            Config.fastDrop = on
+            SaveConfig()
+            Notify("Fast Drop " .. (on and "AKTIF!" or "DIMATIKAN."))
+        end,
+    })
+
+    Tab:Input({
+        Title = "Jumlah Fast Drop (0 = Drop Semua / All)",
+        Desc = "Isi 0 untuk langsung drop seluruh jumlah item tersebut di tas.",
+        Value = tostring(Config.fastDropCount or 0),
+        Placeholder = "0 = All",
+        Callback = function(t)
+            local v = tonumber(t)
+            Config.fastDropCount = (v and v >= 0) and math.floor(v) or 0
+            SaveConfig()
+            Notify("Jumlah Fast Drop diset ke: " .. (Config.fastDropCount == 0 and "ALL (Semua)" or tostring(Config.fastDropCount)))
+        end,
+    })
+
+    Tab:Space()
+
+    Tab:Toggle({
+        Title = "Fast Recycle / Trash (Klik Recycle = Langsung Trash Tanpa Dialog)",
+        Desc = "Otomatis mengabaikan dialog konfirmasi saat tombol Recycle di Backpack ditekan.",
+        Value = Config.fastRecycle,
+        Callback = function(on)
+            Config.fastRecycle = on
+            SaveConfig()
+            Notify("Fast Recycle " .. (on and "AKTIF!" or "DIMATIKAN."))
+        end,
+    })
+
+    Tab:Input({
+        Title = "Jumlah Fast Recycle (0 = Recycle Semua / All)",
+        Desc = "Isi 0 untuk langsung me-recycle seluruh jumlah item tersebut di tas.",
+        Value = tostring(Config.fastRecycleCount or 0),
+        Placeholder = "0 = All",
+        Callback = function(t)
+            local v = tonumber(t)
+            Config.fastRecycleCount = (v and v >= 0) and math.floor(v) or 0
+            SaveConfig()
+            Notify("Jumlah Fast Recycle diset ke: " .. (Config.fastRecycleCount == 0 and "ALL (Semua)" or tostring(Config.fastRecycleCount)))
         end,
     })
 end)
@@ -9307,6 +10093,8 @@ Session.Cleanup = function()
     StopNoclip()
     StopUjump()
     StopGod()
+    if AutoMove and AutoMove.Stop then AutoMove.Stop() end
+    if Session.RestoreFastBackpack then pcall(Session.RestoreFastBackpack) end
     if Session.RestoreFastWrench then
         pcall(Session.RestoreFastWrench)
     end
@@ -9341,5 +10129,6 @@ task.spawn(function()
     end
     task.spawn(Reconnect.CheckStartup)
     task.spawn(Pabrik.CheckStartup)
+    task.spawn(AutoMove.CheckStartup)
     Notify("ANCH HUB v1.1 Beta Loaded! Semua tab & fitur siap digunakan.")
 end)
