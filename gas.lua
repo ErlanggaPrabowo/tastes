@@ -1543,8 +1543,23 @@ do (function()
     end
 
     local function hazardAt(x, y)
-        local it = fgItemAt(x, y)
-        return it ~= nil and (it.deadly or it.hurts or it.laser) and true or false
+        local id = fgIdAt(x, y)
+        if id == 0 then return false end
+        if id == 4 or id == 410 then return true end -- ID Lava standar
+        local it = ItemDB[id]
+        if not it then return false end
+        if it.deadly or it.hurts or it.laser or it.bounce or it.bouncer then return true end
+        local nm = tostring(rawget(it, "name") or it.name or ""):lower()
+        if nm:find("lava", 1, true)
+            or nm:find("spike", 1, true)
+            or nm:find("magma", 1, true)
+            or nm:find("acid", 1, true)
+            or nm:find("fire", 1, true)
+            or nm:find("pinball", 1, true)
+            or nm:find("trampoline", 1, true) then
+            return true
+        end
+        return false
     end
 
     local function platformAt(x, y)
@@ -1559,6 +1574,8 @@ do (function()
     local function realSupport(x, y)
         return not hazardAt(x, y + 1) and (solidAt(x, y + 1) or platformAt(x, y + 1))
     end
+
+    Nav.HazardAt = hazardAt
 
     local function stateReaches(s, tx, ty, R)
         return abs(tx + 0.5 - s.x) <= R and abs(ty + 0.5 - (s.y - 0.475)) <= R
@@ -3910,10 +3927,10 @@ do (function()
 end)() end
 
 ----------------------------------------------------------------------
--- 2. AUTO CLEAR WORLD (LEGIT WALKING SAAT PINDAH + MODFLY SAAT BREAK)
+-- 2. AUTO CLEAR WORLD (FULL LEGIT WALKING + SIDE BREAK + ANTI-LAVA)
 ----------------------------------------------------------------------
 do (function()
-    local BREAK_TIMEOUT = 3.5
+    local STUCK_HIT_TIMEOUT = 5.5 -- Batas waktu jika 1 layer tidak hancur-hancur agar tidak loop stuck
 
     local function ClearLayerAt(w, x, y)
         local fg = TileValue(w, "fg", x, y)
@@ -3929,9 +3946,17 @@ do (function()
         return nil
     end
 
-    local function CollectTargets(w, skippedSet)
-        local list = {}
-        local dir = 1
+    -- Cek apakah tile (x, y) aman untuk dipijak (kosong, punya lantai di y+1, dan lantai y+1 BUKAN Lava/Hazard)
+    local function IsSafeStandTile(w, x, y)
+        if not InBounds(w, x, y) then return false end
+        if not Nav.OpenAt(x, y) then return false end
+        if y + 1 >= w.h then return false end
+        if Nav.HazardAt and Nav.HazardAt(x, y + 1) then return false end
+        return Nav.RealSupport(x, y)
+    end
+
+    -- Cari baris paling atas yang masih memiliki blok untuk dihancurkan
+    local function FindTopWorkRow(w, skippedSet)
         for y = 0, w.h - 1 do
             local rowTargets = {}
             for x = 0, w.w - 1 do
@@ -3944,185 +3969,256 @@ do (function()
                 end
             end
             if #rowTargets > 0 then
-                if Config.clearSweep == "Zig-zag" and dir == -1 then
-                    table.sort(rowTargets, function(a, b) return a.x > b.x end)
-                else
-                    table.sort(rowTargets, function(a, b) return a.x < b.x end)
+                return y, rowTargets
+            end
+        end
+        return nil, {}
+    end
+
+    -- Cari posisi berdiri terbaik: Prioritaskan di SAMPING blok (sejajar Y), bukan di atasnya, dan bebas Lava!
+    local function FindSideStandPositions(w, tx, ty, prefSide)
+        local s1 = (prefSide == 1) and 1 or -1
+        local s2 = -s1
+        local candidates = {
+            -- 1. Prioritas Utama: Tepat di samping kiri/kanan blok (sejajar y)
+            { x = tx + s1,     y = ty },
+            { x = tx + s2,     y = ty },
+            { x = tx + s1 * 2, y = ty },
+            { x = tx + s2 * 2, y = ty },
+            -- 2. Serong samping atas (jika di samping sejajar belum ada pijakan)
+            { x = tx + s1,     y = ty - 1 },
+            { x = tx + s2,     y = ty - 1 },
+            -- 3. Fallback: Di atas blok (dipakai saat membuka blok paling ujung agar ada ruang turun)
+            { x = tx,          y = ty - 1 },
+        }
+        local valid = {}
+        for _, c in ipairs(candidates) do
+            if IsSafeStandTile(w, c.x, c.y) then
+                table.insert(valid, c)
+            end
+        end
+        return valid
+    end
+
+    -- Pukul target (tx, ty) sampai benar-benar hancur total (FG + BG), kecuali lewat batas STUCK_HIT_TIMEOUT
+    local function BreakTargetUntilGone(w, tx, ty, cancelFn)
+        local lastLayer, lastId = ClearLayerAt(w, tx, ty)
+        if not lastLayer then return true end
+
+        local layerStartClock = os.clock()
+        local reachR = PunchReach() - 0.1
+
+        while not cancelFn() do
+            local curLayer, curId = ClearLayerAt(w, tx, ty)
+            if not curLayer then
+                -- Verifikasi singkat 0.06 detik untuk memastikan blok tidak rollback dari server
+                task.wait(0.06)
+                curLayer, curId = ClearLayerAt(w, tx, ty)
+                if not curLayer then
+                    return true
                 end
-                for _, t in ipairs(rowTargets) do
-                    table.insert(list, t)
-                end
-                if Config.clearSweep == "Zig-zag" then
-                    dir = -dir
+            end
+
+            -- Jika layer/id berubah (misal FG pecah lanjut ke BG), reset timer timeout!
+            if curLayer ~= lastLayer or curId ~= lastId then
+                lastLayer, lastId = curLayer, curId
+                layerStartClock = os.clock()
+            end
+
+            -- Jika sudah dipukul terus selama STUCK_HIT_TIMEOUT tapi tidak hancur, lewati agar tidak loop stuck!
+            if (os.clock() - layerStartClock) >= STUCK_HIT_TIMEOUT then
+                return false, "timeout"
+            end
+
+            -- Pastikan karakter masih dalam jangkauan pukul & tidak terpental lava
+            local s = PlayerPhysicsState()
+            if not s or not Nav.StateReaches(s, tx, ty, reachR + 0.35) then
+                return false, "out_of_range"
+            end
+
+            Clear.status = string.format("Breaking %s (%d,%d)", ItemName(curId), tx, ty)
+            local r = TryBreakOnce(tx, ty, Config.clearIncludeBg)
+            if r == nil then
+                return false, "unbreakable"
+            elseif r == "broke" then
+                Clear.stats.broken += 1
+                layerStartClock = os.clock()
+            end
+            task.wait(math.max(0.04, Config.clearBreakDelay))
+        end
+        return false, "cancelled"
+    end
+
+    -- Bergerak murni dengan Legit Walking (tanpa ModFly) menuju samping/dekat target
+    local function WalkToBreakTarget(w, tx, ty, prefSide, cancelFn)
+        SetAutoFly("autoclear", false)
+        if w and not noclipOn then w.ghost = false end
+
+        local reachR = PunchReach() - 0.15
+        local sNow = PlayerPhysicsState()
+        local px, py = GetTile()
+
+        -- Jika sudah berada di samping blok (atau dalam jangkauan pukul pada pijakan yang aman & bebas lava)
+        if sNow and px and py and Nav.StateReaches(sNow, tx, ty, reachR) and IsSafeStandTile(w, px, py) and not (px == tx and py == ty - 1 and Nav.OpenAt(tx + prefSide, ty) and IsSafeStandTile(w, tx + prefSide, ty)) then
+            return true
+        end
+
+        -- Tunggu karakter menapak tanah jika sedang melompat/jatuh
+        local tGround = os.clock()
+        while not cancelFn() and (os.clock() - tGround) < 0.5 do
+            local st = PlayerPhysicsState()
+            if st and st.grounded then break end
+            task.wait(0.03)
+        end
+
+        local standList = FindSideStandPositions(w, tx, ty, prefSide)
+        for _, stPos in ipairs(standList) do
+            if cancelFn() then return false end
+            if Nav.LegitTo(stPos.x, stPos.y, cancelFn, 0.35, true) then
+                local sCheck = PlayerPhysicsState()
+                if sCheck and Nav.StateReaches(sCheck, tx, ty, reachR + 0.3) then
+                    return true
                 end
             end
         end
-        return list
-    end
 
-    -- Cari tile pijakan terbaik (di atas blok target atau di sebelahnya) untuk dituju dengan Legit Walking
-    local function FindWalkGoalForTarget(w, tx, ty)
-        local standAboveY = ty - 1
-        if standAboveY >= 0 and Nav.OpenAt(tx, standAboveY) then
-            return tx, standAboveY, 0.45
+        -- Fallback: Cari jalur A* ke tile mana saja yang menjangkau (tx, ty)
+        if Nav.LegitTo(tx, ty, cancelFn, math.max(1.8, reachR), true) then
+            local sCheck = PlayerPhysicsState()
+            if sCheck and Nav.StateReaches(sCheck, tx, ty, reachR + 0.3) then
+                return true
+            end
         end
-        local R = math.max(1.8, PunchReach() - 0.35)
-        return tx, ty, R
+        return false
     end
 
     local function ClearLoop(token, home)
+        -- Pastikan ModFly MATI sepenuhnya agar murni Legit Walking & tidak teleport-teleport
         SetAutoFly("autoclear", false)
         ReleaseInput()
         AutoInput.active = false
 
         local skippedSet = {}
+        local retryCount = {}
         local pass = 0
+        local rowDir = 1
 
         while Clear.on and Clear.token == token and alive() do
-            pass += 1
             local w = FindWorld()
             if not w or CurrentWorldName() ~= home.world then
-                Clear.status = "World berubah, berhenti"
+                Clear.status = "World changed, stopped"
+                break
+            end
+            if not noclipOn then w.ghost = false end
+
+            local cancelFn = function()
+                return not Clear.on or Clear.token ~= token or not alive()
+            end
+
+            local topY, rowTargets = FindTopWorkRow(w, skippedSet)
+            if not topY then
+                -- Jika masih ada blok yang tadi sempat ke-skip karena belum terjangkau, coba ulang maksimal 2 pass
+                if next(skippedSet) ~= nil and pass < 3 then
+                    pass += 1
+                    table.clear(skippedSet)
+                    table.clear(Nav.BadEdge)
+                    task.wait(0.5)
+                    continue
+                end
                 break
             end
 
-            Clear.status = "Scan objek di world..."
-            Clear.stats.pass = pass
-            local targets = CollectTargets(w, skippedSet)
-            Clear.stats.scanned = #targets
-            Clear.stats.left = #targets
+            Clear.stats.row = topY
+            Clear.stats.scanned = #rowTargets
+            Clear.stats.left = #rowTargets
 
-            if #targets == 0 then
-                break
+            -- Tentukan arah sapuan baris ini (pilih ujung terdekat jika Zig-zag)
+            local px = GetTile()
+            if Config.clearSweep == "Zig-zag" and px then
+                local minX, maxX = rowTargets[1].x, rowTargets[#rowTargets].x
+                for _, t in ipairs(rowTargets) do
+                    if t.x < minX then minX = t.x end
+                    if t.x > maxX then maxX = t.x end
+                end
+                rowDir = (math.abs(px - maxX) < math.abs(px - minX)) and -1 or 1
+            else
+                rowDir = 1
             end
 
-            if pass == 1 then
-                local first = targets[1]
-                Notify(string.format("Auto Clear: %d blok ditemukan. Mulai dari (%d, %d).", #targets, first.x, first.y))
+            if rowDir == -1 then
+                table.sort(rowTargets, function(a, b) return a.x > b.x end)
+            else
+                table.sort(rowTargets, function(a, b) return a.x < b.x end)
             end
 
-            local brokeAny = false
-            local reachR = PunchReach() - 0.15
+            -- LANGKAH 1: Buka ruang di ujung baris terlebih dahulu agar karakter bisa turun ke samping blok!
+            local firstEdge = rowTargets[1]
+            if firstEdge and ClearLayerAt(w, firstEdge.x, firstEdge.y) then
+                -- Jika di bawah blok ujung ada Lava, kita juga akan menghancurkan Lava tersebut sebelum turun
+                Clear.status = string.format("Opening edge pocket at (%d,%d)...", firstEdge.x, firstEdge.y)
+                if WalkToBreakTarget(w, firstEdge.x, firstEdge.y, -rowDir, cancelFn) then
+                    BreakTargetUntilGone(w, firstEdge.x, firstEdge.y, cancelFn)
+                    -- Cek apakah lantai di bawah ruang turun (firstEdge.x, firstEdge.y + 1) adalah Lava!
+                    if InBounds(w, firstEdge.x, firstEdge.y + 1) and Nav.HazardAt(firstEdge.x, firstEdge.y + 1) and ClearLayerAt(w, firstEdge.x, firstEdge.y + 1) then
+                        Clear.status = string.format("Clearing Lava below edge (%d,%d)...", firstEdge.x, firstEdge.y + 1)
+                        if WalkToBreakTarget(w, firstEdge.x, firstEdge.y + 1, -rowDir, cancelFn) then
+                            BreakTargetUntilGone(w, firstEdge.x, firstEdge.y + 1, cancelFn)
+                        end
+                    end
+                end
+            end
 
-            for idx, target in ipairs(targets) do
-                if not Clear.on or Clear.token ~= token or not alive() then return end
+            -- LANGKAH 2: Sapu seluruh blok di baris topY dari samping (karakter berdiri di sejajar topY)
+            for idx, target in ipairs(rowTargets) do
+                if cancelFn() then return end
                 w = FindWorld()
                 if not w or CurrentWorldName() ~= home.world then return end
 
-                local curLayer, curId = ClearLayerAt(w, target.x, target.y)
-                if curLayer then
-                    Clear.stats.row = target.y
-                    local cancelFn = function()
-                        return not Clear.on or Clear.token ~= token or not alive()
-                    end
-
-                    -- Cek apakah karakter sudah berada dalam jangkauan pukul atau tepat di atas blok
-                    local sNow = PlayerPhysicsState()
-                    local px, py = GetTile()
-                    local alreadyInRange = (px == target.x and py == target.y - 1)
-                        or (sNow and Nav.StateReaches(sNow, target.x, target.y, reachR))
-
-                    local movedOk = true
-                    if not alreadyInRange then
-                        -- 1. MATIKAN MODFLY SAAT BERPINDAH TEMPAT & GUNAKAN LEGIT WALKING!
-                        SetAutoFly("autoclear", false)
-                        if w and not noclipOn then w.ghost = false end
-
-                        -- Tunggu sejenak agar karakter menapak tanah sebelum A* mencari jalur jalan
-                        local tGround = os.clock()
-                        while alive() and not cancelFn() and (os.clock() - tGround) < 0.45 do
-                            local st = PlayerPhysicsState()
-                            if st and st.grounded then break end
-                            task.wait(0.03)
-                        end
-
-                        local gx, gy, gRadius = FindWalkGoalForTarget(w, target.x, target.y)
-                        Clear.status = string.format("Jalan ke (%d,%d) [%d/%d]", target.x, target.y, idx, #targets)
-
-                        -- Jika blok berada lebih tinggi di kolom yang sama/dekat, panjat dengan Dirt
-                        px, py = GetTile()
-                        if py and gy < py and px and math.abs(px - gx) <= 2 then
-                            Nav.ClimbUpWithDirt(gx, gy, cancelFn, true, Config.clearTpDelay, true)
-                        end
-
-                        sNow = PlayerPhysicsState()
-                        px, py = GetTile()
-                        alreadyInRange = (px == target.x and py == target.y - 1)
-                            or (sNow and Nav.StateReaches(sNow, target.x, target.y, reachR))
-
-                        if not alreadyInRange then
-                            movedOk = Nav.LegitTo(gx, gy, cancelFn, gRadius, true)
-                            if not movedOk and gRadius < 1.5 then
-                                movedOk = Nav.LegitTo(target.x, target.y, cancelFn, math.max(1.8, reachR), true)
-                            end
+                if ClearLayerAt(w, target.x, target.y) then
+                    -- Sebelum maju memijak tile sebelumnya, pastikan lantai di bawah target bukan Lava
+                    if InBounds(w, target.x, target.y + 1) and Nav.HazardAt(target.x, target.y + 1) and ClearLayerAt(w, target.x, target.y + 1) then
+                        if WalkToBreakTarget(w, target.x, target.y + 1, -rowDir, cancelFn) then
+                            BreakTargetUntilGone(w, target.x, target.y + 1, cancelFn)
                         end
                     end
 
-                    local sCheck = PlayerPhysicsState()
-                    local cx, cy = GetTile()
-                    local canHitNow = movedOk and (
-                        (cx == target.x and cy == target.y - 1)
-                        or (sCheck and Nav.StateReaches(sCheck, target.x, target.y, reachR + 0.35))
-                    )
+                    Clear.status = string.format("Walking beside (%d,%d) [%d/%d]", target.x, target.y, idx, #rowTargets)
+                    local reached = WalkToBreakTarget(w, target.x, target.y, -rowDir, cancelFn)
 
-                    if not canHitNow then
-                        skippedSet[target.key] = true
-                        Clear.stats.skipped += 1
-                        Clear.stats.left = math.max(0, Clear.stats.left - 1)
-                        Clear.status = string.format("Skip (%d,%d) belum terjangkau", target.x, target.y)
-                    else
-                        -- 2. NYALAKAN MODFLY HANYA SAAT BREAK AGAR TIDAK JATUH SAAT BLOK DI BAWAH KAKI HANCUR!
-                        SetAutoFly("autoclear", true)
-                        w.ghost = true
-                        ReleaseInput()
-
-                        local started = os.clock()
-                        local timedOut = false
-
-                        while Clear.on and Clear.token == token and alive() do
-                            w.ghost = true
-                            local lNow, idNow = ClearLayerAt(w, target.x, target.y)
-                            if not lNow then break end
-                            if os.clock() - started >= BREAK_TIMEOUT then
-                                timedOut = true
-                                break
+                    if reached then
+                        local okBroke, why = BreakTargetUntilGone(w, target.x, target.y, cancelFn)
+                        -- Jika terpental saat memukul, jalan kembali 1x dan tuntaskan sampai benar-benar hancur!
+                        if not okBroke and why == "out_of_range" and ClearLayerAt(w, target.x, target.y) then
+                            if WalkToBreakTarget(w, target.x, target.y, -rowDir, cancelFn) then
+                                okBroke, why = BreakTargetUntilGone(w, target.x, target.y, cancelFn)
                             end
-                            Clear.status = string.format("Break %s (%d,%d) [%d/%d]", ItemName(idNow), target.x, target.y, idx, #targets)
-                            local r = TryBreakOnce(target.x, target.y, Config.clearIncludeBg)
-                            if r == nil then
-                                timedOut = true
-                                break
-                            elseif r == "broke" then
-                                brokeAny = true
-                                Clear.stats.broken += 1
-                                started = os.clock()
-                            end
-                            task.wait(math.max(0.04, Config.clearBreakDelay))
                         end
 
-                        if not ClearLayerAt(w, target.x, target.y) then
+                        if okBroke or not ClearLayerAt(w, target.x, target.y) then
                             Clear.stats.left = math.max(0, Clear.stats.left - 1)
-                        elseif timedOut then
+                        else
                             skippedSet[target.key] = true
                             Clear.stats.skipped += 1
-                            Clear.stats.left = math.max(0, Clear.stats.left - 1)
-                            Clear.status = string.format("Skip (%d,%d) tidak bisa hancur", target.x, target.y)
+                            Clear.status = string.format("Skipped (%d,%d) [%s]", target.x, target.y, tostring(why))
+                        end
+                    else
+                        retryCount[target.key] = (retryCount[target.key] or 0) + 1
+                        if retryCount[target.key] >= 2 then
+                            skippedSet[target.key] = true
+                            Clear.stats.skipped += 1
                         end
                     end
                 else
                     Clear.stats.left = math.max(0, Clear.stats.left - 1)
                 end
             end
-
-            if not brokeAny then break end
-            table.clear(skippedSet)
         end
 
         SetAutoFly("autoclear", false)
         ReleaseInput()
         AutoInput.active = false
-        Clear.status = "Selesai"
-        local msg = string.format("Auto Clear selesai! Hancur: %d | Diambil: %d | Skip: %d", Clear.stats.broken, Clear.stats.picked, Clear.stats.skipped)
+        Clear.status = "Completed"
+        local msg = string.format("Auto Clear finished! Broken: %d | Collected: %d | Skipped: %d", Clear.stats.broken, Clear.stats.picked, Clear.stats.skipped)
         Notify(msg)
         Webhook.Send("stop", msg)
     end
@@ -4134,7 +4230,7 @@ do (function()
         SetAutoFly("autoclear", false)
         ReleaseInput()
         AutoInput.active = false
-        Clear.status = "Mati"
+        Clear.status = "Idle"
         return true
     end
 
@@ -4145,15 +4241,16 @@ do (function()
         if DF.on then DF.Stop() end
         if SpliceBot.on then SpliceBot.Stop() end
         if Pabrik.on then Pabrik.Stop() end
+        if Session.Rotation and Session.Rotation.on then Session.Rotation.Stop() end
 
         local x, y = GetGridState()
-        if not x then Notify("Posisi belum terdeteksi."); return false end
+        if not x then Notify("Character position not detected."); return false end
         local home = { x = math.floor(x), y = math.floor(y - 0.475), world = CurrentWorldName() }
         Clear.token += 1
         local token = Clear.token
         Clear.on = true
-        Clear.status = "Mulai"
-        Clear.stats = { scanned = 0, broken = 0, picked = 0, skipped = 0, left = 0, pass = 0, row = -1 }
+        Clear.status = "Starting"
+        Clear.stats = { scanned = 0, broken = 0, picked = 0, skipped = 0, left = 0, pass = 1, row = -1 }
 
         task.spawn(function()
             local ok, err = pcall(ClearLoop, token, home)
@@ -4163,7 +4260,7 @@ do (function()
             AutoInput.active = false
             if Clear.token == token then
                 Clear.on = false
-                if Clear.status ~= "Selesai" then Clear.status = "Mati" end
+                if Clear.status ~= "Completed" then Clear.status = "Idle" end
                 if RefreshHub then RefreshHub() end
             end
         end)
@@ -4377,7 +4474,7 @@ do (function()
 end)() end
 
 ----------------------------------------------------------------------
--- 4. AUTO DIRT FARM (FULL WORLD: BAWAH + ATAS + SMART SUPPLY + NO MODFLY)
+-- 4. AUTO DIRT FARM (TOP-DOWN PLATFORM BREAK + SMART PARKOUR MOVE)
 ----------------------------------------------------------------------
 do (function()
     local DF_BREAK_TIMEOUT = 5.0
@@ -4397,7 +4494,7 @@ do (function()
                 if fg ~= 0 then
                     if IsBedrockId(fg) then
                         bedrockCount += 1
-                    elseif fg == dirtId or CanBreakId(fg) then
+                    elseif fg == dirtId or CanBreakId(fg, x, y) then
                         groundCount += 1
                     end
                 end
@@ -4415,46 +4512,66 @@ do (function()
         return topDirtY, bedrockY
     end
 
-    local function WalkOrClimbTo(standX, standY, token)
+    -- Smart Parkour & Smooth Move: Memanfaatkan lompatan antar baris kosong DF (A* Stair/Jump) sebelum fallback ke panjat
+    local function WalkOrParkourTo(standX, standY, token)
         local cancelFn = function() return DF.token ~= token or not DF.on or not alive() end
         local px, py = GetTile()
         if not px or (px == standX and py == standY) then return true end
 
-        if Config.moveMethod == "Teleport Mode" then
-            return Nav.FlyTo(standX, standY, cancelFn, Config.dfTpDelay, false)
-        end
-
-        if py == standY and math.abs(px - standX) <= 2 then
+        -- 1. Jika di baris yang sama dan dekat, geser mulus dengan ExecWalk
+        if py == standY and math.abs(px - standX) <= 3 then
             if Nav.ExecWalk(standX, standY, cancelFn) then return true end
-        elseif py and standY < py and math.abs(px - standX) <= 1 then
-            if Nav.ClimbUpWithDirt(standX, standY, cancelFn, true, Config.dfTpDelay, true) then return true end
         end
 
-        if Nav.To(standX, standY, cancelFn, 0.3, true) then
+        -- 2. Coba cari jalur parkour murni tanpa pasang blok (melompat melewati pola baris kosong DF)
+        if Nav.LegitTo(standX, standY, cancelFn, 0.35, false) then
             return true
         end
-        return Nav.FlyTo(standX, standY, cancelFn, Config.dfTpDelay, false)
+
+        -- 3. Jika belum terjangkau (misal ujung lorong belum terbuka), izinkan A* memakai 1-2 pijakan parkour
+        if Nav.LegitTo(standX, standY, cancelFn, 0.35, true) then
+            return true
+        end
+
+        -- 4. Fallback terakhir jika harus naik vertikal di kolom pinggir
+        if py and standY < py then
+            if Nav.ClimbUpWithDirt(standX, standY, cancelFn, true, Config.dfTpDelay, true) then
+                return true
+            end
+        end
+        return Nav.To(standX, standY, cancelFn, 0.35, true)
     end
 
     local function BreakTotalAt(w, tx, ty, standX, standY, token)
         if not InBounds(w, tx, ty) then return false end
         local fg = TileValue(w, "fg", tx, ty) or 0
         local bg = TileValue(w, "bg", tx, ty) or 0
-        if (fg == 0 or not CanBreakId(fg)) and (bg == 0 or not CanBreakId(bg)) then
+        if (fg == 0 or not CanBreakId(fg, tx, ty)) and (bg == 0 or not CanBreakId(bg, tx, ty)) then
             return true
         end
 
-        WalkOrClimbTo(standX, standY, token)
+        WalkOrParkourTo(standX, standY, token)
 
         local startT = os.clock()
         while DF.on and DF.token == token and alive() do
             local cFg = TileValue(w, "fg", tx, ty) or 0
             local cBg = TileValue(w, "bg", tx, ty) or 0
-            local hasFg = cFg ~= 0 and CanBreakId(cFg)
-            local hasBg = cBg ~= 0 and CanBreakId(cBg)
-            if Config.dfModFly then w.ghost = true end
-            if not hasFg and not hasBg then break end
+            local hasFg = cFg ~= 0 and CanBreakId(cFg, tx, ty)
+            local hasBg = cBg ~= 0 and CanBreakId(cBg, tx, ty)
+            if not hasFg and not hasBg then
+                task.wait(0.05)
+                cFg = TileValue(w, "fg", tx, ty) or 0
+                cBg = TileValue(w, "bg", tx, ty) or 0
+                if (cFg == 0 or not CanBreakId(cFg, tx, ty)) and (cBg == 0 or not CanBreakId(cBg, tx, ty)) then
+                    break
+                end
+            end
             if os.clock() - startT >= DF_BREAK_TIMEOUT then break end
+
+            local s = PlayerPhysicsState()
+            if not s or not Nav.StateReaches(s, tx, ty, PunchReach() + 0.25) then
+                WalkOrParkourTo(standX, standY, token)
+            end
 
             local r = TryBreakOnce(tx, ty, true)
             if r == "broke" then
@@ -4496,7 +4613,7 @@ do (function()
             if not DF.on or DF.token ~= token then break end
             if CountItem(seedId) <= 0 or count >= (maxPlant or 20) then break end
             if (TileValue(w, "fg", x, platformY) or 0) == dirtId and (TileValue(w, "fg", x, plantY) or 0) == 0 then
-                WalkOrClimbTo(x, plantY, token)
+                WalkOrParkourTo(x, plantY, token)
                 if PlaceCell(seedId, { x = x, y = plantY }, 1) then
                     Stats.Planted += 1
                     table.insert(plantedSpots, { x = x, y = plantY, plantedTime = os.clock() })
@@ -4532,13 +4649,13 @@ do (function()
                     break
                 end
                 local left = math.max(0, math.ceil(growTime - elapsed))
-                DF.status = string.format("Menunggu Dirt Tree matang (%ds) [%d/%d]...", left, idx, #plantedSpots)
+                DF.status = string.format("Waiting Dirt Tree (%ds) [%d/%d]...", left, idx, #plantedSpots)
                 task.wait(0.5)
             end
 
             if (TileValue(w, "fg", spot.x, spot.y) or 0) == seedId then
-                DF.status = string.format("Harvest Dirt Tree (%d,%d) [%d/%d]", spot.x, spot.y, idx, #plantedSpots)
-                WalkOrClimbTo(spot.x, spot.y, token)
+                DF.status = string.format("Harvesting Dirt Tree (%d,%d) [%d/%d]", spot.x, spot.y, idx, #plantedSpots)
+                WalkOrParkourTo(spot.x, spot.y, token)
                 local t0 = os.clock()
                 while DF.on and DF.token == token and (TileValue(w, "fg", spot.x, spot.y) or 0) == seedId and os.clock() - t0 < 3.5 do
                     local r = TryBreakOnce(spot.x, spot.y, false)
@@ -4568,17 +4685,14 @@ do (function()
     local function EnsureDirtSupply(w, returnX, returnY, refPlatformY, topDirtY, bedrockY, token)
         local dirtId = GetDirtId()
         local seedId = GetDirtSeedId()
-
-        if CountItem(dirtId) > 0 then
-            return true
-        end
+        if CountItem(dirtId) > 0 then return true end
 
         DF.stats.step = "Restock Dirt"
         local workPlatformY = FindFarmablePlatformRow(w, topDirtY, bedrockY)
 
         while DF.on and DF.token == token and alive() and CountItem(dirtId) < 15 do
             if CountItem(seedId) > 0 then
-                DF.status = "Stok Dirt habis! Menanam & memanen Dirt Seed..."
+                DF.status = "Dirt empty! Planting & harvesting Dirt Seeds..."
                 PlantAndHarvestDirtSeeds(w, workPlatformY, token, 20)
                 if CountItem(dirtId) >= 15 then break end
             end
@@ -4586,55 +4700,16 @@ do (function()
             local drop = FindWorldDirtDrop(dirtId, seedId)
             if drop then
                 local dx, dy = math.floor(drop.x), math.floor(drop.y)
-                DF.status = string.format("Mengambil drop Dirt/Seed di (%d, %d)...", dx, dy)
-                WalkOrClimbTo(dx, dy, token)
+                DF.status = string.format("Collecting Dirt/Seed drop at (%d, %d)...", dx, dy)
+                WalkOrParkourTo(dx, dy, token)
                 task.wait(0.5)
                 if CountItem(dirtId) >= 15 then break end
-                if CountItem(seedId) > 0 then
-                    PlantAndHarvestDirtSeeds(w, workPlatformY, token, 20)
-                    if CountItem(dirtId) >= 15 then break end
-                end
             end
 
-            if CountItem(dirtId) == 0 and CountItem(seedId) == 0 then
-                DF.status = "Break Dirt di world untuk mencari Seed..."
-                local brokenList = {}
-                for x = 4, w.w - 5 do
-                    if not DF.on or DF.token ~= token then break end
-                    if #brokenList >= 14 or CountItem(seedId) >= 6 then break end
-                    if (TileValue(w, "fg", x, workPlatformY) or 0) == dirtId
-                        and (TileValue(w, "fg", x - 1, workPlatformY) or 0) == dirtId then
-                        local standX, standY = x - 1, workPlatformY - 1
-                        WalkOrClimbTo(standX, standY, token)
-                        BreakTotalAt(w, x, workPlatformY, standX, standY, token)
-                        if (TileValue(w, "fg", x, workPlatformY) or 0) == 0 then
-                            table.insert(brokenList, { x = x, y = workPlatformY, standX = standX, standY = standY })
-                        end
-                        task.wait(0.2)
-                    end
-                end
-
-                if CountItem(seedId) > 0 then
-                    PlantAndHarvestDirtSeeds(w, workPlatformY, token, 20)
-                end
-
-                for _, item in ipairs(brokenList) do
-                    if not DF.on or DF.token ~= token then break end
-                    while DF.on and DF.token == token and CountItem(dirtId) == 0 and CountItem(seedId) > 0 do
-                        PlantAndHarvestDirtSeeds(w, workPlatformY, token, 15)
-                    end
-                    if (TileValue(w, "fg", item.x, item.y) or 0) == 0 and CountItem(dirtId) > 0 then
-                        WalkOrClimbTo(item.standX, item.standY, token)
-                        if PlaceCell(dirtId, { x = item.x, y = item.y }, 1) then
-                            DF.stats.placed += 1
-                            task.wait(0.14)
-                        end
-                    end
-                end
-            elseif CountItem(dirtId) > 0 and CountItem(dirtId) < 15 and CountItem(seedId) == 0 then
+            if CountItem(dirtId) < 15 and CountItem(seedId) == 0 then
                 local testX = 5
                 local standX, standY = 4, workPlatformY - 1
-                WalkOrClimbTo(standX, standY, token)
+                WalkOrParkourTo(standX, standY, token)
                 while DF.on and DF.token == token and CountItem(seedId) < 4 and CountItem(dirtId) > 0 do
                     if (TileValue(w, "fg", testX, standY) or 0) == 0 then
                         PlaceCell(dirtId, { x = testX, y = standY }, 1)
@@ -4643,13 +4718,12 @@ do (function()
                     BreakTotalAt(w, testX, standY, standX, standY, token)
                     task.wait(0.2)
                 end
-            else
-                break
+                if CountItem(seedId) == 0 then break end
             end
         end
 
         if returnX and returnY then
-            WalkOrClimbTo(returnX, returnY, token)
+            WalkOrParkourTo(returnX, returnY, token)
         end
         return CountItem(dirtId) > 0
     end
@@ -4659,9 +4733,9 @@ do (function()
         local dirtId = GetDirtId()
         local fg = TileValue(w, "fg", tx, ty) or 0
         if fg == dirtId then return end
-        if fg ~= 0 and not CanBreakId(fg) then return end
+        if fg ~= 0 and not CanBreakId(fg, tx, ty) then return end
 
-        WalkOrClimbTo(standX, standY, token)
+        WalkOrParkourTo(standX, standY, token)
 
         if fg ~= 0 and fg ~= dirtId then
             local t0 = os.clock()
@@ -4685,35 +4759,30 @@ do (function()
         end
     end
 
-    -- Cek apakah kolom vertikal ujung (kiri/kanan) sudah bersih
     local function FirstUncleanVerticalY(w, colA, colB, topDirtY, bedrockY)
         for y = topDirtY, bedrockY - 1 do
             local fgA, bgA = TileValue(w, "fg", colA, y) or 0, TileValue(w, "bg", colA, y) or 0
             local fgB, bgB = TileValue(w, "fg", colB, y) or 0, TileValue(w, "bg", colB, y) or 0
             if IsBedrockId(fgA) and IsBedrockId(fgB) then break end
-            if (fgA ~= 0 and CanBreakId(fgA)) or (bgA ~= 0 and CanBreakId(bgA))
-                or (fgB ~= 0 and CanBreakId(fgB)) or (bgB ~= 0 and CanBreakId(bgB)) then
+            if (fgA ~= 0 and CanBreakId(fgA, colA, y)) or (bgA ~= 0 and CanBreakId(bgA, colA, y))
+                or (fgB ~= 0 and CanBreakId(fgB, colB, y)) or (bgB ~= 0 and CanBreakId(bgB, colB, y)) then
                 return y
             end
         end
         return nil
     end
 
+    -- Bersihkan kolom vertikal pinggir dengan berdiri di atas blok yang akan dihancurkan / dari samping platform
     local function ClearVerticalEdge(w, colA, colB, topDirtY, bedrockY, label, token)
         local firstY = FirstUncleanVerticalY(w, colA, colB, topDirtY, bedrockY)
         if not firstY then
-            DF.status = "Kolom vertikal " .. label .. " sudah bersih, lanjut..."
+            DF.status = "Vertical edge " .. label .. " already clean, continuing..."
             return true
         end
 
-        DF.stats.step = "Clear Vertikal " .. label
-        local startY = math.max(0, firstY - 1)
-        DF.status = string.format("Lanjut vertikal %s dari Y=%d...", label, firstY)
+        DF.stats.step = "Vertical Edge " .. label
+        local innerPlatformX = (colB < 5) and 2 or (w.w - 3)
 
-        WalkOrClimbTo(colB, startY, token)
-        task.wait(math.max(0.20, Config.dfTpDelay))
-
-        local lastY = startY
         for y = firstY, bedrockY - 1 do
             if not DF.on or DF.token ~= token or not alive() then return false end
             w = FindWorld()
@@ -4721,45 +4790,39 @@ do (function()
             if IsBedrockId(TileValue(w, "fg", colA, y)) and IsBedrockId(TileValue(w, "fg", colB, y)) then
                 break
             end
+            -- Berdiri di atas blok atau di pinggir platform dalam agar karakter tidak jatuh ke jurang
             local standY = math.max(0, y - 1)
-            DF.status = string.format("Vertikal %s: Break Y=%d", label, y)
-            BreakTotalAt(w, colA, y, colB, standY, token)
+            local standX = (Nav.RealSupport(innerPlatformX, standY)) and innerPlatformX or colB
+            DF.status = string.format("Vertical %s: Breaking Y=%d from above", label, y)
+            BreakTotalAt(w, colB, y, standX, standY, token)
             if not DF.on or DF.token ~= token then return false end
-            BreakTotalAt(w, colB, y, colB, standY, token)
-            lastY = standY
+            BreakTotalAt(w, colA, y, colB, standY, token)
         end
 
-        if DF.on and DF.token == token and lastY > math.max(0, topDirtY - 1) then
-            DF.status = string.format("Naik kembali dari ujung %s...", label)
-            Nav.ClimbUpWithDirt(colB, math.max(0, topDirtY - 1), function() return DF.token ~= token end, true, Config.dfTpDelay, true)
+        -- Parkour / panjat kembali ke permukaan atas
+        if DF.on and DF.token == token then
+            DF.status = string.format("Parkouring back up from %s...", label)
+            WalkOrParkourTo(innerPlatformX, math.max(0, topDirtY - 1), token)
         end
         return true
     end
 
-    -- Cek apakah 1 baris kosong bagian bawah (emptyY) sudah selesai dikerjakan
     local function IsBottomRowComplete(w, emptyY, topDirtY, bedrockY)
         local dirtId = GetDirtId()
-        local platformAboveY = emptyY - 1
-        local platformBelowY = emptyY + 1
+        local platY = emptyY - 1
         for x = 2, w.w - 3 do
             local fg = TileValue(w, "fg", x, emptyY) or 0
             local bg = TileValue(w, "bg", x, emptyY) or 0
-            if (fg ~= 0 and CanBreakId(fg)) or (bg ~= 0 and CanBreakId(bg)) then
+            if (fg ~= 0 and CanBreakId(fg, x, emptyY)) or (bg ~= 0 and CanBreakId(bg, x, emptyY)) then
                 return false
             end
-            if Config.dfReplacePlatform then
-                if platformAboveY >= topDirtY and (TileValue(w, "fg", x, platformAboveY) or 0) ~= dirtId then
-                    return false
-                end
-                if platformBelowY < bedrockY and (TileValue(w, "fg", x, platformBelowY) or 0) ~= dirtId then
-                    return false
-                end
+            if Config.dfReplacePlatform and platY >= topDirtY and (TileValue(w, "fg", x, platY) or 0) ~= dirtId then
+                return false
             end
         end
         return true
     end
 
-    -- Cek apakah 1 baris platform bagian atas (platformY) sudah terisi penuh
     local function IsUpperRowComplete(w, platformY)
         local dirtId = GetDirtId()
         local walkY = platformY - 1
@@ -4777,7 +4840,7 @@ do (function()
     local function DFLoop(token, home)
         local wasGod = godOn
         if not wasGod and StartGod then pcall(StartGod) end
-        SetAutoFly("autodf", Config.dfModFly)
+        SetAutoFly("autodf", false)
 
         local w = FindWorld()
         if not w then return end
@@ -4785,101 +4848,112 @@ do (function()
         local topDirtY, bedrockY = DetectWorldLayers(w)
         DF.stats.topDirtY = topDirtY
         DF.stats.bedrockY = bedrockY
-        Notify(string.format("Auto DF Scan: Melanjutkan progres Dirt Farm (Dirt Y=%d, Bedrock Y=%d).", topDirtY, bedrockY))
+        Notify(string.format("Auto DF: Top-Down Platform Mode (Dirt Y=%d, Bedrock Y=%d).", topDirtY, bedrockY))
 
         local W = w.w
-        if not ClearVerticalEdge(w, 0, 1, topDirtY, bedrockY, "Kiri (1-2)", token) then return end
+        if not ClearVerticalEdge(w, 0, 1, topDirtY, bedrockY, "Left (1-2)", token) then return end
         if not DF.on or DF.token ~= token then return end
-        if not ClearVerticalEdge(w, W - 2, W - 1, topDirtY, bedrockY, "Kanan (99-100)", token) then return end
+        if not ClearVerticalEdge(w, W - 2, W - 1, topDirtY, bedrockY, "Right (99-100)", token) then return end
         if not DF.on or DF.token ~= token then return end
 
-        local leftToRight = false
+        -- FASE 1: BANGUN POLA DF BAWAH DARI ATAS PLATFORM!
+        -- Karakter berdiri di standY = emptyY - 2 (di atas platform platY = emptyY - 1)
+        -- dan menghancurkan baris kosong emptyY yang berada tepat di bawah platform tersebut!
+        local leftToRight = true
         for emptyY = topDirtY + 1, bedrockY - 1, 2 do
             if not DF.on or DF.token ~= token or not alive() then return end
             w = FindWorld()
             if not w or CurrentWorldName() ~= home.world then return end
 
-            -- Scan Baris: Jika baris emptyY ini sudah selesai dibuat sebelumnya, langsung skip!
             if IsBottomRowComplete(w, emptyY, topDirtY, bedrockY) then
-                DF.status = string.format("Baris Y=%d sudah selesai, lanjut ke baris berikutnya...", emptyY)
+                DF.status = string.format("Row Y=%d already complete, skipping...", emptyY)
             else
-                local platformAboveY = emptyY - 1
-                local platformBelowY = emptyY + 1
-                DF.stats.step = string.format("Bawah: Baris Y=%d", emptyY)
+                local platY = emptyY - 1  -- Baris platform tempat karakter berpijak
+                local standY = emptyY - 2 -- Tile badan karakter (di atas platform platY)
+                DF.stats.step = string.format("Bottom: Row Y=%d (Stand Y=%d)", emptyY, standY)
 
                 local startX = leftToRight and 2 or (W - 3)
                 local endX   = leftToRight and (W - 3) or 2
                 local stepX  = leftToRight and 1 or -1
-                local entryStandX = leftToRight and 1 or (W - 2)
 
-                WalkOrClimbTo(entryStandX, emptyY, token)
+                -- Pastikan titik awal platform (startX, platY) sudah ada Dirt untuk dipijak
+                if (TileValue(w, "fg", startX, platY) or 0) ~= GetDirtId() then
+                    EnsurePlatformDirtAt(w, startX, platY, startX, math.max(0, standY - 1), topDirtY, bedrockY, token)
+                end
+                WalkOrParkourTo(startX, standY, token)
 
                 for x = startX, endX, stepX do
                     if not DF.on or DF.token ~= token or not alive() then return end
                     w = FindWorld()
                     if not w or CurrentWorldName() ~= home.world then return end
 
-                    local standX = x - stepX
-                    local standY = emptyY
-
-                    if Config.dfReplacePlatform and platformBelowY < bedrockY then
-                        EnsurePlatformDirtAt(w, standX, platformBelowY, standX, standY, topDirtY, bedrockY, token)
-                    end
-                    if Config.dfReplacePlatform and platformAboveY >= topDirtY then
-                        EnsurePlatformDirtAt(w, standX, platformAboveY, standX, standY, topDirtY, bedrockY, token)
+                    -- 1. Pastikan tile berdiri (x, standY) kosong (jika ada blok menghalangi jalan di atas platform, hancurkan)
+                    local prevX = (x == startX) and startX or (x - stepX)
+                    if (TileValue(w, "fg", x, standY) or 0) ~= 0 or (TileValue(w, "bg", x, standY) or 0) ~= 0 then
+                        BreakTotalAt(w, x, standY, prevX, standY, token)
                     end
 
-                    DF.status = string.format("Bawah Y=%d | Break (%d,%d)", emptyY, x, emptyY)
-                    BreakTotalAt(w, x, emptyY, standX, standY, token)
-
-                    if Config.dfReplacePlatform then
-                        if platformAboveY >= topDirtY then
-                            EnsurePlatformDirtAt(w, x, platformAboveY, standX, standY, topDirtY, bedrockY, token)
-                        end
-                        if platformBelowY < bedrockY then
-                            EnsurePlatformDirtAt(w, x, platformBelowY, standX, standY, topDirtY, bedrockY, token)
-                        end
+                    -- 2. Pastikan platform pijakan (x, platY) adalah Dirt padat SEBELUM karakter melangkah ke atasnya!
+                    if Config.dfReplacePlatform or (TileValue(w, "fg", x, platY) or 0) == 0 or Nav.HazardAt(x, platY) then
+                        EnsurePlatformDirtAt(w, x, platY, prevX, standY, topDirtY, bedrockY, token)
                     end
 
-                    WalkOrClimbTo(x, emptyY, token)
+                    -- 3. Melangkah ke atas platform (x, standY) -> 100% aman, tidak mungkin jatuh!
+                    WalkOrParkourTo(x, standY, token)
+
+                    -- 4. Hancurkan blok pola kosong (x, emptyY) yang berada di bawah platform!
+                    DF.status = string.format("Row Y=%d | Breaking (%d,%d) from above", emptyY, x, emptyY)
+                    BreakTotalAt(w, x, emptyY, x, standY, token)
                 end
 
                 leftToRight = not leftToRight
             end
         end
 
-        for x = 2, W - 3 do
-            if not DF.on or DF.token ~= token then return end
-            if (TileValue(w, "fg", x, topDirtY) or 0) ~= GetDirtId() then
-                EnsurePlatformDirtAt(w, x, topDirtY, x, topDirtY - 1, topDirtY, bedrockY, token)
+        -- Pastikan baris lantai paling bawah (bedrockY - 1) jika genap juga rapi
+        local lastPlatY = bedrockY - 1
+        if Config.dfReplacePlatform and (lastPlatY - topDirtY) % 2 == 0 then
+            local standLastY = lastPlatY - 1
+            for x = 2, W - 3 do
+                if not DF.on or DF.token ~= token then break end
+                if (TileValue(w, "fg", x, lastPlatY) or 0) ~= GetDirtId() then
+                    EnsurePlatformDirtAt(w, x, lastPlatY, x, standLastY, topDirtY, bedrockY, token)
+                end
             end
         end
 
+        -- Parkour naik kembali dari bawah ke topDirtY melalui baris-baris kosong DF yang sudah jadi!
+        DF.status = "Parkouring up through DF rows to surface..."
+        WalkOrParkourTo(2, math.max(0, topDirtY - 1), token)
+
+        -- FASE 2: BANGUN PLATFORM ATAS DENGAN PARKOUR JUMP + BRIDGE WALK
         local upperLeftToRight = true
         for platformY = topDirtY - 2, 2, -2 do
             if not DF.on or DF.token ~= token or not alive() then return end
             w = FindWorld()
             if not w or CurrentWorldName() ~= home.world then return end
 
-            -- Scan Baris Atas: Jika baris platformY ini sudah penuh Dirt, langsung skip!
             if IsUpperRowComplete(w, platformY) then
-                DF.status = string.format("Platform Atas Y=%d sudah selesai, skip...", platformY)
+                DF.status = string.format("Upper Platform Y=%d complete, skipping...", platformY)
             else
                 local walkY = platformY - 1
-                DF.stats.step = string.format("Atas: Platform Y=%d", platformY)
+                local prevWalkY = platformY + 1
+                DF.stats.step = string.format("Upper: Platform Y=%d", platformY)
 
                 local startX = upperLeftToRight and 2 or (W - 3)
                 local endX   = upperLeftToRight and (W - 3) or 2
                 local stepX  = upperLeftToRight and 1 or -1
 
-                local prevWalkY = platformY + 1
-                WalkOrClimbTo(startX, prevWalkY, token)
-                EnsurePlatformDirtAt(w, startX, platformY, startX, prevWalkY, topDirtY, bedrockY, token)
+                -- Berdiri di baris bawahnya (startX + stepX, prevWalkY), pasang Dirt pertama di (startX, platformY),
+                -- lalu langsung Parkour Jump 2 tile ke atasnya (startX, walkY)!
+                WalkOrParkourTo(startX + stepX, prevWalkY, token)
+                EnsurePlatformDirtAt(w, startX, platformY, startX + stepX, prevWalkY, topDirtY, bedrockY, token)
+                EnsurePlatformDirtAt(w, startX + stepX, platformY, startX + stepX * 2, prevWalkY, topDirtY, bedrockY, token)
 
-                local climbCol = upperLeftToRight and 1 or (W - 2)
-                Nav.ClimbUpWithDirt(climbCol, walkY, function() return DF.token ~= token end, true, Config.dfTpDelay, true)
-                WalkOrClimbTo(startX, walkY, token)
+                -- Parkour naik ke atas platform baru (startX, walkY)
+                WalkOrParkourTo(startX, walkY, token)
 
+                -- Jalan di atas platform baru sambil memasang Dirt di depan kaki (jembatan)
                 for x = startX + stepX, endX, stepX do
                     if not DF.on or DF.token ~= token or not alive() then return end
                     w = FindWorld()
@@ -4890,10 +4964,9 @@ do (function()
                         BreakTotalAt(w, x, walkY, standX, walkY, token)
                     end
 
-                    DF.status = string.format("Atas Y=%d | Pasang Dirt (%d,%d)", platformY, x, platformY)
+                    DF.status = string.format("Upper Y=%d | Placing Dirt (%d,%d)", platformY, x, platformY)
                     EnsurePlatformDirtAt(w, x, platformY, standX, walkY, topDirtY, bedrockY, token)
-
-                    WalkOrClimbTo(x, walkY, token)
+                    WalkOrParkourTo(x, walkY, token)
                 end
 
                 upperLeftToRight = not upperLeftToRight
@@ -4904,9 +4977,9 @@ do (function()
         SetAutoFly("autodf", false)
         ReleaseInput()
         AutoInput.active = false
-        DF.stats.step = "Selesai"
-        DF.status = "Selesai"
-        local msg = string.format("Full World Dirt Farm selesai! Hancur: %d | Dirt dipasang: %d | Drop: %d", DF.stats.broken, DF.stats.placed, DF.stats.picked)
+        DF.stats.step = "Completed"
+        DF.status = "Completed"
+        local msg = string.format("Full World Dirt Farm finished! Broken: %d | Dirt Placed: %d | Drops: %d", DF.stats.broken, DF.stats.placed, DF.stats.picked)
         Notify(msg)
         Webhook.Send("pabrik", msg)
     end
@@ -4918,7 +4991,7 @@ do (function()
         SetAutoFly("autodf", false)
         ReleaseInput()
         AutoInput.active = false
-        DF.status = "Mati"
+        DF.status = "Idle"
         DF.stats.step = "-"
         return true
     end
@@ -4930,15 +5003,16 @@ do (function()
         if Farmer.on then Farmer.Stop() end
         if SpliceBot.on then SpliceBot.Stop() end
         if Pabrik.on then Pabrik.Stop() end
+        if Session.Rotation and Session.Rotation.on then Session.Rotation.Stop() end
 
         local x, y = GetGridState()
-        if not x then Notify("Posisi belum terdeteksi."); return false end
+        if not x then Notify("Character position not detected."); return false end
         local home = { x = math.floor(x), y = math.floor(y - 0.475), world = CurrentWorldName() }
         DF.token += 1
         local token = DF.token
         DF.on = true
-        DF.status = "Mulai"
-        DF.stats = { topDirtY = 0, bedrockY = 0, broken = 0, placed = 0, picked = 0, step = "Inisialisasi" }
+        DF.status = "Starting"
+        DF.stats = { topDirtY = 0, bedrockY = 0, broken = 0, placed = 0, picked = 0, step = "Initializing" }
 
         task.spawn(function()
             local ok, err = pcall(DFLoop, token, home)
@@ -4948,7 +5022,7 @@ do (function()
             AutoInput.active = false
             if DF.token == token then
                 DF.on = false
-                if DF.status ~= "Selesai" then DF.status = "Mati" end
+                if DF.status ~= "Completed" then DF.status = "Idle" end
                 if RefreshHub then RefreshHub() end
             end
         end)
@@ -5180,9 +5254,12 @@ do (function()
 end)() end
 
 ----------------------------------------------------------------------
--- 6. PABRIK / FACTORY (11 LANGKAH LENGKAP + RESUME SAAT PINDAH WORLD)
+-- 6. PABRIK / FACTORY (ANTI-STUCK HARVEST, BREAK & DROP SEED)
 ----------------------------------------------------------------------
 do (function()
+    local LocalPlantedAt = {} -- Fallback timer pohon lokal jika Refs.Trees belum terbaca sehabis pindah world
+    local FailedDropUntil = {}
+
     local function SavePabrikState(stateTbl)
         if writefile then
             stateTbl.updatedAt = os.time()
@@ -5219,47 +5296,50 @@ do (function()
 
     local function EnterTargetWorld(name, doorId)
         name = Trim(name):upper()
-        if name == "" then return false, "nama world kosong" end
-        if CurrentWorldName():upper() == name then return true end
+        if name == "" then return false, "empty world name" end
+        if CurrentWorldName():upper() == name and not doorId then return true end
 
         if QueueReload then pcall(QueueReload) end
 
-        local w = FindWorld()
-        if CurrentWorldName() ~= "" then
-            LeaveCurrentWorld()
-            task.wait(1.8)
-        end
-        w = FindWorld()
-        if doorId and w then
-            rawset(w, "arriveDoor", doorId)
-        end
-        local oldFg = w and rawget(w, "fg")
-        local m = Refs.Menu
-        if m and type(rawget(m, "enter")) == "function" then
-            pcall(m.enter, name)
-        elseif w and type(rawget(w, "enter")) == "function" then
-            pcall(w.enter, name)
-        else
-            return false, "fungsi enter tidak ditemukan"
-        end
-
-        local t0 = os.clock()
-        while alive() and os.clock() - t0 < 10 do
-            local cw = FindWorld()
-            if cw and rawget(cw, "fg") ~= oldFg and CurrentWorldName():upper() == name then
-                Refs.Scan()
-                task.wait(1.2)
-                return true
+        for try = 1, 3 do
+            if not alive() then return false, "stopped" end
+            if CurrentWorldName() ~= "" and (CurrentWorldName():upper() ~= name or doorId) then
+                LeaveCurrentWorld()
+                task.wait(1.8)
             end
-            task.wait(0.25)
+            local w = FindWorld()
+            if doorId and w then
+                rawset(w, "arriveDoor", doorId)
+            end
+            local oldFg = w and rawget(w, "fg")
+            local m = Refs.Menu
+            if m and type(rawget(m, "enter")) == "function" then
+                pcall(m.enter, name)
+            elseif w and type(rawget(w, "enter")) == "function" then
+                pcall(w.enter, name)
+            else
+                Refs.Scan(true)
+            end
+
+            local t0 = os.clock()
+            while alive() and (os.clock() - t0) < 14 do
+                local cw = FindWorld()
+                if cw and (rawget(cw, "fg") ~= oldFg or not doorId) and CurrentWorldName():upper() == name and GetTile() then
+                    Refs.Scan(true)
+                    task.wait(1.0)
+                    return true
+                end
+                task.wait(0.25)
+            end
+            task.wait(1.5)
         end
-        return false, "sedang teleport / terkunci"
+        return false, "timeout entering " .. name
     end
 
-    -- Cek apakah masih ada dropped block/seed di world (di luar zona drop seed)
+    -- Cari dropped item dengan proteksi anti-loop pada drop yang nyangkut/tidak terjangkau
     local function FindDroppedItemInWorld(targetId)
+        if not Drops.list and Drops.findRefs then Drops.findRefs() end
         local list = Drops.list
-        if not list then Refs.Scan(); list = Drops.list end
         if type(list) ~= "table" then return nil end
         local px, py = GetTile()
         px, py = px or 50, py or 30
@@ -5267,13 +5347,19 @@ do (function()
         if dropZone and dropZone.world ~= CurrentWorldName() then
             dropZone = nil
         end
+        local now = os.clock()
         local best, bestDist = nil, math.huge
         for _, d in ipairs(list) do
-            if type(d) == "table" and d.id == targetId and (d.n or 0) > 0 and type(d.x) == "number" then
-                if not (dropZone and math.abs(d.x - dropZone.x) <= 2.5 and math.abs(d.y - dropZone.y) <= 2.5) then
-                    local dist = math.abs(d.x - px) + math.abs(d.y - py)
-                    if dist < bestDist then
-                        best, bestDist = d, dist
+            if type(d) == "table" and d.id == targetId and (d.n or 0) > 0 and not d.display and type(d.x) == "number" then
+                local key = d.uid or (math.floor(d.x) .. "," .. math.floor(d.y))
+                local skipUntil = FailedDropUntil[key]
+                local dx, dy = math.floor(d.x), math.floor(d.y)
+                if not (skipUntil and now < skipUntil) and not Nav.SolidAt(dx, dy) then
+                    if not (dropZone and math.abs(d.x - dropZone.x) <= 2.5 and math.abs(d.y - dropZone.y) <= 2.5) then
+                        local dist = math.abs(d.x - px) + math.abs(d.y - py)
+                        if dist < bestDist then
+                            best, bestDist = d, dist
+                        end
                     end
                 end
             end
@@ -5281,74 +5367,117 @@ do (function()
         return best
     end
 
-    -- Ambil semua dropped block yang tersisa di world sampai habis atau tas penuh (200)
+    -- Ambil semua dropped block dengan batas percobaan agar TIDAK PERNAH diam/infinite loop!
     local function CollectAllDroppedBlocks(blockId, liveFn)
         local collectedAny = false
-        while liveFn() and CountItem(blockId) < 200 do
+        local triesPerDrop = {}
+        local startSweep = os.clock()
+
+        while liveFn() and CountItem(blockId) < 200 and (os.clock() - startSweep) < 35 do
             local drop = FindDroppedItemInWorld(blockId)
             if not drop then break end
+            local key = drop.uid or (math.floor(drop.x) .. "," .. math.floor(drop.y))
+            triesPerDrop[key] = (triesPerDrop[key] or 0) + 1
+            if triesPerDrop[key] > 2 then
+                FailedDropUntil[key] = os.clock() + 45 -- Lewati drop yang nyangkut agar tidak loop stuck!
+                continue
+            end
+
             local dx, dy = math.floor(drop.x), math.floor(drop.y)
+            local before = CountItem(blockId)
             Pabrik.phase = "COLLECT BLOCK"
-            Pabrik.status = string.format("Mengambil drop %s di (%d,%d)...", ItemName(blockId), dx, dy)
-            -- Jalan murni via A* mengikuti tangga tanpa merusak/menaruh blok
-            Nav.To(dx, dy, function() return not liveFn() end, 0.5, false)
-            collectedAny = true
-            task.wait(0.45)
+            Pabrik.status = string.format("Collecting dropped %s at (%d,%d)...", ItemName(blockId), dx, dy)
+
+            local reached = Nav.To(dx, dy, function() return not liveFn() end, 0.45, false)
+            if reached and Drops.walkToX then
+                local wasA = AutoInput.active
+                AutoInput.active = true
+                Drops.collecting = true
+                Drops.walkToX(drop.x, 0.8)
+                Drops.collecting = false
+                AutoInput.active = wasA
+            end
+
+            -- Bantu ambil via takeDrop jika dalam jangkauan
+            local w = FindWorld()
+            local worldTake = w and rawget(w, "takeDrop")
+            if type(worldTake) == "function" and drop.uid then
+                local room = 200 - CountItem(blockId)
+                if room > 0 then pcall(worldTake, drop.uid, math.min(drop.n or 1, room)) end
+            end
+
+            task.wait(0.35)
+            if CountItem(blockId) > before then
+                collectedAny = true
+                FailedDropUntil[key] = nil
+            elseif not reached then
+                FailedDropUntil[key] = os.clock() + 45
+            end
         end
         return collectedAny
     end
 
+    -- Drop seed dengan fitur otomatis geser kanan 1 langkah jika tile penuh
     local function DropSeedItem(seedId, amount, liveFn)
         local hud = Refs.Hud or FindInventory()
         local onDrop = hud and rawget(hud, "onDrop")
         local rem = amount
-        local nudged = false
-        while rem > 0 and liveFn() and CountItem(seedId) > 0 do
+        local stepTries = 0
+
+        while rem > 0 and liveFn() and CountItem(seedId) > 0 and stepTries < 15 do
             local before = CountItem(seedId)
             local dropNow = math.min(rem, before, 200)
             if type(onDrop) == "function" then
                 pcall(onDrop, seedId, dropNow)
             elseif DropEvent then
                 pcall(function() DropEvent:FireServer(seedId, dropNow) end)
+            elseif NetOk and type(Net) == "table" and Net.drop then
+                pcall(Net.drop.send, { id = seedId, n = dropNow })
             end
             task.wait(0.8)
             local diff = before - CountItem(seedId)
             if diff > 0 then
                 rem = rem - diff
                 Pabrik.dropped = Pabrik.dropped + diff
-            elseif not nudged then
-                nudged = true
-                local s = PlayerPhysicsState()
-                local faceLeft = s and (s.facing or 1) < 0
-                AutoInput.active = true
-                AutoInput.right, AutoInput.left = faceLeft, not faceLeft
-                task.wait(0.08)
-                ReleaseInput()
-                AutoInput.active = false
-                task.wait(0.35)
             else
-                return amount - rem, "tile drop penuh"
+                -- Tile penuh: geser ke kanan 1 tile lalu coba drop lagi!
+                stepTries = stepTries + 1
+                local cx, cy = GetTile()
+                if cx and cy and not Nav.SolidAt(cx + 1, cy) then
+                    if Drops.walkToX then
+                        local wasA = AutoInput.active
+                        AutoInput.active = true
+                        Drops.collecting = true
+                        Drops.walkToX(cx + 1.5, 1.2)
+                        Drops.collecting = false
+                        AutoInput.active = wasA
+                    else
+                        Nav.To(cx + 1, cy, function() return not liveFn() end, 0.35, false)
+                    end
+                    task.wait(0.25)
+                else
+                    return amount - rem, "drop tile full"
+                end
             end
         end
         return amount - rem, nil
     end
 
-    -- Langkah 9: Jika seed mencapai >= 180, tuju world penyimpanan & drop 100 seed
     local function ExecuteDropCycle(seedId, dropAmount, liveFn)
         local targetW, doorId = Pabrik.ParseDropTarget()
         local homeW = Pabrik.home ~= "" and Pabrik.home or CurrentWorldName()
         if targetW == "" then targetW = homeW end
 
-        if Config.pabrikDropX < 0 and not doorId and targetW == homeW then
-            Pabrik.status = "Posisi drop belum diatur (drop dilewati)"
+        if Config.pabrikDropX < 0 and not doorId and targetW:upper() == homeW:upper() then
+            Pabrik.status = "Drop position not set (skipping drop)"
             Pabrik.dropOffUntil = os.clock() + 60
             return
         end
 
         Pabrik.traveling = true
+        AutoMove.pauseCollect = true -- Matikan auto collect sementara agar seed yang di-drop tidak terambil balik
         local diffWorld = targetW:upper() ~= CurrentWorldName():upper()
 
-        -- Simpan state sebelum pindah world agar jika script ke-reload, otomatis lanjut drop & balik!
         SavePabrikState({
             active = true,
             stage = "dropping",
@@ -5361,27 +5490,26 @@ do (function()
 
         local okTravel, errMsg = true, nil
         if diffWorld or doorId then
-            Pabrik.status = "Menuju world penyimpanan " .. targetW .. (doorId and (":" .. doorId) or "") .. "..."
+            Pabrik.status = "Warping to storage world " .. targetW .. (doorId and (":" .. doorId) or "") .. "..."
             local okE, why = EnterTargetWorld(targetW, doorId)
             if not okE then
-                okTravel, errMsg = false, "Gagal masuk " .. targetW .. " (" .. tostring(why) .. ")"
+                okTravel, errMsg = false, "Failed entering " .. targetW .. " (" .. tostring(why) .. ")"
             end
         end
 
         if okTravel and liveFn() and Config.pabrikDropX >= 0 and Config.pabrikDropY >= 0 then
-            Pabrik.status = string.format("Jalan A* ke posisi drop (%d,%d)...", Config.pabrikDropX, Config.pabrikDropY)
-            -- Gunakan allowScaffold = false & R = 0.5 agar murni berjalan kaki lewat tangga tanpa Noclip!
+            Pabrik.status = string.format("Walking to drop pos (%d,%d)...", Config.pabrikDropX, Config.pabrikDropY)
             local reached = false
             for try = 1, 3 do
                 if not liveFn() then break end
-                if Nav.To(Config.pabrikDropX, Config.pabrikDropY, function() return not liveFn() end, 0.5, false) then
+                if Nav.To(Config.pabrikDropX, Config.pabrikDropY, function() return not liveFn() end, 0.45, false) then
                     reached = true
                     break
                 end
                 task.wait(0.3)
             end
             if not reached then
-                okTravel, errMsg = false, "Tidak bisa jalan ke posisi drop (pastikan tidak terhalang tembok)"
+                okTravel, errMsg = false, "Could not reach drop position"
             end
         end
 
@@ -5392,20 +5520,31 @@ do (function()
             end
             local droppedN, dropErr = DropSeedItem(seedId, dropAmount, liveFn)
             if droppedN > 0 then
-                local msg = string.format("Berhasil Drop %s x%d di %s", ItemName(seedId), droppedN, CurrentWorldName())
+                local msg = string.format("Dropped %s x%d in %s", ItemName(seedId), droppedN, CurrentWorldName())
                 Pabrik.status = msg
-                Notify(msg, "Pabrik ANCH")
+                Notify(msg, "Factory ANCH")
                 Webhook.Send("pabrik", msg)
             end
             if dropErr then okTravel, errMsg = false, dropErr end
+            -- Mundur 1 langkah setelah drop di world yang sama agar badan tidak menempel pada tumpukan seed
+            if not diffWorld then
+                local cx, cy = GetTile()
+                if cx and cy and cx > 1 and not Nav.SolidAt(cx - 1, cy) and Drops.walkToX then
+                    local wasA = AutoInput.active
+                    AutoInput.active = true
+                    Drops.collecting = true
+                    Drops.walkToX(cx - 0.5, 1.0)
+                    Drops.collecting = false
+                    AutoInput.active = wasA
+                end
+            end
         end
 
         if not okTravel then
-            Pabrik.dropOffUntil = os.clock() + 90
-            Pabrik.status = "Drop gagal: " .. tostring(errMsg)
+            Pabrik.dropOffUntil = os.clock() + 60
+            Pabrik.status = "Drop failed: " .. tostring(errMsg)
         end
 
-        -- Ubah state ke returning sebelum pulang ke world pabrik
         SavePabrikState({
             active = true,
             stage = "farming",
@@ -5414,18 +5553,20 @@ do (function()
             seedId = seedId,
         })
 
+        -- Pastikan karakter BENAR-BENAR kembali ke world Pabrik sebelum melanjutkan loop!
         if homeW ~= "" and CurrentWorldName():upper() ~= homeW:upper() and liveFn() then
-            Pabrik.status = "Kembali ke world pabrik " .. homeW .. "..."
-            if not EnterTargetWorld(homeW, nil) and liveFn() then
-                task.wait(4)
-                EnterTargetWorld(homeW, nil)
+            for attempt = 1, 4 do
+                if not liveFn() or CurrentWorldName():upper() == homeW:upper() then break end
+                Pabrik.status = string.format("Returning to factory world %s (%d/4)...", homeW, attempt)
+                if EnterTargetWorld(homeW, nil) then break end
+                task.wait(2.5)
             end
         end
 
+        AutoMove.pauseCollect = false
         Pabrik.traveling = false
     end
 
-    -- Fungsi Drop Seed Eksternal untuk dipakai oleh Auto Farm
     function Pabrik.ExternalDropSeed(seedId, dropAmt, dropWorldRaw, dropX, dropY, returnWorld, returnX, returnY, liveFn)
         local origDropW, origX, origY, origHome = Config.pabrikDropWorld, Config.pabrikDropX, Config.pabrikDropY, Pabrik.home
         Config.pabrikDropWorld = dropWorldRaw or ""
@@ -5439,7 +5580,6 @@ do (function()
         end
     end
 
-    -- Sistem Max Seed: Jika seed di tas > Max Seed (misal > 100), drop kelebihannya dan sisakan tepat Max Seed!
     local function CheckAndDropSeedIfReady(seedId, liveFn)
         if not Config.pabrikDrop then return false end
         local sCount = CountItem(seedId)
@@ -5447,8 +5587,8 @@ do (function()
         if sCount > maxSeed and os.clock() >= (Pabrik.dropOffUntil or 0) then
             local dropAmt = sCount - maxSeed
             if dropAmt > 0 then
-                Pabrik.phase = "DROP KELEBIHAN SEED"
-                Pabrik.status = string.format("Seed %d > Max (%d)! Drop %d seed...", sCount, maxSeed, dropAmt)
+                Pabrik.phase = "DROP EXCESS SEEDS"
+                Pabrik.status = string.format("Seeds %d > Max (%d)! Dropping %d seeds...", sCount, maxSeed, dropAmt)
                 ExecuteDropCycle(seedId, dropAmt, liveFn)
                 return true
             end
@@ -5456,11 +5596,29 @@ do (function()
         return false
     end
 
-    -- Langkah 2, 6, 7: Menuju ke Posisi Break dan lakukan break hingga blok habis
+    -- Cek apakah masih ada blok yang menempel di tile break pabrik
+    local function AnyBreakTileHasBlock(w, anchorX, anchorY)
+        if not w then return false end
+        for key, on in pairs(Config.pabrikTiles) do
+            if on then
+                local dx, dy = tostring(key):match("^(-?%d+),(-?%d+)$")
+                if dx and dy then
+                    local tx, ty = anchorX + tonumber(dx), anchorY + tonumber(dy)
+                    local fg = TileValue(w, "fg", tx, ty) or 0
+                    local bg = TileValue(w, "bg", tx, ty) or 0
+                    if (fg ~= 0 and CanBreakId(fg, tx, ty)) or (Config.farmBreakBg and bg ~= 0 and CanBreakId(bg, tx, ty)) then
+                        return true
+                    end
+                end
+            end
+        end
+        return false
+    end
+
     local function RunBreakUntilEmpty(seedId, blockId, liveFn)
         if Config.pabrikBreakX < 0 or Config.pabrikBreakY < 0 then
-            Pabrik.status = "Posisi Break belum diatur! Tekan tombol SetPos Break dulu."
-            Notify("Pabrik: Tekan tombol 'SetPos Break' di tab Pabrik terlebih dahulu!")
+            Pabrik.status = "Break position not set! Click SetPos Break first."
+            Notify("Factory: Click 'SetPos Break' in the Seed Factory tab first!")
             task.wait(2.5)
             return false
         end
@@ -5468,13 +5626,14 @@ do (function()
             Config.pabrikTiles = { ["1,0"] = true }
         end
 
-        -- Ulangi selama ada blok di tas ATAU masih ada dropped blok di world (Langkah 7)
         while liveFn() do
             CheckAndDropSeedIfReady(seedId, liveFn)
             if not liveFn() then break end
 
-            if CountItem(blockId) <= 0 then
-                -- Langkah 7: Cek apakah masih ada dropped blok di world, ambil dulu lalu ulangi break
+            local w = FindWorld()
+            local hasResidualOnTiles = AnyBreakTileHasBlock(w, Config.pabrikBreakX, Config.pabrikBreakY)
+
+            if CountItem(blockId) <= 0 and not hasResidualOnTiles then
                 if not CollectAllDroppedBlocks(blockId, liveFn) or CountItem(blockId) <= 0 then
                     break
                 end
@@ -5483,16 +5642,40 @@ do (function()
             Pabrik.phase = "BREAK BLOCK"
             local px, py = GetTile()
             if px ~= Config.pabrikBreakX or py ~= Config.pabrikBreakY then
-                Pabrik.status = string.format("Menuju Posisi Break (%d,%d)...", Config.pabrikBreakX, Config.pabrikBreakY)
-                if not Nav.To(Config.pabrikBreakX, Config.pabrikBreakY, function() return not liveFn() end, 0.5, false) then
-                    Pabrik.status = "Gagal jalan ke Posisi Break, mencoba ulang..."
-                    task.wait(2)
+                Pabrik.status = string.format("Walking to Break Pos (%d,%d)...", Config.pabrikBreakX, Config.pabrikBreakY)
+                local reached = false
+                for try = 1, 3 do
+                    if not liveFn() then break end
+                    if Nav.To(Config.pabrikBreakX, Config.pabrikBreakY, function() return not liveFn() end, 0.45, false) then
+                        reached = true
+                        break
+                    end
+                    -- Jika tile di sekitar pos break tertutup blok sisa, hancurkan dulu agar bisa berdiri di pos break!
+                    local cx, cy = GetTile()
+                    if cx and cy and math.abs(cx - Config.pabrikBreakX) <= 2 and math.abs(cy - Config.pabrikBreakY) <= 2 then
+                        TryBreakOnce(Config.pabrikBreakX, Config.pabrikBreakY, false)
+                    end
+                    task.wait(0.35)
+                end
+                if not reached then
+                    Pabrik.status = "Failed walking to Break Pos, retrying..."
+                    task.wait(1.5)
                     break
                 end
             end
             if not liveFn() then break end
 
-            local x, y, facing = GetGridState()
+            -- Rapikan posisi tepat ke tengah tile anchor break
+            if Drops.walkToX then
+                local wasA = AutoInput.active
+                AutoInput.active = true
+                Drops.collecting = true
+                Drops.walkToX(Config.pabrikBreakX + 0.5, 1.0)
+                Drops.collecting = false
+                AutoInput.active = wasA
+            end
+
+            local x, _, facing = GetGridState()
             if not x then break end
             local anchor = {
                 x = Config.pabrikBreakX,
@@ -5516,17 +5699,19 @@ do (function()
                     if acts ~= lastActs then lastActs, lastActAt = acts, os.clock() end
                     local sCount = CountItem(seedId)
                     local bCount = CountItem(blockId)
-                    local maxSeed = math.max(1, tonumber(Config.pabrikMaxSeed) or 100)
+                    local cw = FindWorld()
+                    local tilesBusy = AnyBreakTileHasBlock(cw, anchor.x, anchor.y)
+                    -- PENTING: Jangan matikan Farm.on selama masih ada blok yang menempel di tile break (`tilesBusy`)!
                     if not liveFn()
-                        or bCount <= 0
-                        or (Config.pabrikDrop and sCount > maxSeed and sCount >= 180)
-                        or (os.clock() - lastActAt > 8) then
+                        or (bCount <= 0 and not tilesBusy and not Drops.collecting)
+                        or (Config.pabrikDrop and sCount >= 195 and not tilesBusy)
+                        or (os.clock() - lastActAt > 10) then
                         Farm.on = false
                     end
                 end
             end)
 
-            Pabrik.status = string.format("Break %s di (%d,%d) [Sisa: %d]...", ItemName(blockId), anchor.x, anchor.y, CountItem(blockId))
+            Pabrik.status = string.format("Breaking %s at (%d,%d) [Bag: %d]...", ItemName(blockId), anchor.x, anchor.y, CountItem(blockId))
             pcall(RunFarmLoopDirect, fToken, anchor)
             Farm.on = false
             Farm.Override = nil
@@ -5536,7 +5721,6 @@ do (function()
         return true
     end
 
-    -- Cek apakah koordinat (x,y) adalah titik break atau tile target break pabrik
     local function IsReservedBreakSpot(x, y)
         if Config.pabrikBreakX < 0 or Config.pabrikBreakY < 0 then return false end
         if x == Config.pabrikBreakX and y == Config.pabrikBreakY then return true end
@@ -5553,7 +5737,6 @@ do (function()
         return false
     end
 
-    -- Pindai pohon di world dengan urutan ZIG-ZAG per baris agar jalan mengikuti lorong Dirt Farm
     local function ScanWorldTrees(w, seedId)
         local readyTrees = {}
         local growingCount = 0
@@ -5566,25 +5749,29 @@ do (function()
         for y = 0, w.h - 1 do
             local rowReady = {}
             for x = 0, w.w - 1 do
+                local idx = y * w.w + x
                 local fg = TileValue(w, "fg", x, y) or 0
                 if fg == seedId then
                     local rAt = TreeReadyAt(w, x, y, fg)
-                    if rAt then
-                        if nowSrv >= rAt then
-                            table.insert(rowReady, { x = x, y = y })
-                        else
-                            growingCount = growingCount + 1
-                            local rem = rAt - nowSrv
-                            if not soonestWait or rem < soonestWait then
-                                soonestWait = rem
-                            end
+                    -- Fallback jika Refs.Trees belum terbaca: gunakan waktu LocalPlantedAt agar tidak pernah stuck!
+                    if not rAt then
+                        if not LocalPlantedAt[idx] then
+                            LocalPlantedAt[idx] = nowSrv
                         end
+                        rAt = LocalPlantedAt[idx] + defaultGrow
+                    end
+
+                    if nowSrv >= rAt then
+                        table.insert(rowReady, { x = x, y = y, idx = idx })
                     else
                         growingCount = growingCount + 1
-                        if not soonestWait or defaultGrow < soonestWait then
-                            soonestWait = defaultGrow
+                        local rem = rAt - nowSrv
+                        if not soonestWait or rem < soonestWait then
+                            soonestWait = rem
                         end
                     end
+                else
+                    LocalPlantedAt[idx] = nil
                 end
             end
             if #rowReady > 0 then
@@ -5607,6 +5794,12 @@ do (function()
         local R = math.min(PunchReach(), BuildReach()) - 0.15
 
         while liveFn() do
+            -- Pastikan kita selalu berada di world Pabrik (jika habis drop seed di world lain dan belum balik)
+            if Pabrik.home ~= "" and CurrentWorldName():upper() ~= Pabrik.home:upper() and not Pabrik.traveling then
+                Pabrik.status = "Returning to factory world " .. Pabrik.home .. "..."
+                EnterTargetWorld(Pabrik.home, nil)
+            end
+
             local w = FindWorld()
             while not w and liveFn() do
                 task.wait(1)
@@ -5617,25 +5810,25 @@ do (function()
             local seedId = Config.pabrikSeedId
             local maxSeed = math.max(1, tonumber(Config.pabrikMaxSeed) or 100)
 
-            -- 1. Cek ketersediaan blok di tas atau dropped di world; jika ada, break dulu hingga habis!
+            -- 1. Jika ada blok di tas atau drop blok di world, break sampai habis!
             if CountItem(blockId) > 0 or FindDroppedItemInWorld(blockId) ~= nil then
                 RunBreakUntilEmpty(seedId, blockId, liveFn)
                 if not liveFn() then break end
                 w = FindWorld()
             end
 
-            -- 2. Setelah selesai break, jika jumlah seed > Max Seed, drop kelebihannya dan sisakan tepat Max Seed!
+            -- 2. Jika seed di tas > Max Seed, drop kelebihannya ke world/posisi penyimpanan!
             CheckAndDropSeedIfReady(seedId, liveFn)
             if not liveFn() then break end
             w = FindWorld()
 
-            -- 3. Fase TANAM SEED (Zig-Zag & dibatasi maksimal sejumlah Max Seed!)
+            -- 3. Fase TANAM SEED (Zig-Zag & dibatasi maksimal sejumlah Max Seed)
             local existingReady, existingGrowing = ScanWorldTrees(w, seedId)
             local totalPlantedInWorld = #existingReady + existingGrowing
             local canPlantMore = math.max(0, maxSeed - totalPlantedInWorld)
 
             if CountItem(seedId) > 0 and canPlantMore > 0 then
-                Pabrik.phase = "TANAM SEED"
+                Pabrik.phase = "PLANT SEED"
                 local spots = {}
                 local rowDir = 1
                 for y = 0, w.h - 1 do
@@ -5657,21 +5850,22 @@ do (function()
                 end
 
                 local plantedNow = 0
-                for idx, sp in ipairs(spots) do
+                for _, sp in ipairs(spots) do
                     if not liveFn() or CountItem(seedId) <= 0 or plantedNow >= canPlantMore then break end
-                    if CanPlantAt(w, sp.x, sp.y, seedId) then
+                    w = FindWorld()
+                    if w and CanPlantAt(w, sp.x, sp.y, seedId) then
                         local s = PlayerPhysicsState()
                         if not (s and Nav.StateReaches(s, sp.x, sp.y, R)) then
-                            Pabrik.status = string.format("Jalan Zig-Zag tanam (%d,%d) [%d/%d]", sp.x, sp.y, plantedNow + 1, canPlantMore)
-                            -- allowScaffold = false agar TIDAK menaruh/merusak blok Dirt Farm!
+                            Pabrik.status = string.format("Walking Zig-Zag to plant (%d,%d) [%d/%d]", sp.x, sp.y, plantedNow + 1, canPlantMore)
                             Nav.To(sp.x, sp.y, function() return not liveFn() end, R, false)
                         end
                         local sNow = PlayerPhysicsState()
                         if sNow and Nav.StateReaches(sNow, sp.x, sp.y, R + 0.5) and CanPlantAt(w, sp.x, sp.y, seedId) and PlaceCell(seedId, sp, 1) then
+                            LocalPlantedAt[sp.y * w.w + sp.x] = workspace:GetServerTimeNow()
                             plantedNow = plantedNow + 1
                             Pabrik.planted = Pabrik.planted + 1
                             Stats.Planted = Stats.Planted + 1
-                            Pabrik.status = string.format("Menanam %s (%d/%d Max Seed)", ItemName(seedId), totalPlantedInWorld + plantedNow, maxSeed)
+                            Pabrik.status = string.format("Planting %s (%d/%d Max Seed)", ItemName(seedId), totalPlantedInWorld + plantedNow, maxSeed)
                             task.wait(math.max(0.05, Config.harvestPlantDelay))
                         end
                     end
@@ -5685,7 +5879,7 @@ do (function()
             local readyTrees, growingCount, soonestWait = ScanWorldTrees(w, seedId)
 
             if #readyTrees == 0 and growingCount > 0 then
-                Pabrik.phase = "TUNGGU TUMBUH"
+                Pabrik.phase = "WAIT GROW"
                 while liveFn() do
                     w = FindWorld()
                     if not w then break end
@@ -5694,22 +5888,21 @@ do (function()
                         break
                     end
                     local waitSec = math.max(1, math.ceil(soonestWait or 15))
-                    Pabrik.status = string.format("Menunggu %d pohon siap panen (±%ds)...", growingCount, waitSec)
+                    Pabrik.status = string.format("Waiting for %d trees to grow (±%ds)...", growingCount, waitSec)
                     task.wait(1)
                 end
             end
 
             if not liveFn() then break end
 
-            -- 5. Panen pohon secara Zig-Zag (Tanpa menghancurkan Dirt Farm!)
+            -- 5. Panen pohon secara Zig-Zag & langsung lewati tile pohon yang pecah agar drop langsung terambil!
             if #readyTrees > 0 then
-                Pabrik.phase = "PANEN ZIG-ZAG"
+                Pabrik.phase = "HARVEST ZIG-ZAG"
                 for idx, t in ipairs(readyTrees) do
                     if not liveFn() then break end
 
-                    -- Jika blok di tas mencapai 200, menuju Posisi Break & break hingga habis!
                     if CountItem(blockId) >= 200 then
-                        Pabrik.status = "Blok mencapai 200! Menuju Posisi Break..."
+                        Pabrik.status = "Blocks reached 200! Going to Break Pos..."
                         RunBreakUntilEmpty(seedId, blockId, liveFn)
                         if not liveFn() then break end
                         CheckAndDropSeedIfReady(seedId, liveFn)
@@ -5720,8 +5913,7 @@ do (function()
                     if w and (TileValue(w, "fg", t.x, t.y) or 0) == seedId then
                         local s = PlayerPhysicsState()
                         if not (s and Nav.StateReaches(s, t.x, t.y, R)) then
-                            Pabrik.status = string.format("Panen Zig-Zag (%d,%d) [%d/%d]", t.x, t.y, idx, #readyTrees)
-                            -- allowScaffold = false agar karakter murni berjalan zig-zag mengikuti lorong DF tanpa merusak blok!
+                            Pabrik.status = string.format("Harvesting Zig-Zag (%d,%d) [%d/%d]", t.x, t.y, idx, #readyTrees)
                             Nav.To(t.x, t.y, function() return not liveFn() end, R, false)
                         end
                         local sNow = PlayerPhysicsState()
@@ -5730,16 +5922,28 @@ do (function()
                             while liveFn() and (TileValue(w, "fg", t.x, t.y) or 0) == seedId and os.clock() - t0 < 3.5 do
                                 local r = TryBreakOnce(t.x, t.y, false)
                                 if r == "broke" then
+                                    LocalPlantedAt[t.idx or (t.y * w.w + t.x)] = nil
                                     Pabrik.harvested = Pabrik.harvested + 1
                                     Stats.Harvested = Stats.Harvested + 1
                                 end
                                 task.wait(math.max(0.05, Config.harvestDelay))
                             end
-                            task.wait(0.20)
+                            -- Segera melangkah ke tile pohon yang baru dipanen agar drop langsung tersentuh badan!
+                            local px, py = GetTile()
+                            if px and py == t.y and math.abs(px - t.x) <= 3 and not Nav.SolidAt(t.x, t.y) and Drops.walkToX then
+                                local wasA = AutoInput.active
+                                AutoInput.active = true
+                                Drops.collecting = true
+                                Drops.walkToX(t.x + 0.5, 0.9)
+                                Drops.collecting = false
+                                AutoInput.active = wasA
+                            end
+                            task.wait(0.15)
                         end
                     end
                 end
 
+                -- Ambil sisa drop blok di world (dengan anti-stuck) lalu langsung lanjut break & tanam!
                 CollectAllDroppedBlocks(blockId, liveFn)
                 if CountItem(blockId) > 0 then
                     RunBreakUntilEmpty(seedId, blockId, liveFn)
@@ -5747,7 +5951,7 @@ do (function()
                 CheckAndDropSeedIfReady(seedId, liveFn)
             else
                 if CountItem(seedId) <= 0 and CountItem(blockId) <= 0 and FindDroppedItemInWorld(blockId) == nil then
-                    Pabrik.status = "Selesai: Seed, blok, dan pohon sudah habis."
+                    Pabrik.status = "Done: All seeds, blocks, and trees are finished."
                     ClearPabrikState()
                     break
                 end
@@ -5763,6 +5967,7 @@ do (function()
         Pabrik.token = Pabrik.token + 1
         Pabrik.on = false
         Pabrik.traveling = false
+        AutoMove.pauseCollect = false
         if Farm.Override then
             Farm.on = false
             Farm.Override = nil
@@ -5771,7 +5976,7 @@ do (function()
         ReleaseInput()
         AutoInput.active = false
         Pabrik.phase = "-"
-        Pabrik.status = "Mati"
+        Pabrik.status = "Idle"
         if UpdateGridVisuals then pcall(UpdateGridVisuals) end
         return true
     end
@@ -5781,7 +5986,7 @@ do (function()
         local seedId = Config.pabrikSeedId
         local blockId = BlockOfSeed(seedId)
         if not seedId or not blockId then
-            Notify("Pabrik: Pilih seed pabrik yang valid terlebih dahulu!")
+            Notify("Factory: Select a valid factory Seed ID first!")
             return false
         end
         if Farm.on then StopFarm() end
@@ -5789,14 +5994,16 @@ do (function()
         if Farmer.on then Farmer.Stop() end
         if DF.on then DF.Stop() end
         if SpliceBot.on then SpliceBot.Stop() end
+        if Session.Rotation and Session.Rotation.on then Session.Rotation.Stop() end
 
+        table.clear(FailedDropUntil)
         Pabrik.home = resumeHomeWorld or CurrentWorldName()
         Pabrik.dropOffUntil = 0
         Pabrik.token = Pabrik.token + 1
         local token = Pabrik.token
         Pabrik.on = true
-        Pabrik.phase = "MULAI"
-        Pabrik.status = "Inisialisasi Pabrik..."
+        Pabrik.phase = "STARTING"
+        Pabrik.status = "Initializing Seed Factory..."
 
         SavePabrikState({
             active = true,
@@ -5811,13 +6018,14 @@ do (function()
         task.spawn(function()
             local ok, err = pcall(PabrikLoop, token, blockId)
             if not ok then warn("[ANCHHub] Pabrik error: " .. tostring(err)) end
+            AutoMove.pauseCollect = false
             ReleaseInput()
             AutoInput.active = false
             if Pabrik.token == token then
                 Pabrik.on = false
                 Pabrik.traveling = false
                 Pabrik.phase = "-"
-                if Pabrik.status == "Inisialisasi Pabrik..." then Pabrik.status = "Mati" end
+                if Pabrik.status == "Initializing Seed Factory..." then Pabrik.status = "Idle" end
                 if UpdateGridVisuals then pcall(UpdateGridVisuals) end
                 if RefreshHub then RefreshHub() end
             end
@@ -5825,7 +6033,6 @@ do (function()
         return true
     end
 
-    -- Pemulihan Otomatis Pabrik Saat Pindah World / Reload Script
     function Pabrik.CheckStartup()
         pcall(function()
             if not (isfile and readfile and isfile(PABRIK_STATE_FILE)) then return end
@@ -5837,7 +6044,6 @@ do (function()
                 return
             end
 
-            -- Tunggu sampai world dan karakter selesai dimuat
             local t0 = os.clock()
             while alive() and os.clock() - t0 < 30 do
                 if CurrentWorldName() ~= "" and GetTile() then break end
@@ -5845,19 +6051,19 @@ do (function()
             end
             if not alive() or CurrentWorldName() == "" then return end
 
-            Refs.Scan()
+            Refs.Scan(true)
             task.wait(1.2)
             local curW = CurrentWorldName():upper()
             local homeW = tostring(st.homeWorld or ""):upper()
             local targetW = tostring(st.targetWorld or ""):upper()
 
             if st.stage == "dropping" and targetW ~= "" and curW == targetW then
-                Notify("Melanjutkan proses Drop Seed Pabrik di " .. curW .. "...", "Pabrik ANCH")
+                Notify("Resuming Factory Seed Drop in " .. curW .. "...", "Factory ANCH")
                 Pabrik.home = st.homeWorld
                 Pabrik.on = true
                 Pabrik.token = Pabrik.token + 1
                 local tk = Pabrik.token
-                ExecuteDropCycle(st.seedId or Config.pabrikSeedId, st.dropAmount or Config.pabrikDropAmount or 100, function()
+                ExecuteDropCycle(st.seedId or Config.pabrikSeedId, st.dropAmount or 100, function()
                     return Pabrik.on and Pabrik.token == tk and alive()
                 end)
                 Pabrik.on = false
@@ -5865,10 +6071,10 @@ do (function()
                     Pabrik.Start(st.homeWorld)
                 end
             elseif homeW ~= "" and curW == homeW then
-                Notify("Melanjutkan siklus Pabrik otomatis di " .. curW .. "!", "Pabrik ANCH")
+                Notify("Resuming Seed Factory in " .. curW .. "!", "Factory ANCH")
                 Pabrik.Start(st.homeWorld)
             elseif homeW ~= "" and curW ~= homeW then
-                Notify("Kembali ke world Pabrik: " .. homeW .. "...", "Pabrik ANCH")
+                Notify("Returning to Factory world: " .. homeW .. "...", "Factory ANCH")
                 if EnterTargetWorld(homeW, nil) then
                     Pabrik.Start(st.homeWorld)
                 end
