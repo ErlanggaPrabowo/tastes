@@ -8173,27 +8173,32 @@ do (function()
         local nt = c and c:FindFirstChild("NameTag")
         if nt then return nt end
 
-        -- 2. Deteksi otomatis Frame Camera & NameTag (ZIndex >= 1030 dengan BitmapText)
+        -- 2. Deteksi spesifik Frame NameTag (ZIndex == 1016 & memiliki BitmapText sesuai DisplayName "AyamSuki")
+        local dispLen = #(Player.DisplayName or "")
+        local nameLen = #(Player.Name or "")
+        local fallback1016 = nil
+
         for _, worldCand in ipairs(gg:GetChildren()) do
             if worldCand:IsA("Frame") then
                 for _, camCand in ipairs(worldCand:GetChildren()) do
                     if camCand:IsA("Frame") and camCand:FindFirstChildOfClass("UIScale") then
-                        local bestHolder, bestZ = nil, -1
                         for _, child in ipairs(camCand:GetChildren()) do
-                            if child:IsA("Frame") and child:FindFirstChild("BitmapText") then
-                                -- NameTag utama karakter memiliki ZIndex tertinggi (1038) dibanding label pintu (1016/1017)
-                                if child.ZIndex >= 1030 and child.ZIndex > bestZ then
-                                    bestHolder = child
-                                    bestZ = child.ZIndex
+                            if child:IsA("Frame") and child.ZIndex == 1016 then
+                                local bmp = child:FindFirstChild("BitmapText")
+                                if bmp then
+                                    local letterCount = #bmp:GetChildren()
+                                    if letterCount == dispLen or letterCount == nameLen then
+                                        return child
+                                    end
+                                    fallback1016 = fallback1016 or child
                                 end
                             end
                         end
-                        if bestHolder then return bestHolder end
                     end
                 end
             end
         end
-        return nil
+        return fallback1016
     end
 
     local function nameHolders()
@@ -8202,7 +8207,7 @@ do (function()
         if NameFx.cachedPanel and not NameFx.cachedPanel.Parent then NameFx.cachedPanel = nil end
 
         if (not NameFx.cachedTag or not NameFx.cachedPanel) and now >= NameFx.nextScan then
-            NameFx.nextScan = now + 1.0
+            NameFx.nextScan = now + 0.5
             local gg = PlayerGui:FindFirstChild("GameGui")
             if not NameFx.cachedTag then
                 NameFx.cachedTag = findCameraNameTag(gg)
@@ -8230,7 +8235,7 @@ do (function()
         lb.TextSize = size
         lb.TextColor3 = Color3.new(1, 1, 1)
         lb.Text = Config.watermarkText
-        lb.ZIndex = isTag and math.max(holder.ZIndex + 1, 1039) or math.max(holder.ZIndex + 9, 10)
+        lb.ZIndex = isTag and 1017 or 10
         if isTag then
             lb.AnchorPoint = Vector2.new(0.5, 0.5)
             lb.Position = UDim2.fromScale(0.5, 0.5)
@@ -8274,7 +8279,6 @@ do (function()
             e.label.Text = Config.watermarkText
             e.w = textWidth(Config.watermarkText, size)
         end
-        -- Selalu perbarui referensi BitmapText jika dibuat ulang oleh game
         local bmp = holder:FindFirstChild("BitmapText")
         if bmp then
             e.bitmap = bmp
