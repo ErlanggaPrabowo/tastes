@@ -4829,7 +4829,7 @@ do (function()
         return nil
     end
 
-    -- Bersihkan 2 kolom vertikal ujung (0,1 di kiri dan W-2,W-1 di kanan) TANPA menaruh blok pijakan!
+    -- Bersihkan 2 kolom vertikal ujung (0,1 di kiri dan W-2,W-1 di kanan) hingga Bedrock terlebih dahulu
     local function ClearVerticalEdge(w, colA, colB, topDirtY, bedrockY, label, token)
         local firstY = FirstUncleanVerticalY(w, colA, colB, topDirtY, bedrockY)
         if not firstY then
@@ -4840,38 +4840,92 @@ do (function()
         DF.stats.step = "Vertical Edge " .. label
         local innerPlatformX = (colB < 5) and 2 or (w.w - 3)
         local platId = tonumber(Config.dfPlatformId) or 102
+        local cancelFn = function() return DF.token ~= token or not DF.on or not alive() end
+
+        -- Pastikan karakter berada di permukaan atas parit sebelum mulai menggali ke bawah
+        local startStandY = math.max(0, firstY - 1)
+        local startStandX = colB
+        if not Nav.RealSupport(colB, startStandY) then
+            if Nav.RealSupport(colA, startStandY) then
+                startStandX = colA
+            elseif Nav.OpenAt(innerPlatformX, startStandY) and Nav.RealSupport(innerPlatformX, startStandY) then
+                startStandX = innerPlatformX
+            end
+        end
+        WalkOrParkourTo(startStandX, startStandY, token)
 
         for y = firstY, bedrockY - 1 do
-            if not DF.on or DF.token ~= token or not alive() then return false end
+            if cancelFn() then return false end
             w = FindWorld()
             if not w then return false end
             if IsBedrockId(TileValue(w, "fg", colA, y)) and IsBedrockId(TileValue(w, "fg", colB, y)) then
                 break
             end
+
             local standY = math.max(0, y - 1)
-            -- Berdiri di atas colB (blok yang akan digali ke bawah) atau di innerPlatformX jika sejajar
-            local standX = Nav.RealSupport(colB, standY) and colB or innerPlatformX
+            local supA = Nav.OpenAt(colA, standY) and Nav.RealSupport(colA, standY)
+            local supB = Nav.OpenAt(colB, standY) and Nav.RealSupport(colB, standY)
+            local supInner = Nav.OpenAt(innerPlatformX, standY) and Nav.RealSupport(innerPlatformX, standY)
+
             DF.status = string.format("Vertical %s: Breaking Y=%d", label, y)
 
-            -- Hancurkan colA (kolom terluar 0 atau 99) terlebih dahulu, lalu colB (1 atau 98) agar pijakan turun bertahap!
-            BreakTotalAt(w, colA, y, standX, standY, token)
-            if not DF.on or DF.token ~= token then return false end
+            -- Jika chỉ colA yang punya blok pijakan di baris y (misal colB kosong/lava), berdiri di colA dulu
+            if supA and not supB then
+                local fgB = TileValue(w, "fg", colB, y) or 0
+                if not (Config.dfUsePlatform and fgB == platId) then
+                    BreakTotalAt(w, colB, y, colA, standY, token)
+                end
+                if cancelFn() then return false end
+                BreakTotalAt(w, colA, y, colA, standY, token)
+            else
+                -- Default: Berdiri di colB (atau innerPlatformX jika di permukaan atas), hancurkan colA dulu baru colB
+                local standX = supB and colB or (supInner and innerPlatformX or (supA and colA or colB))
 
-            local fgB = TileValue(w, "fg", colB, y) or 0
-            if not (Config.dfUsePlatform and fgB == platId) then
-                BreakTotalAt(w, colB, y, standX, standY, token)
+                -- Jika kedua tile di bawah kaki kosong (misal ketemu gua di tengah jalan), pasang 1 Dirt penopang di colB
+                if not supB and not supA and not supInner and (TileValue(w, "fg", colB, y) or 0) == 0 then
+                    local dirtId = GetDirtId()
+                    if CountItem(dirtId) > 0 then
+                        PlaceCell(dirtId, { x = colB, y = y }, 1)
+                        task.wait(PLACE_GUARD)
+                    end
+                end
+
+                BreakTotalAt(w, colA, y, standX, standY, token)
+                if cancelFn() then return false end
+
+                local fgB = TileValue(w, "fg", colB, y) or 0
+                if not (Config.dfUsePlatform and fgB == platId) then
+                    BreakTotalAt(w, colB, y, standX, standY, token)
+                end
             end
 
-            -- Jika Use Platform aktif dan baris y ini adalah baris platform (selisih genap dari topDirtY), langsung pasang Platform di colB (1 atau 98)!
+            -- Jika Use Platform aktif, pasang Platform di colB setiap kelipatan 2 baris dari topDirtY
             if Config.dfUsePlatform and ((y - topDirtY) % 2 == 0) and CountItem(platId) > 0 then
-                PlaceEdgePlatformAt(w, colB, y, standX, standY, token)
+                PlaceEdgePlatformAt(w, colB, y, colB, standY, token)
             end
         end
 
-        -- Parkour kembali ke atas lewat barisan platform / Wooden Platform (tanpa pasang Dirt)
+        -- Naik kembali ke permukaan atas (topDirtY - 1) setelah mencapai Bedrock
         if DF.on and DF.token == token then
-            DF.status = string.format("Parkouring up from %s...", label)
-            WalkOrParkourTo(innerPlatformX, math.max(0, topDirtY - 1), token)
+            local surfaceY = math.max(0, topDirtY - 1)
+            DF.status = string.format("Climbing up from %s to surface...", label)
+
+            if Config.moveMethod == "Teleport Mode" or Config.dfModFly then
+                SetAutoFly("autodf", true)
+                Nav.FlyTo(innerPlatformX, surfaceY, cancelFn, Config.dfTpDelay, false)
+                SetAutoFly("autodf", false)
+            elseif Config.dfUsePlatform and (TileValue(w, "fg", colB, topDirtY) or 0) == platId then
+                WalkOrParkourTo(innerPlatformX, surfaceY, token)
+            else
+                -- Jika belum ada pola DF & tanpa Platform: panjat vertikal dengan Dirt lalu bersihkan jejak otomatis
+                local dirtId = GetDirtId()
+                local needDirt = math.max(5, bedrockY - topDirtY + 2)
+                if CountItem(dirtId) < needDirt then
+                    EnsureDirtSupply(w, colB, bedrockY - 1, topDirtY, topDirtY, bedrockY, token)
+                end
+                Nav.ClimbUpWithDirt(colB, surfaceY, cancelFn, true, Config.dfTpDelay, true)
+                WalkOrParkourTo(innerPlatformX, surfaceY, token)
+            end
         end
         return true
     end
@@ -4933,9 +4987,20 @@ do (function()
 
         local W = w.w
 
-        -- FASE 1: Kerjakan baris bawah dari atas ke bawah DULU (supaya langsung terbentuk pola baris kosong & baris platform untuk parkour!)
+        -- FASE 0 (BARU): Habiskan 2 tile vertikal di ujung kiri (0,1) dan ujung kanan (W-2,W-1) hingga Bedrock terlebih dahulu!
+        if not ClearVerticalEdge(w, 0, 1, topDirtY, bedrockY, "Left (1-2)", token) then return end
+        if not DF.on or DF.token ~= token then return end
+        if not ClearVerticalEdge(w, W - 2, W - 1, topDirtY, bedrockY, "Right (99-100)", token) then return end
+        if not DF.on or DF.token ~= token then return end
+
+        -- Pastikan karakter berada di permukaan atas sebelum mulai membentuk pola Dirt Farm
+        DF.status = "Moving to surface start position..."
+        WalkOrParkourTo(2, math.max(0, topDirtY - 1), token)
+
+        -- FASE 1: Kerjakan baris bawah dari atas ke bawah
         local leftToRight = true
         for emptyY = topDirtY + 1, bedrockY - 1, 2 do
+            -- (Biarkan isi loop emptyY tetap seperti kode asli Anda)
             if not DF.on or DF.token ~= token or not alive() then return end
             w = FindWorld()
             if not w or CurrentWorldName() ~= home.world then return end
@@ -8090,7 +8155,7 @@ do (function()
         end
     end
 
-    local NameFx = { t0 = os.clock(), tag = nil, panel = nil }
+    local NameFx = { t0 = os.clock(), tag = nil, panel = nil, cachedTag = nil, cachedPanel = nil, nextScan = 0 }
     local NAME_COLORS = ColorSequence.new({
         ColorSequenceKeypoint.new(0.00, Color3.fromRGB(48, 255, 106)),
         ColorSequenceKeypoint.new(0.25, Color3.fromRGB(60, 205, 255)),
@@ -8100,14 +8165,56 @@ do (function()
     })
     local NAME_FONT = Enum.Font.FredokaOne
 
+    local function findCameraNameTag(gg)
+        if not gg then return nil end
+        -- 1. Cek path klasik jika suatu saat tidak di-obfuscate
+        local w = gg:FindFirstChild("World")
+        local c = w and w:FindFirstChild("Camera")
+        local nt = c and c:FindFirstChild("NameTag")
+        if nt then return nt end
+
+        -- 2. Deteksi otomatis Frame Camera & NameTag (ZIndex >= 1030 dengan BitmapText)
+        for _, worldCand in ipairs(gg:GetChildren()) do
+            if worldCand:IsA("Frame") then
+                for _, camCand in ipairs(worldCand:GetChildren()) do
+                    if camCand:IsA("Frame") and camCand:FindFirstChildOfClass("UIScale") then
+                        local bestHolder, bestZ = nil, -1
+                        for _, child in ipairs(camCand:GetChildren()) do
+                            if child:IsA("Frame") and child:FindFirstChild("BitmapText") then
+                                -- NameTag utama karakter memiliki ZIndex tertinggi (1038) dibanding label pintu (1016/1017)
+                                if child.ZIndex >= 1030 and child.ZIndex > bestZ then
+                                    bestHolder = child
+                                    bestZ = child.ZIndex
+                                end
+                            end
+                        end
+                        if bestHolder then return bestHolder end
+                    end
+                end
+            end
+        end
+        return nil
+    end
+
     local function nameHolders()
-        local gg = PlayerGui:FindFirstChild("GameGui")
-        local world = gg and gg:FindFirstChild("World")
-        local cam = world and world:FindFirstChild("Camera")
-        local chat = PlayerGui:FindFirstChild("ChatGui")
-        local hud = chat and chat:FindFirstChild("HUD")
-        local panel = hud and hud:FindFirstChild("PlayerPanel")
-        return cam and cam:FindFirstChild("NameTag"), panel and panel:FindFirstChild("Name")
+        local now = os.clock()
+        if NameFx.cachedTag and not NameFx.cachedTag.Parent then NameFx.cachedTag = nil end
+        if NameFx.cachedPanel and not NameFx.cachedPanel.Parent then NameFx.cachedPanel = nil end
+
+        if (not NameFx.cachedTag or not NameFx.cachedPanel) and now >= NameFx.nextScan then
+            NameFx.nextScan = now + 1.0
+            local gg = PlayerGui:FindFirstChild("GameGui")
+            if not NameFx.cachedTag then
+                NameFx.cachedTag = findCameraNameTag(gg)
+            end
+            if not NameFx.cachedPanel then
+                local chat = PlayerGui:FindFirstChild("ChatGui")
+                local hud = chat and chat:FindFirstChild("HUD")
+                local panel = hud and hud:FindFirstChild("PlayerPanel")
+                NameFx.cachedPanel = panel and panel:FindFirstChild("Name")
+            end
+        end
+        return NameFx.cachedTag, NameFx.cachedPanel
     end
 
     local function textWidth(text, size)
@@ -8123,7 +8230,7 @@ do (function()
         lb.TextSize = size
         lb.TextColor3 = Color3.new(1, 1, 1)
         lb.Text = Config.watermarkText
-        lb.ZIndex = isTag and 1017 or 10
+        lb.ZIndex = isTag and math.max(holder.ZIndex + 1, 1039) or math.max(holder.ZIndex + 9, 10)
         if isTag then
             lb.AnchorPoint = Vector2.new(0.5, 0.5)
             lb.Position = UDim2.fromScale(0.5, 0.5)
@@ -8146,7 +8253,8 @@ do (function()
     local function dropEntry(e)
         if not e then return end
         pcall(function() e.label:Destroy() end)
-        if e.bitmap then pcall(function() e.bitmap.Visible = true end) end
+        local bmp = (e.holder and e.holder:FindFirstChild("BitmapText")) or e.bitmap
+        if bmp then pcall(function() bmp.Visible = true end) end
     end
 
     function Session.RestoreWatermark()
@@ -8166,7 +8274,12 @@ do (function()
             e.label.Text = Config.watermarkText
             e.w = textWidth(Config.watermarkText, size)
         end
-        if e.bitmap and e.bitmap.Visible then e.bitmap.Visible = false end
+        -- Selalu perbarui referensi BitmapText jika dibuat ulang oleh game
+        local bmp = holder:FindFirstChild("BitmapText")
+        if bmp then
+            e.bitmap = bmp
+            if bmp.Visible then bmp.Visible = false end
+        end
         if isTag then
             local h = math.max(holder.Size.Y.Offset, size + 6)
             e.label.Size = UDim2.fromOffset(e.w, h)
