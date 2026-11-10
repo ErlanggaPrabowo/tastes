@@ -320,12 +320,16 @@ local Config = {
     harvestTpDelay = 0.30,
     harvestTake = true,
     harvestModFly = false,
-    -- Auto Dirt Farm (DF Full World)
+    -- Auto Dirt Farm (DF Full World + Use Platform)
     dfBreakDelay = 0.15,
     dfTpDelay = 0.28,
     dfTake = true,
     dfModFly = true,
     dfReplacePlatform = true,
+    dfUsePlatform = false,
+    dfPlatformId = 102, -- Default: 102 (Wooden Platform)
+    -- Helper: Fast Roulette
+    fastRoulette = false,
     -- Auto Splice
     spliceA = 3,
     spliceB = 5,
@@ -4474,7 +4478,7 @@ do (function()
 end)() end
 
 ----------------------------------------------------------------------
--- 4. AUTO DIRT FARM (TOP-DOWN PLATFORM BREAK + SMART PARKOUR MOVE)
+-- 4. AUTO DIRT FARM (PURE PARKOUR + USE PLATFORM MODE + NO SCAFFOLD)
 ----------------------------------------------------------------------
 do (function()
     local DF_BREAK_TIMEOUT = 5.0
@@ -4512,34 +4516,57 @@ do (function()
         return topDirtY, bedrockY
     end
 
-    -- Smart Parkour & Smooth Move: Memanfaatkan lompatan antar baris kosong DF (A* Stair/Jump) sebelum fallback ke panjat
+    -- Parkour Murni TANPA menaruh blok pijakan (allowScaffold = false) agar tidak pernah nyangkut karena gagal break pijakan!
     local function WalkOrParkourTo(standX, standY, token)
         local cancelFn = function() return DF.token ~= token or not DF.on or not alive() end
         local px, py = GetTile()
         if not px or (px == standX and py == standY) then return true end
 
-        -- 1. Jika di baris yang sama dan dekat, geser mulus dengan ExecWalk
+        if Config.moveMethod == "Teleport Mode" then
+            return Nav.FlyTo(standX, standY, cancelFn, Config.dfTpDelay, false)
+        end
+
+        -- 1. Jika di baris yang sama dan dekat, jalan lurus biasa
         if py == standY and math.abs(px - standX) <= 3 then
             if Nav.ExecWalk(standX, standY, cancelFn) then return true end
         end
 
-        -- 2. Coba cari jalur parkour murni tanpa pasang blok (melompat melewati pola baris kosong DF)
-        if Nav.LegitTo(standX, standY, cancelFn, 0.35, false) then
+        -- 2. Gunakan A* Murni TANPA pasang scaffold (allowScaffold = false) -> otomatis parkour/stair lewat barisan DF & Wooden Platform!
+        if Nav.LegitTo(standX, standY, cancelFn, 0.4, false) then
             return true
         end
 
-        -- 3. Jika belum terjangkau (misal ujung lorong belum terbuka), izinkan A* memakai 1-2 pijakan parkour
-        if Nav.LegitTo(standX, standY, cancelFn, 0.35, true) then
-            return true
-        end
-
-        -- 4. Fallback terakhir jika harus naik vertikal di kolom pinggir
+        -- 3. Jika target berada jauh di atas (misal naik dari bedrock ke atas), parkour bertahap tiap 2 baris (1 lantai DF)
         if py and standY < py then
-            if Nav.ClimbUpWithDirt(standX, standY, cancelFn, true, Config.dfTpDelay, true) then
+            local curY = py
+            while curY > standY and not cancelFn() do
+                local stepTargetY = math.max(standY, curY - 2)
+                -- Cari pijakan ujung terdekat (kolom 1/2 di kiri atau W-3/W-2 di kanan)
+                local w = FindWorld()
+                local W = (w and w.w) or 100
+                local nearLeft = (math.abs((px or 2) - 2) <= math.abs((px or 2) - (W - 3)))
+                local tryCols = nearLeft and { 1, 2, 3, W - 2, W - 3 } or { W - 2, W - 3, W - 4, 1, 2 }
+                local climbedStep = false
+                for _, tx in ipairs(tryCols) do
+                    if Nav.OpenAt(tx, stepTargetY) and Nav.RealSupport(tx, stepTargetY) then
+                        if Nav.LegitTo(tx, stepTargetY, cancelFn, 0.4, false) then
+                            climbedStep = true
+                            break
+                        end
+                    end
+                end
+                local nx, ny = GetTile()
+                if not climbedStep or not ny or ny >= curY then
+                    break
+                end
+                px, curY = nx, ny
+            end
+            if Nav.LegitTo(standX, standY, cancelFn, 0.4, false) then
                 return true
             end
         end
-        return Nav.To(standX, standY, cancelFn, 0.35, true)
+
+        return false
     end
 
     local function BreakTotalAt(w, tx, ty, standX, standY, token)
@@ -4581,6 +4608,34 @@ do (function()
             task.wait(math.max(0.04, Config.dfBreakDelay))
         end
         return true
+    end
+
+    -- Pasang Platform (misal Wooden Platform ID 102) di bagian kosong yang menempel dengan ujung barisan Dirt (x = 1 dan x = W - 2)
+    local function PlaceEdgePlatformAt(w, platX, platY, standX, standY, token)
+        if not Config.dfUsePlatform then return end
+        local platId = tonumber(Config.dfPlatformId) or 102
+        if platId <= 0 or CountItem(platId) <= 0 then return end
+        if not InBounds(w, platX, platY) then return end
+
+        local curFg = TileValue(w, "fg", platX, platY) or 0
+        if curFg == platId then return end
+
+        WalkOrParkourTo(standX, standY, token)
+
+        if curFg ~= 0 and CanBreakId(curFg, platX, platY) then
+            local t0 = os.clock()
+            while DF.on and DF.token == token and (TileValue(w, "fg", platX, platY) or 0) ~= 0 and (os.clock() - t0) < 3.5 do
+                TryBreakOnce(platX, platY, false)
+                task.wait(math.max(0.04, Config.dfBreakDelay))
+            end
+        end
+
+        if DF.on and DF.token == token and (TileValue(w, "fg", platX, platY) or 0) == 0 and CountItem(platId) > 0 then
+            if PlaceCell(platId, { x = platX, y = platY }, (platX >= standX) and 1 or -1) then
+                DF.stats.placed += 1
+                task.wait(0.14)
+            end
+        end
     end
 
     local function FindWorldDirtDrop(dirtId, seedId)
@@ -4760,19 +4815,21 @@ do (function()
     end
 
     local function FirstUncleanVerticalY(w, colA, colB, topDirtY, bedrockY)
+        local platId = tonumber(Config.dfPlatformId) or 102
         for y = topDirtY, bedrockY - 1 do
             local fgA, bgA = TileValue(w, "fg", colA, y) or 0, TileValue(w, "bg", colA, y) or 0
             local fgB, bgB = TileValue(w, "fg", colB, y) or 0, TileValue(w, "bg", colB, y) or 0
             if IsBedrockId(fgA) and IsBedrockId(fgB) then break end
+            local ignoreB = Config.dfUsePlatform and (fgB == platId)
             if (fgA ~= 0 and CanBreakId(fgA, colA, y)) or (bgA ~= 0 and CanBreakId(bgA, colA, y))
-                or (fgB ~= 0 and CanBreakId(fgB, colB, y)) or (bgB ~= 0 and CanBreakId(bgB, colB, y)) then
+                or (not ignoreB and fgB ~= 0 and CanBreakId(fgB, colB, y)) or (bgB ~= 0 and CanBreakId(bgB, colB, y)) then
                 return y
             end
         end
         return nil
     end
 
-    -- Bersihkan kolom vertikal pinggir dengan berdiri di atas blok yang akan dihancurkan / dari samping platform
+    -- Bersihkan 2 kolom vertikal ujung (0,1 di kiri dan W-2,W-1 di kanan) TANPA menaruh blok pijakan!
     local function ClearVerticalEdge(w, colA, colB, topDirtY, bedrockY, label, token)
         local firstY = FirstUncleanVerticalY(w, colA, colB, topDirtY, bedrockY)
         if not firstY then
@@ -4782,6 +4839,7 @@ do (function()
 
         DF.stats.step = "Vertical Edge " .. label
         local innerPlatformX = (colB < 5) and 2 or (w.w - 3)
+        local platId = tonumber(Config.dfPlatformId) or 102
 
         for y = firstY, bedrockY - 1 do
             if not DF.on or DF.token ~= token or not alive() then return false end
@@ -4790,18 +4848,29 @@ do (function()
             if IsBedrockId(TileValue(w, "fg", colA, y)) and IsBedrockId(TileValue(w, "fg", colB, y)) then
                 break
             end
-            -- Berdiri di atas blok atau di pinggir platform dalam agar karakter tidak jatuh ke jurang
             local standY = math.max(0, y - 1)
-            local standX = (Nav.RealSupport(innerPlatformX, standY)) and innerPlatformX or colB
-            DF.status = string.format("Vertical %s: Breaking Y=%d from above", label, y)
-            BreakTotalAt(w, colB, y, standX, standY, token)
+            -- Berdiri di atas colB (blok yang akan digali ke bawah) atau di innerPlatformX jika sejajar
+            local standX = Nav.RealSupport(colB, standY) and colB or innerPlatformX
+            DF.status = string.format("Vertical %s: Breaking Y=%d", label, y)
+
+            -- Hancurkan colA (kolom terluar 0 atau 99) terlebih dahulu, lalu colB (1 atau 98) agar pijakan turun bertahap!
+            BreakTotalAt(w, colA, y, standX, standY, token)
             if not DF.on or DF.token ~= token then return false end
-            BreakTotalAt(w, colA, y, colB, standY, token)
+
+            local fgB = TileValue(w, "fg", colB, y) or 0
+            if not (Config.dfUsePlatform and fgB == platId) then
+                BreakTotalAt(w, colB, y, standX, standY, token)
+            end
+
+            -- Jika Use Platform aktif dan baris y ini adalah baris platform (selisih genap dari topDirtY), langsung pasang Platform di colB (1 atau 98)!
+            if Config.dfUsePlatform and ((y - topDirtY) % 2 == 0) and CountItem(platId) > 0 then
+                PlaceEdgePlatformAt(w, colB, y, standX, standY, token)
+            end
         end
 
-        -- Parkour / panjat kembali ke permukaan atas
+        -- Parkour kembali ke atas lewat barisan platform / Wooden Platform (tanpa pasang Dirt)
         if DF.on and DF.token == token then
-            DF.status = string.format("Parkouring back up from %s...", label)
+            DF.status = string.format("Parkouring up from %s...", label)
             WalkOrParkourTo(innerPlatformX, math.max(0, topDirtY - 1), token)
         end
         return true
@@ -4810,6 +4879,7 @@ do (function()
     local function IsBottomRowComplete(w, emptyY, topDirtY, bedrockY)
         local dirtId = GetDirtId()
         local platY = emptyY - 1
+        local platId = tonumber(Config.dfPlatformId) or 102
         for x = 2, w.w - 3 do
             local fg = TileValue(w, "fg", x, emptyY) or 0
             local bg = TileValue(w, "bg", x, emptyY) or 0
@@ -4820,17 +4890,28 @@ do (function()
                 return false
             end
         end
+        if Config.dfUsePlatform and platY >= topDirtY and CountItem(platId) > 0 then
+            if (TileValue(w, "fg", 1, platY) or 0) ~= platId or (TileValue(w, "fg", w.w - 2, platY) or 0) ~= platId then
+                return false
+            end
+        end
         return true
     end
 
     local function IsUpperRowComplete(w, platformY)
         local dirtId = GetDirtId()
         local walkY = platformY - 1
+        local platId = tonumber(Config.dfPlatformId) or 102
         for x = 2, w.w - 3 do
             if (TileValue(w, "fg", x, platformY) or 0) ~= dirtId then
                 return false
             end
             if (TileValue(w, "fg", x, walkY) or 0) ~= 0 then
+                return false
+            end
+        end
+        if Config.dfUsePlatform and CountItem(platId) > 0 then
+            if (TileValue(w, "fg", 1, platformY) or 0) ~= platId or (TileValue(w, "fg", w.w - 2, platformY) or 0) ~= platId then
                 return false
             end
         end
@@ -4848,17 +4929,11 @@ do (function()
         local topDirtY, bedrockY = DetectWorldLayers(w)
         DF.stats.topDirtY = topDirtY
         DF.stats.bedrockY = bedrockY
-        Notify(string.format("Auto DF: Top-Down Platform Mode (Dirt Y=%d, Bedrock Y=%d).", topDirtY, bedrockY))
+        Notify(string.format("Auto DF: Pure Parkour Mode (Dirt Y=%d, Bedrock Y=%d).", topDirtY, bedrockY))
 
         local W = w.w
-        if not ClearVerticalEdge(w, 0, 1, topDirtY, bedrockY, "Left (1-2)", token) then return end
-        if not DF.on or DF.token ~= token then return end
-        if not ClearVerticalEdge(w, W - 2, W - 1, topDirtY, bedrockY, "Right (99-100)", token) then return end
-        if not DF.on or DF.token ~= token then return end
 
-        -- FASE 1: BANGUN POLA DF BAWAH DARI ATAS PLATFORM!
-        -- Karakter berdiri di standY = emptyY - 2 (di atas platform platY = emptyY - 1)
-        -- dan menghancurkan baris kosong emptyY yang berada tepat di bawah platform tersebut!
+        -- FASE 1: Kerjakan baris bawah dari atas ke bawah DULU (supaya langsung terbentuk pola baris kosong & baris platform untuk parkour!)
         local leftToRight = true
         for emptyY = topDirtY + 1, bedrockY - 1, 2 do
             if not DF.on or DF.token ~= token or not alive() then return end
@@ -4870,63 +4945,64 @@ do (function()
             else
                 local platY = emptyY - 1  -- Baris platform tempat karakter berpijak
                 local standY = emptyY - 2 -- Tile badan karakter (di atas platform platY)
-                DF.stats.step = string.format("Bottom: Row Y=%d (Stand Y=%d)", emptyY, standY)
+                DF.stats.step = string.format("Bottom: Row Y=%d", emptyY)
 
                 local startX = leftToRight and 2 or (W - 3)
                 local endX   = leftToRight and (W - 3) or 2
                 local stepX  = leftToRight and 1 or -1
 
-                -- Pastikan titik awal platform (startX, platY) sudah ada Dirt untuk dipijak
-                if (TileValue(w, "fg", startX, platY) or 0) ~= GetDirtId() then
-                    EnsurePlatformDirtAt(w, startX, platY, startX, math.max(0, standY - 1), topDirtY, bedrockY, token)
-                end
                 WalkOrParkourTo(startX, standY, token)
+
+                -- Jika Use Platform nyala, pasang Platform di sisi awal yang menempel dengan ujung Dirt (x=1 atau x=W-2)
+                if Config.dfUsePlatform and platY >= topDirtY then
+                    local startEdgePlatX = leftToRight and 1 or (W - 2)
+                    PlaceEdgePlatformAt(w, startEdgePlatX, platY, startX, standY, token)
+                end
 
                 for x = startX, endX, stepX do
                     if not DF.on or DF.token ~= token or not alive() then return end
                     w = FindWorld()
                     if not w or CurrentWorldName() ~= home.world then return end
 
-                    -- 1. Pastikan tile berdiri (x, standY) kosong (jika ada blok menghalangi jalan di atas platform, hancurkan)
                     local prevX = (x == startX) and startX or (x - stepX)
                     if (TileValue(w, "fg", x, standY) or 0) ~= 0 or (TileValue(w, "bg", x, standY) or 0) ~= 0 then
                         BreakTotalAt(w, x, standY, prevX, standY, token)
                     end
 
-                    -- 2. Pastikan platform pijakan (x, platY) adalah Dirt padat SEBELUM karakter melangkah ke atasnya!
+                    -- Ganti Lava/Rock/Kosong di platform pijakan dengan Dirt
                     if Config.dfReplacePlatform or (TileValue(w, "fg", x, platY) or 0) == 0 or Nav.HazardAt(x, platY) then
                         EnsurePlatformDirtAt(w, x, platY, prevX, standY, topDirtY, bedrockY, token)
                     end
 
-                    -- 3. Melangkah ke atas platform (x, standY) -> 100% aman, tidak mungkin jatuh!
                     WalkOrParkourTo(x, standY, token)
 
-                    -- 4. Hancurkan blok pola kosong (x, emptyY) yang berada di bawah platform!
-                    DF.status = string.format("Row Y=%d | Breaking (%d,%d) from above", emptyY, x, emptyY)
+                    -- Hancurkan blok pola kosong (x, emptyY) yang berada tepat di bawah platform
+                    DF.status = string.format("Row Y=%d | Breaking (%d,%d)", emptyY, x, emptyY)
                     BreakTotalAt(w, x, emptyY, x, standY, token)
+                end
+
+                -- Jika Use Platform nyala, pasang Platform di sisi akhir yang menempel dengan ujung Dirt (x=W-2 atau x=1)
+                if Config.dfUsePlatform and platY >= topDirtY then
+                    local endEdgePlatX = leftToRight and (W - 2) or 1
+                    PlaceEdgePlatformAt(w, endEdgePlatX, platY, endX, standY, token)
                 end
 
                 leftToRight = not leftToRight
             end
         end
 
-        -- Pastikan baris lantai paling bawah (bedrockY - 1) jika genap juga rapi
-        local lastPlatY = bedrockY - 1
-        if Config.dfReplacePlatform and (lastPlatY - topDirtY) % 2 == 0 then
-            local standLastY = lastPlatY - 1
-            for x = 2, W - 3 do
-                if not DF.on or DF.token ~= token then break end
-                if (TileValue(w, "fg", x, lastPlatY) or 0) ~= GetDirtId() then
-                    EnsurePlatformDirtAt(w, x, lastPlatY, x, standLastY, topDirtY, bedrockY, token)
-                end
-            end
-        end
+        -- Sekarang barisan platform & baris kosong sudah terbentuk sampai bawah!
+        -- Bersihkan kolom vertikal kiri (0,1) dan kanan (98,99); karakter bisa langsung Parkour naik ke atas lewat barisan DF & Platform!
+        if not ClearVerticalEdge(w, 0, 1, topDirtY, bedrockY, "Left (1-2)", token) then return end
+        if not DF.on or DF.token ~= token then return end
+        if not ClearVerticalEdge(w, W - 2, W - 1, topDirtY, bedrockY, "Right (99-100)", token) then return end
+        if not DF.on or DF.token ~= token then return end
 
-        -- Parkour naik kembali dari bawah ke topDirtY melalui baris-baris kosong DF yang sudah jadi!
+        -- Parkour naik kembali ke permukaan topDirtY
         DF.status = "Parkouring up through DF rows to surface..."
         WalkOrParkourTo(2, math.max(0, topDirtY - 1), token)
 
-        -- FASE 2: BANGUN PLATFORM ATAS DENGAN PARKOUR JUMP + BRIDGE WALK
+        -- FASE 2: BANGUN PLATFORM ATAS DENGAN PARKOUR + USE PLATFORM
         local upperLeftToRight = true
         for platformY = topDirtY - 2, 2, -2 do
             if not DF.on or DF.token ~= token or not alive() then return end
@@ -4944,16 +5020,20 @@ do (function()
                 local endX   = upperLeftToRight and (W - 3) or 2
                 local stepX  = upperLeftToRight and 1 or -1
 
-                -- Berdiri di baris bawahnya (startX + stepX, prevWalkY), pasang Dirt pertama di (startX, platformY),
-                -- lalu langsung Parkour Jump 2 tile ke atasnya (startX, walkY)!
-                WalkOrParkourTo(startX + stepX, prevWalkY, token)
-                EnsurePlatformDirtAt(w, startX, platformY, startX + stepX, prevWalkY, topDirtY, bedrockY, token)
-                EnsurePlatformDirtAt(w, startX + stepX, platformY, startX + stepX * 2, prevWalkY, topDirtY, bedrockY, token)
+                WalkOrParkourTo(startX, prevWalkY, token)
+
+                -- Jika Use Platform aktif, pasang Platform di ujung awal (x=1 atau x=W-2) supaya karakter langsung melompat naik menembus Platform!
+                if Config.dfUsePlatform then
+                    local startPlatX = upperLeftToRight and 1 or (W - 2)
+                    PlaceEdgePlatformAt(w, startPlatX, platformY, startX, prevWalkY, token)
+                end
+
+                EnsurePlatformDirtAt(w, startX, platformY, startX, prevWalkY, topDirtY, bedrockY, token)
+                EnsurePlatformDirtAt(w, startX + stepX, platformY, startX + stepX, prevWalkY, topDirtY, bedrockY, token)
 
                 -- Parkour naik ke atas platform baru (startX, walkY)
                 WalkOrParkourTo(startX, walkY, token)
 
-                -- Jalan di atas platform baru sambil memasang Dirt di depan kaki (jembatan)
                 for x = startX + stepX, endX, stepX do
                     if not DF.on or DF.token ~= token or not alive() then return end
                     w = FindWorld()
@@ -4969,6 +5049,12 @@ do (function()
                     WalkOrParkourTo(x, walkY, token)
                 end
 
+                -- Pasang juga Platform di ujung akhir baris atas
+                if Config.dfUsePlatform then
+                    local endPlatX = upperLeftToRight and (W - 2) or 1
+                    PlaceEdgePlatformAt(w, endPlatX, platformY, endX, walkY, token)
+                end
+
                 upperLeftToRight = not upperLeftToRight
             end
         end
@@ -4979,7 +5065,7 @@ do (function()
         AutoInput.active = false
         DF.stats.step = "Completed"
         DF.status = "Completed"
-        local msg = string.format("Full World Dirt Farm finished! Broken: %d | Dirt Placed: %d | Drops: %d", DF.stats.broken, DF.stats.placed, DF.stats.picked)
+        local msg = string.format("Full World Dirt Farm finished! Broken: %d | Placed: %d | Drops: %d", DF.stats.broken, DF.stats.placed, DF.stats.picked)
         Notify(msg)
         Webhook.Send("pabrik", msg)
     end
@@ -5268,6 +5354,9 @@ do (function()
     end
 
     local function ClearPabrikState()
+        if writefile then
+            pcall(writefile, PABRIK_STATE_FILE, '{"active":false}')
+        end
         if isfile and delfile and isfile(PABRIK_STATE_FILE) then
             pcall(delfile, PABRIK_STATE_FILE)
         end
@@ -6095,6 +6184,9 @@ do (function()
     end
 
     local function ClearMoveState()
+        if writefile then
+            pcall(writefile, AUTOMOVE_STATE_FILE, '{"active":false}')
+        end
         if isfile and delfile and isfile(AUTOMOVE_STATE_FILE) then
             pcall(delfile, AUTOMOVE_STATE_FILE)
         end
@@ -6560,6 +6652,9 @@ do (function()
     end
 
     local function ClearRotState()
+        if writefile then
+            pcall(writefile, Session.ROTATION_STATE_FILE, '{"active":false}')
+        end
         if isfile and delfile and isfile(Session.ROTATION_STATE_FILE) then
             pcall(delfile, Session.ROTATION_STATE_FILE)
         end
@@ -7570,12 +7665,15 @@ do (function()
     task.spawn(function()
         while alive() do
             local wName = CurrentWorldName()
-            if wName ~= "" and not Pabrik.traveling then
+            if wName ~= "" and not Pabrik.traveling and not AutoMove.traveling and not (Session.Rotation and Session.Rotation.traveling) then
                 Config.lastWorld = wName
             end
             if anyBotRunning() and Guard.mode == "idle" then
                 Reconnect.last = snapshot()
                 Reconnect.lastAt = os.clock()
+            else
+                -- Jika user sudah mematikan bot, hapus snapshot agar tidak nyala sendiri saat pindah world!
+                Reconnect.last = nil
             end
             task.wait(1)
         end
@@ -9083,11 +9181,14 @@ local Features = {
 local function SetFeature(key, on)
     local feature = Features[key]
     if not feature then return end
+    if UIInitializing and feature.noSession then return end
     feature.set(on)
     if feature.get() == on then
         Notify(feature.label .. (on and " enabled." or " disabled."))
         if not feature.noSession then
             Config.session[key] = on or nil
+        else
+            Config.session[key] = nil
         end
         SaveConfig()
     end
@@ -10110,6 +10211,30 @@ SafeUI("Tab:AutoDF", function()
         Title = "Replace Lava/Rock with Dirt on Platforms",
         Value = Config.dfReplacePlatform,
         Callback = function(on) Config.dfReplacePlatform = on; SaveConfig() end,
+    })
+
+    Tab:Toggle({
+        Title = "Use Platform",
+        Desc = "Automaticly place platform like wooden platform",
+        Value = Config.dfUsePlatform,
+        Callback = function(on)
+            Config.dfUsePlatform = on
+            SaveConfig()
+        end,
+    })
+
+    Tab:Input({
+        Title = "ID Platform (Default: 102 = Wooden Platform)",
+        Value = tostring(Config.dfPlatformId or 102),
+        Placeholder = "102",
+        Callback = function(text)
+            local v = tonumber(text)
+            if v and v > 0 then
+                Config.dfPlatformId = math.floor(v)
+                SaveConfig()
+                Notify("Platform DF diset ke: " .. ItemName(Config.dfPlatformId) .. " [" .. Config.dfPlatformId .. "]")
+            end
+        end,
     })
 
     Tab:Toggle({
