@@ -4478,116 +4478,278 @@ do (function()
 end)() end
 
 ----------------------------------------------------------------------
--- 4. AUTO DIRT FARM (PURE PARKOUR + USE PLATFORM MODE + NO SCAFFOLD)
+-- 4. AUTO DIRT FARM (SMART ADAPTIVE: REAL-TIME POS, ANTI-PING ROLLBACK, AUTO RESUME)
 ----------------------------------------------------------------------
 do (function()
-    local DF_BREAK_TIMEOUT = 5.0
+    local DF_BREAK_TIMEOUT = 6.5
 
     local function IsBedrockId(id)
+        if id == 8 then return true end
         local it = ItemDB and ItemDB[id]
         return type(it) == "table" and type(it.name) == "string" and it.name:lower():find("bedrock", 1, true) ~= nil
     end
 
+    -- Hitung jeda konfirmasi server dinamis berdasarkan Ping agar kebal rollback saat ping jumping
+    local function GetPingSettleDelay()
+        local ping = 0.10
+        pcall(function() ping = Player:GetNetworkPing() end)
+        return math.clamp(0.12 + (ping * 2.2), 0.14, 0.60)
+    end
+
+    -- Deteksi topDirtY yang selalu terkunci pada lantai Main Door (id 6 / spawn) agar tidak salah baca di world yang sudah ada platform atas
     local function DetectWorldLayers(w)
-        local dirtId = GetDirtId()
-        local topDirtY, bedrockY = nil, nil
+        local doorY = nil
         for y = 0, w.h - 1 do
-            local groundCount, bedrockCount = 0, 0
             for x = 0, w.w - 1 do
-                local fg = TileValue(w, "fg", x, y) or 0
-                if fg ~= 0 then
-                    if IsBedrockId(fg) then
-                        bedrockCount += 1
-                    elseif fg == dirtId or CanBreakId(fg, x, y) then
-                        groundCount += 1
-                    end
+                if (TileValue(w, "fg", x, y) or 0) == 6 then
+                    doorY = y
+                    break
                 end
             end
-            if not topDirtY and groundCount >= math.floor(w.w * 0.25) then topDirtY = y end
-            if topDirtY and y > topDirtY and bedrockCount >= math.floor(w.w * 0.4) then
+            if doorY then break end
+        end
+        if not doorY and typeof(w.spawn) == "Vector2" then
+            doorY = math.floor(w.spawn.Y)
+        end
+
+        local topDirtY = doorY and (doorY + 1) or nil
+
+        -- Fallback jika pintu tidak terbaca: cari baris tanah asli (memiliki blok + background tanah, bukan platform langit)
+        if not topDirtY then
+            for y = 10, w.h - 8 do
+                local soilCount = 0
+                for x = 0, w.w - 1 do
+                    local fg = TileValue(w, "fg", x, y) or 0
+                    local bg = TileValue(w, "bg", x, y) or 0
+                    if (fg ~= 0 or bg ~= 0) and not IsBedrockId(fg) then
+                        soilCount += 1
+                    end
+                end
+                if soilCount >= math.floor(w.w * 0.5) then
+                    topDirtY = y
+                    break
+                end
+            end
+        end
+        topDirtY = topDirtY or 37
+
+        local bedrockY = nil
+        for y = topDirtY + 1, w.h - 1 do
+            local bedrockCount = 0
+            for x = 0, w.w - 1 do
+                if IsBedrockId(TileValue(w, "fg", x, y) or 0) then
+                    bedrockCount += 1
+                end
+            end
+            if bedrockCount >= math.floor(w.w * 0.4) then
                 bedrockY = y
                 break
             end
         end
-        if not topDirtY then
-            topDirtY = (typeof(w.spawn) == "Vector2") and (math.floor(w.spawn.Y) + 1) or 37
-        end
-        if not bedrockY then bedrockY = w.h - 6 end
+        bedrockY = bedrockY or (w.h - 6)
         return topDirtY, bedrockY
     end
 
-    local EnsureDirtSupply -- forward declaration agar bisa dipanggil saat turun lorong
+    local function HasBreakableAt(w, x, y, includeBg)
+        if not InBounds(w, x, y) then return false end
+        local fg = TileValue(w, "fg", x, y) or 0
+        if fg ~= 0 and CanBreakId(fg, x, y) then return true end
+        if includeBg ~= false then
+            local bg = TileValue(w, "bg", x, y) or 0
+            if bg ~= 0 and CanBreakId(bg, x, y) then return true end
+        end
+        return false
+    end
 
-    -- Parkour Murni TANPA menaruh blok pijakan (allowScaffold = false)
-    local function WalkOrParkourTo(standX, standY, token)
+    local function OverlapsPlayerBody(s, tx, ty)
+        if not s or not s.x or not s.y then return false end
+        return (tx + 1 > s.x - 0.30) and (tx < s.x + 0.30) and (ty + 1 > s.y - 0.95) and (ty < s.y)
+    end
+
+    local EnsureDirtSupply
+    local EnsureStandingAt
+    local BreakTotalAt
+
+    --Pergerakan horizontal di dalam lorong yang otomatis membersihkan blok rollback atau menambal lantai bolong di depannya
+    local function WalkCorridorSmart(w, targetX, standY, topDirtY, bedrockY, token)
         local cancelFn = function() return DF.token ~= token or not DF.on or not alive() end
         local px, py = GetTile()
-        if not px or (px == standX and py == standY) then return true end
+        if not px or py ~= standY then return false end
+        if px == targetX then
+            local s = PlayerPhysicsState()
+            if s and s.grounded and math.abs(s.x - (targetX + 0.5)) <= 0.30 then
+                return true
+            end
+        end
+
+        local dirtId = GetDirtId()
+        local step = (targetX >= px) and 1 or -1
+
+        for cx = px, targetX, step do
+            if cancelFn() then return false end
+            w = FindWorld()
+            if not w then return false end
+
+            local curX, curY = GetTile()
+            if not curX or curY ~= standY then return false end
+
+            -- 1. Jika di depan kepala/badan (cx, standY) ada blok rollback, hancurkan dulu sebelum melangkah!
+            if cx ~= curX and not Nav.OpenAt(cx, standY) then
+                local fg = TileValue(w, "fg", cx, standY) or 0
+                if fg ~= 0 and CanBreakId(fg, cx, standY) then
+                    local standHere = cx - step
+                    Nav.ExecWalk(standHere, standY, cancelFn)
+                    local t0 = os.clock()
+                    while not cancelFn() and (TileValue(w, "fg", cx, standY) or 0) ~= 0 and (os.clock() - t0) < DF_BREAK_TIMEOUT do
+                        local r = TryBreakOnce(cx, standY, false)
+                        if r == "broke" then DF.stats.broken += 1 end
+                        task.wait(math.max(0.04, Config.dfBreakDelay))
+                    end
+                    task.wait(GetPingSettleDelay())
+                end
+            end
+
+            -- 2. Jika lantai di bawah langkah berikutnya (cx, standY + 1) kosong atau Lava (dan bukan parit 0,1 / 98,99), tambal dulu!
+            if cx >= 2 and cx <= (w.w - 3) and InBounds(w, cx, standY + 1) and not Nav.RealSupport(cx, standY) then
+                local standHere = (cx == curX) and curX or (cx - step)
+                Nav.ExecWalk(standHere, standY, cancelFn)
+                local floorFg = TileValue(w, "fg", cx, standY + 1) or 0
+                if floorFg ~= 0 and Nav.HazardAt(cx, standY + 1) and CanBreakId(floorFg, cx, standY + 1) then
+                    local t0 = os.clock()
+                    while not cancelFn() and (TileValue(w, "fg", cx, standY + 1) or 0) ~= 0 and (os.clock() - t0) < DF_BREAK_TIMEOUT do
+                        TryBreakOnce(cx, standY + 1, false)
+                        task.wait(math.max(0.04, Config.dfBreakDelay))
+                    end
+                    task.wait(GetPingSettleDelay())
+                end
+                if (TileValue(w, "fg", cx, standY + 1) or 0) == 0 then
+                    if CountItem(dirtId) <= 0 and EnsureDirtSupply then
+                        EnsureDirtSupply(w, standHere, standY, topDirtY, topDirtY, bedrockY, token)
+                    end
+                    if CountItem(dirtId) > 0 then
+                        PlaceCell(dirtId, { x = cx, y = standY + 1 }, step)
+                        DF.stats.placed += 1
+                        task.wait(math.max(PLACE_GUARD, GetPingSettleDelay()))
+                    end
+                end
+            end
+        end
+
+        if Nav.ExecWalk(targetX, standY, cancelFn) then
+            return true
+        end
+        return Nav.LegitTo(targetX, standY, cancelFn, 0.35, false)
+    end
+
+    -- Memanjat vertikal dengan aman dari dasar parit/lubang ke targetY, lalu membuka akses masuk ke innerX sebelum membersihkan pilar
+    local function ClimbUpSafely(w, targetX, targetY, topDirtY, bedrockY, token)
+        local cancelFn = function() return DF.token ~= token or not DF.on or not alive() end
+        local px, py = GetTile()
+        if not px or not py then return false end
+        if py <= targetY then return true end
 
         if Config.moveMethod == "Teleport Mode" or Config.dfModFly then
             SetAutoFly("autodf", true)
-            local ok = Nav.FlyTo(standX, standY, cancelFn, Config.dfTpDelay, false)
+            local ok = Nav.FlyTo(targetX, targetY, cancelFn, Config.dfTpDelay, false)
             SetAutoFly("autodf", false)
             return ok
         end
 
-        -- 1. Jika di baris yang sama (di dalam lorong DF), cek apakah jalur lurus terbuka
-        if py == standY then
-            local clearLine = true
-            local step = (standX >= px) and 1 or -1
-            for cx = px, standX, step do
-                if not (Nav.OpenAt(cx, standY) and Nav.RealSupport(cx, standY)) then
-                    clearLine = false
-                    break
+        -- 1. Coba parkour lewat tangga/platform jika sudah tersedia
+        if Nav.LegitTo(targetX, targetY, cancelFn, 0.4, false) then
+            local _, ny = GetTile()
+            if ny == targetY then return true end
+        end
+
+        -- 2. Pilih kolom panjat di tepi parit terdekat (x=1 di kiri atau x=W-2 di kanan)
+        local W = w.w
+        local useLeft = (math.abs(px - 1) <= math.abs(px - (W - 2)))
+        local climbCol = useLeft and 1 or (W - 2)
+        local innerX   = useLeft and 2 or (W - 3)
+        local dirtId   = GetDirtId()
+
+        DF.status = string.format("Recovering: Climbing up to Y=%d...", targetY)
+
+        -- Pastikan punya stok Dirt untuk memanjat
+        local needBlocks = math.max(6, (py - targetY) + 3)
+        if CountItem(dirtId) < needBlocks and EnsureDirtSupply then
+            EnsureDirtSupply(w, nil, nil, topDirtY, topDirtY, bedrockY, token)
+        end
+
+        -- Geser ke climbCol terlebih dahulu
+        px, py = GetTile()
+        if px and px ~= climbCol then
+            if not Nav.LegitTo(climbCol, py, cancelFn, 0.4, false) then
+                Nav.ExecWalk(climbCol, py, cancelFn)
+            end
+        end
+        px, py = GetTile()
+        if not px then return false end
+        if px ~= climbCol then
+            climbCol = px
+            innerX = (climbCol < W / 2) and math.min(W - 3, climbCol + 1) or math.max(2, climbCol - 1)
+        end
+
+        -- Panjat menggunakan ClimbUpWithDirt sampai targetY TANPA langsung meruntuhkan pijakan terakhir sebelum kita melangkah ke innerX
+        Nav.ClimbUpWithDirt(climbCol, targetY, cancelFn, false, Config.dfTpDelay, true)
+
+        -- Pastikan di puncak panjatan (targetY), tile samping (innerX, targetY) dibuka & lantainya (innerX, targetY+1) padat sebelum pindah!
+        local cx, cy = GetTile()
+        if cx and cy == targetY then
+            w = FindWorld()
+            if w then
+                -- Buka (innerX, targetY) jika masih tertutup blok
+                if HasBreakableAt(w, innerX, targetY, false) then
+                    local t0 = os.clock()
+                    while not cancelFn() and HasBreakableAt(w, innerX, targetY, false) and (os.clock() - t0) < DF_BREAK_TIMEOUT do
+                        TryBreakOnce(innerX, targetY, false)
+                        task.wait(math.max(0.04, Config.dfBreakDelay))
+                    end
+                    task.wait(GetPingSettleDelay())
                 end
-            end
-            if clearLine and Nav.ExecWalk(standX, standY, cancelFn) then
-                return true
+                -- Pasang lantai (innerX, targetY + 1) jika kosong
+                if InBounds(w, innerX, targetY + 1) and (TileValue(w, "fg", innerX, targetY + 1) or 0) == 0 and CountItem(dirtId) > 0 then
+                    PlaceCell(dirtId, { x = innerX, y = targetY + 1 }, (innerX > climbCol) and 1 or -1)
+                    task.wait(math.max(PLACE_GUARD, GetPingSettleDelay()))
+                end
+                -- Melangkah masuk ke koridor aman (innerX, targetY)
+                Nav.ExecWalk(innerX, targetY, cancelFn)
+                task.wait(0.15)
             end
         end
 
-        -- 2. Gunakan A* Murni TANPA pasang scaffold (allowScaffold = false)
-        if Nav.LegitTo(standX, standY, cancelFn, 0.4, false) then
-            return true
-        end
-
-        -- 3. Jika target berada jauh di atas, parkour bertahap tiap 2 baris
-        if py and standY < py then
-            local curY = py
-            while curY > standY and not cancelFn() do
-                local stepTargetY = math.max(standY, curY - 2)
-                local w = FindWorld()
-                local W = (w and w.w) or 100
-                local nearLeft = (math.abs((px or 2) - 2) <= math.abs((px or 2) - (W - 3)))
-                local tryCols = nearLeft and { 1, 2, 3, W - 2, W - 3 } or { W - 2, W - 3, W - 4, 1, 2 }
-                local climbedStep = false
-                for _, tx in ipairs(tryCols) do
-                    if Nav.OpenAt(tx, stepTargetY) and Nav.RealSupport(tx, stepTargetY) then
-                        if Nav.LegitTo(tx, stepTargetY, cancelFn, 0.4, false) then
-                            climbedStep = true
-                            break
+        -- Bersihkan sisa blok pijakan di kolom parit (climbCol) dari dalam koridor (innerX)
+        w = FindWorld()
+        if w and (climbCol <= 1 or climbCol >= W - 2) then
+            local platId = tonumber(Config.dfPlatformId) or 102
+            for cleanY = math.max(0, targetY - 1), bedrockY - 1 do
+                if cancelFn() then break end
+                local fg = TileValue(w, "fg", climbCol, cleanY) or 0
+                local keepPlat = Config.dfUsePlatform and (fg == platId) and ((cleanY - topDirtY) % 2 == 0)
+                if fg ~= 0 and not keepPlat and CanBreakId(fg, climbCol, cleanY) then
+                    local s = PlayerPhysicsState()
+                    if s and Nav.StateReaches(s, climbCol, cleanY, PunchReach() - 0.05) then
+                        local t0 = os.clock()
+                        while not cancelFn() and (TileValue(w, "fg", climbCol, cleanY) or 0) ~= 0 and (os.clock() - t0) < 3.5 do
+                            TryBreakOnce(climbCol, cleanY, false)
+                            task.wait(math.max(0.04, Config.dfBreakDelay))
                         end
                     end
                 end
-                local nx, ny = GetTile()
-                if not climbedStep or not ny or ny >= curY then
-                    break
-                end
-                px, curY = nx, ny
-            end
-            if Nav.LegitTo(standX, standY, cancelFn, 0.4, false) then
-                return true
             end
         end
 
-        return false
+        return WalkCorridorSmart(w, targetX, targetY, topDirtY, bedrockY, token)
     end
 
-    -- Fungsi khusus untuk masuk/turun ke lorong DF (targetStandY) dengan metode Break-Drop-Seal (Pocket Drop)
-    local function EnterCorridorRow(w, targetX, targetStandY, topDirtY, bedrockY, token)
+    -- Turun ke baris lorong bawah dengan metode Bumper Pocket-Drop (Anti-Terlempar ke Parit)
+    local function SafeDescendToRow(w, targetX, targetStandY, topDirtY, bedrockY, token)
         local cancelFn = function() return DF.token ~= token or not DF.on or not alive() end
         local px, py = GetTile()
-        if not px then return false end
+        if not px or not py then return false end
+        if py == targetStandY then
+            return WalkCorridorSmart(w, targetX, targetStandY, topDirtY, bedrockY, token)
+        end
 
         if Config.moveMethod == "Teleport Mode" or Config.dfModFly then
             SetAutoFly("autodf", true)
@@ -4596,66 +4758,73 @@ do (function()
             return ok
         end
 
-        -- 1. Jika sudah di baris lorong yang sama, langsung jalan ke targetX
-        if py == targetStandY then
-            return WalkOrParkourTo(targetX, targetStandY, token)
-        end
-
-        -- 2. Jika posisi karakter lebih rendah dari targetStandY (py > targetStandY), naik dulu
-        if py > targetStandY then
-            if WalkOrParkourTo(targetX, targetStandY, token) then return true end
-            local edgeCol = (math.abs(px - 1) <= math.abs(px - (w.w - 2))) and 1 or (w.w - 2)
-            Nav.ClimbUpWithDirt(edgeCol, targetStandY, cancelFn, true, Config.dfTpDelay, true)
-            return WalkOrParkourTo(targetX, targetStandY, token)
-        end
-
-        -- 3. Jika karakter berada di atas lorong tujuan (py < targetStandY):
-        --    Buka 1 blok platform di (targetX, bridgeY), melangkah turun 2 tile ke (targetX, nextStandY),
-        --    lalu langsung pasang kembali blok Dirt di (targetX, bridgeY) tepat di atas kepala!
+        local W = w.w
         local dirtId = GetDirtId()
-        local curY = py
-        local stepInward = (targetX <= 2) and 1 or -1
-        local inwardX = targetX + stepInward
 
-        while curY < targetStandY and not cancelFn() do
+        -- Pilih sisi turun terdekat (Kiri: bumperX=2, dropX=3, prepX=4 | Kanan: bumperX=W-3, dropX=W-4, prepX=W-5)
+        -- Blok di bumperX (2 atau 97) TETAP PADAT sebagai tembok penahan agar karakter tidak mungkin bablas ke parit 0,1 / 98,99!
+        local useLeft = (math.abs(targetX - 2) <= math.abs(targetX - (W - 3)))
+        local bumperX = useLeft and 2 or (W - 3)
+        local dropX   = useLeft and 3 or (W - 4)
+        local prepX   = useLeft and 4 or (W - 5)
+
+        local curY = py
+        local safetyLoops = 0
+
+        while curY < targetStandY and safetyLoops < 30 and not cancelFn() do
+            safetyLoops += 1
             w = FindWorld()
             if not w then return false end
 
             local nextStandY = math.min(targetStandY, curY + 2)
-            local bridgeY = nextStandY - 1 -- Blok platform yang memisahkan curY dan nextStandY
-            local floorY  = nextStandY + 1 -- Blok lantai tempat mendarat di lorong nextStandY
+            local bridgeY    = nextStandY - 1 -- Lantai platform yang memisahkan curY dan nextStandY
+            local floorY     = nextStandY + 1 -- Lantai tempat mendarat di lorong nextStandY
 
-            if CountItem(dirtId) < 2 and EnsureDirtSupply then
-                EnsureDirtSupply(w, inwardX, curY, topDirtY, topDirtY, bedrockY, token)
+            if CountItem(dirtId) < 3 and EnsureDirtSupply then
+                EnsureDirtSupply(w, prepX, curY, topDirtY, topDirtY, bedrockY, token)
             end
 
-            -- Berdiri 1 tile di sebelah dalam (inwardX, curY) agar tidak jatuh saat membuka lubang turun
-            WalkOrParkourTo(inwardX, curY, token)
+            -- 1. Pastikan dinding penahan (bumperX, bridgeY) padat agar tidak bisa jatuh ke parit luar!
+            WalkCorridorSmart(w, dropX, curY, topDirtY, bedrockY, token)
+            if (TileValue(w, "fg", bumperX, bridgeY) or 0) == 0 and CountItem(dirtId) > 0 then
+                PlaceCell(dirtId, { x = bumperX, y = bridgeY }, useLeft and -1 or 1)
+                task.wait(math.max(PLACE_GUARD, GetPingSettleDelay()))
+            end
+
+            -- 2. Berdiri di (prepX, curY) lalu buka lubang turun di (dropX, bridgeY)
+            WalkCorridorSmart(w, prepX, curY, topDirtY, bedrockY, token)
             if cancelFn() then return false end
 
-            -- Hancurkan 1 blok FG di (targetX, bridgeY) untuk jalan turun
-            if (TileValue(w, "fg", targetX, bridgeY) or 0) ~= 0 and CanBreakId(TileValue(w, "fg", targetX, bridgeY), targetX, bridgeY) then
-                DF.status = string.format("Opening drop pocket at (%d,%d)...", targetX, bridgeY)
+            if HasBreakableAt(w, dropX, bridgeY, false) then
+                DF.status = string.format("Opening safe drop hole at (%d,%d)...", dropX, bridgeY)
                 local t0 = os.clock()
-                while not cancelFn() and (TileValue(w, "fg", targetX, bridgeY) or 0) ~= 0 and (os.clock() - t0) < DF_BREAK_TIMEOUT do
-                    local r = TryBreakOnce(targetX, bridgeY, false)
+                while not cancelFn() and HasBreakableAt(w, dropX, bridgeY, false) and (os.clock() - t0) < DF_BREAK_TIMEOUT do
+                    local r = TryBreakOnce(dropX, bridgeY, false)
                     if r == "broke" then DF.stats.broken += 1 end
                     task.wait(math.max(0.04, Config.dfBreakDelay))
                 end
+                task.wait(GetPingSettleDelay())
             end
 
-            -- Pastikan tile lorong tujuan (targetX, nextStandY) juga kosong
-            if (TileValue(w, "fg", targetX, nextStandY) or 0) ~= 0 and CanBreakId(TileValue(w, "fg", targetX, nextStandY), targetX, nextStandY) then
+            -- 3. Pastikan ruang lorong bawah (dropX, nextStandY) kosong (hancurkan dari atas jika masih ada tanah)
+            if HasBreakableAt(w, dropX, nextStandY, false) then
                 local t0 = os.clock()
-                while not cancelFn() and (TileValue(w, "fg", targetX, nextStandY) or 0) ~= 0 and (os.clock() - t0) < DF_BREAK_TIMEOUT do
-                    local r = TryBreakOnce(targetX, nextStandY, false)
+                while not cancelFn() and HasBreakableAt(w, dropX, nextStandY, false) and (os.clock() - t0) < DF_BREAK_TIMEOUT do
+                    local r = TryBreakOnce(dropX, nextStandY, false)
                     if r == "broke" then DF.stats.broken += 1 end
                     task.wait(math.max(0.04, Config.dfBreakDelay))
                 end
+                task.wait(GetPingSettleDelay())
             end
 
-            -- Melangkah masuk dari inwardX ke targetX agar jatuh tepat ke (targetX, nextStandY)
-            DF.status = string.format("Dropping into corridor Y=%d at X=%d...", nextStandY, targetX)
+            -- 4. Pastikan lantai pendaratan (dropX, floorY) padat (pasang Dirt jika bolong/gua)
+            if InBounds(w, dropX, floorY) and (TileValue(w, "fg", dropX, floorY) or 0) == 0 and CountItem(dirtId) > 0 then
+                PlaceCell(dirtId, { x = dropX, y = floorY }, (dropX > prepX) and 1 or -1)
+                task.wait(math.max(PLACE_GUARD, GetPingSettleDelay()))
+            end
+
+            -- 5. Melangkah pelan dari prepX ke dropX (tertahan dinding bumperX sehingga jatuh lurus ke (dropX, nextStandY))
+            DF.status = string.format("Stepping down to corridor Y=%d...", nextStandY)
             local wasActive = AutoInput.active
             AutoInput.active = true
             local tDrop = os.clock()
@@ -4663,76 +4832,179 @@ do (function()
                 local s = PlayerPhysicsState()
                 if not s or s.dead then break end
 
-                -- Jika lantai pijakan (targetX, floorY) kosong/bolong, langsung pasang Dirt saat turun
-                if InBounds(w, targetX, floorY) and (TileValue(w, "fg", targetX, floorY) or 0) == 0
-                    and Nav.StateReaches(s, targetX, floorY, BuildReach()) and CountItem(dirtId) > 0 then
-                    PlaceCell(dirtId, { x = targetX, y = floorY }, 1)
+                if InBounds(w, dropX, floorY) and (TileValue(w, "fg", dropX, floorY) or 0) == 0
+                    and Nav.StateReaches(s, dropX, floorY, BuildReach()) and CountItem(dirtId) > 0 then
+                    PlaceCell(dirtId, { x = dropX, y = floorY }, 1)
                 end
 
-                local dx = (targetX + 0.5) - s.x
-                AutoInput.left = (dx < -0.08)
-                AutoInput.right = (dx > 0.08)
+                local dx = (dropX + 0.5) - s.x
+                if math.abs(dx) > 0.12 and math.floor(s.y - 0.475) < nextStandY then
+                    AutoInput.left = (dx < 0)
+                    AutoInput.right = (dx > 0)
+                else
+                    ReleaseInput()
+                end
 
                 local nx, ny = math.floor(s.x), math.floor(s.y - 0.475)
-                if nx == targetX and ny == nextStandY and s.grounded and math.abs(s.vx or 0) < 2.0 then
+                if ny >= nextStandY and s.grounded and math.abs(s.vx or 0) < 2.0 then
                     break
                 end
                 task.wait()
             end
             ReleaseInput()
             AutoInput.active = wasActive
-            task.wait(0.15)
+            task.wait(0.16)
 
-            -- Setelah mendarat di (targetX, nextStandY), tutup kembali blok platform (targetX, bridgeY) di atas kepala!
-            if not cancelFn() and (TileValue(w, "fg", targetX, bridgeY) or 0) == 0 and CountItem(dirtId) > 0 then
-                DF.status = string.format("Sealing platform overhead at (%d,%d)...", targetX, bridgeY)
-                if PlaceCell(dirtId, { x = targetX, y = bridgeY }, 1) then
-                    DF.stats.placed += 1
-                    task.wait(PLACE_GUARD)
+            -- 6. Buka ruang di (bumperX, nextStandY) atau (prepX, nextStandY) agar bisa bergeser 1 tile untuk menutup (dropX, bridgeY)
+            local _, landedY = GetTile()
+            if landedY == nextStandY then
+                local sideX = useLeft and bumperX or prepX
+                if HasBreakableAt(w, sideX, nextStandY, false) then
+                    local t0 = os.clock()
+                    while not cancelFn() and HasBreakableAt(w, sideX, nextStandY, false) and (os.clock() - t0) < DF_BREAK_TIMEOUT do
+                        TryBreakOnce(sideX, nextStandY, false)
+                        task.wait(math.max(0.04, Config.dfBreakDelay))
+                    end
+                    task.wait(GetPingSettleDelay())
+                end
+                if InBounds(w, sideX, floorY) and (TileValue(w, "fg", sideX, floorY) or 0) == 0 and CountItem(dirtId) > 0 then
+                    PlaceCell(dirtId, { x = sideX, y = floorY }, 1)
+                    task.wait(math.max(PLACE_GUARD, GetPingSettleDelay()))
+                end
+                Nav.ExecWalk(sideX, nextStandY, cancelFn)
+                task.wait(0.10)
+            end
+
+            -- 7. Tutup kembali lubang platform (dropX, bridgeY) di atas kepala dan verifikasi di server!
+            if not cancelFn() and (TileValue(w, "fg", dropX, bridgeY) or 0) == 0 and CountItem(dirtId) > 0 then
+                DF.status = string.format("Sealing platform at (%d,%d)...", dropX, bridgeY)
+                for _ = 1, 3 do
+                    local sNow = PlayerPhysicsState()
+                    if sNow and not OverlapsPlayerBody(sNow, dropX, bridgeY) then
+                        PlaceCell(dirtId, { x = dropX, y = bridgeY }, 1)
+                        DF.stats.placed += 1
+                    end
+                    task.wait(math.max(PLACE_GUARD, GetPingSettleDelay()))
+                    if (TileValue(w, "fg", dropX, bridgeY) or 0) == dirtId then break end
                 end
             end
 
             local _, nowY = GetTile()
-            if nowY and nowY > curY then
-                curY = nowY
-            else
-                break
+            if not nowY then return false end
+            if nowY > targetStandY then
+                -- Jika bablas ke bawah targetStandY, langsung panjat naik ke targetStandY!
+                return ClimbUpSafely(w, targetX, targetStandY, topDirtY, bedrockY, token)
             end
+            curY = nowY
+        end
+
+        return WalkCorridorSmart(w, targetX, targetStandY, topDirtY, bedrockY, token)
+    end
+
+    -- FUNGSI INTI REAL-TIME POSITION SYNC: Memastikan karakter benar-benar berdiri di (standX, standY) sebelum beraksi
+    EnsureStandingAt = function(w, standX, standY, topDirtY, bedrockY, token)
+        local cancelFn = function() return DF.token ~= token or not DF.on or not alive() end
+        for attempt = 1, 4 do
+            if cancelFn() then return false end
+            w = FindWorld()
+            if not w then return false end
+
+            local s = PlayerPhysicsState()
+            local px, py = GetTile()
+            if not s or not px or s.dead then
+                task.wait(0.25)
+                continue
+            end
+
+            -- Jika sedang di udara (lompat/jatuh), tunggu mendarat dulu
+            if not s.grounded and not (Config.moveMethod == "Teleport Mode" or Config.dfModFly) then
+                local tWait = os.clock()
+                while not cancelFn() and (os.clock() - tWait) < 1.2 do
+                    local st = PlayerPhysicsState()
+                    if st and st.grounded then break end
+                    task.wait(0.04)
+                end
+                s = PlayerPhysicsState()
+                px, py = GetTile()
+                if not s or not px then continue end
+            end
+
+            -- Sudah tepat di posisi berdiri yang diminta
+            if px == standX and py == standY and math.abs(s.x - (standX + 0.5)) <= 0.42 then
+                return true
+            end
+
+            if Config.moveMethod == "Teleport Mode" or Config.dfModFly then
+                SetAutoFly("autodf", true)
+                local ok = Nav.FlyTo(standX, standY, cancelFn, Config.dfTpDelay, false)
+                SetAutoFly("autodf", false)
+                if ok then return true end
+            elseif py == standY then
+                -- Berada di baris yang sama: jalan di koridor (otomatis bersihkan blok rollback di jalan)
+                if WalkCorridorSmart(w, standX, standY, topDirtY, bedrockY, token) then
+                    local fx, fy = GetTile()
+                    if fx == standX and fy == standY then return true end
+                end
+            elseif py > standY then
+                -- Karakter berada di bawah baris target (misal habis jatuh ke parit/bedrock): panjat naik!
+                if ClimbUpSafely(w, standX, standY, topDirtY, bedrockY, token) then
+                    local fx, fy = GetTile()
+                    if fx == standX and fy == standY then return true end
+                end
+            elseif py < standY then
+                -- Karakter berada di atas baris target: turun dengan Bumper Pocket-Drop!
+                if SafeDescendToRow(w, standX, standY, topDirtY, bedrockY, token) then
+                    local fx, fy = GetTile()
+                    if fx == standX and fy == standY then return true end
+                end
+            end
+            task.wait(0.12)
         end
 
         local fx, fy = GetTile()
-        return (fx == targetX and fy == targetStandY)
+        return (fx == standX and fy == standY)
     end
 
-    local function BreakTotalAt(w, tx, ty, standX, standY, token)
-        if not InBounds(w, tx, ty) then return false end
-        local fg = TileValue(w, "fg", tx, ty) or 0
-        local bg = TileValue(w, "bg", tx, ty) or 0
-        if (fg == 0 or not CanBreakId(fg, tx, ty)) and (bg == 0 or not CanBreakId(bg, tx, ty)) then
-            return true
-        end
+    -- Hancurkan blok FG & BG di (tx, ty) dengan verifikasi posisi real-time & konfirmasi anti-rollback server
+    BreakTotalAt = function(w, tx, ty, standX, standY, topDirtY, bedrockY, token)
+        if not InBounds(w, tx, ty) then return true end
+        if not HasBreakableAt(w, tx, ty, true) then return true end
 
-        WalkOrParkourTo(standX, standY, token)
-
+        local cancelFn = function() return DF.token ~= token or not DF.on or not alive() end
+        local reach = PunchReach() - 0.08
         local startT = os.clock()
-        while DF.on and DF.token == token and alive() do
-            local cFg = TileValue(w, "fg", tx, ty) or 0
-            local cBg = TileValue(w, "bg", tx, ty) or 0
-            local hasFg = cFg ~= 0 and CanBreakId(cFg, tx, ty)
-            local hasBg = cBg ~= 0 and CanBreakId(cBg, tx, ty)
-            if not hasFg and not hasBg then
-                task.wait(0.05)
-                cFg = TileValue(w, "fg", tx, ty) or 0
-                cBg = TileValue(w, "bg", tx, ty) or 0
-                if (cFg == 0 or not CanBreakId(cFg, tx, ty)) and (cBg == 0 or not CanBreakId(cBg, tx, ty)) then
-                    break
+        local lastId = -1
+
+        while not cancelFn() do
+            w = FindWorld()
+            if not w then return false end
+
+            if not HasBreakableAt(w, tx, ty, true) then
+                -- Tunggu konfirmasi server sesuai ping (cegah blok rollback tertinggal saat lag/ping jump)
+                task.wait(GetPingSettleDelay())
+                if not HasBreakableAt(w, tx, ty, true) then
+                    return true
                 end
             end
-            if os.clock() - startT >= DF_BREAK_TIMEOUT then break end
 
+            -- Cek real-time apakah karakter benar-benar di (standX, standY) dan menjangkau (tx, ty)
             local s = PlayerPhysicsState()
-            if not s or not Nav.StateReaches(s, tx, ty, PunchReach() + 0.25) then
-                WalkOrParkourTo(standX, standY, token)
+            local px, py = GetTile()
+            if not s or py ~= standY or math.abs(s.x - (standX + 0.5)) > 0.85 or not Nav.StateReaches(s, tx, ty, reach) then
+                EnsureStandingAt(w, standX, standY, topDirtY, bedrockY, token)
+                startT = os.clock()
+            end
+
+            local curFg = TileValue(w, "fg", tx, ty) or 0
+            local curBg = TileValue(w, "bg", tx, ty) or 0
+            local curId = (curFg ~= 0) and curFg or curBg
+            if curId ~= lastId then
+                lastId = curId
+                startT = os.clock()
+            end
+
+            if (os.clock() - startT) >= DF_BREAK_TIMEOUT then
+                return false
             end
 
             local r = TryBreakOnce(tx, ty, true)
@@ -4742,34 +5014,32 @@ do (function()
             end
             task.wait(math.max(0.04, Config.dfBreakDelay))
         end
-        return true
+        return false
     end
 
-    -- Pasang Platform (misal Wooden Platform ID 102) di bagian kosong yang menempel dengan ujung barisan Dirt (x = 1 dan x = W - 2)
-    local function PlaceEdgePlatformAt(w, platX, platY, standX, standY, token)
+    -- Pasang Platform (misal Wooden Platform ID 102) di ujung baris (x=1 atau x=W-2) dengan verifikasi server
+    local function PlaceEdgePlatformAt(w, platX, platY, standX, standY, topDirtY, bedrockY, token)
         if not Config.dfUsePlatform then return end
         local platId = tonumber(Config.dfPlatformId) or 102
         if platId <= 0 or CountItem(platId) <= 0 then return end
         if not InBounds(w, platX, platY) then return end
+        if (TileValue(w, "fg", platX, platY) or 0) == platId then return end
+
+        EnsureStandingAt(w, standX, standY, topDirtY, bedrockY, token)
 
         local curFg = TileValue(w, "fg", platX, platY) or 0
-        if curFg == platId then return end
-
-        WalkOrParkourTo(standX, standY, token)
-
         if curFg ~= 0 and CanBreakId(curFg, platX, platY) then
-            local t0 = os.clock()
-            while DF.on and DF.token == token and (TileValue(w, "fg", platX, platY) or 0) ~= 0 and (os.clock() - t0) < 3.5 do
-                TryBreakOnce(platX, platY, false)
-                task.wait(math.max(0.04, Config.dfBreakDelay))
-            end
+            BreakTotalAt(w, platX, platY, standX, standY, topDirtY, bedrockY, token)
         end
 
-        if DF.on and DF.token == token and (TileValue(w, "fg", platX, platY) or 0) == 0 and CountItem(platId) > 0 then
+        for _ = 1, 3 do
+            if not DF.on or DF.token ~= token then break end
+            if (TileValue(w, "fg", platX, platY) or 0) == platId or CountItem(platId) <= 0 then break end
+            EnsureStandingAt(w, standX, standY, topDirtY, bedrockY, token)
             if PlaceCell(platId, { x = platX, y = platY }, (platX >= standX) and 1 or -1) then
                 DF.stats.placed += 1
-                task.wait(0.14)
             end
+            task.wait(math.max(PLACE_GUARD, GetPingSettleDelay()))
         end
     end
 
@@ -4791,7 +5061,7 @@ do (function()
         return best
     end
 
-    local function PlantAndHarvestDirtSeeds(w, platformY, token, maxPlant)
+    local function PlantAndHarvestDirtSeeds(w, platformY, topDirtY, bedrockY, token, maxPlant)
         local dirtId = GetDirtId()
         local seedId = GetDirtSeedId()
         local plantY = platformY - 1
@@ -4803,7 +5073,7 @@ do (function()
             if not DF.on or DF.token ~= token then break end
             if CountItem(seedId) <= 0 or count >= (maxPlant or 20) then break end
             if (TileValue(w, "fg", x, platformY) or 0) == dirtId and (TileValue(w, "fg", x, plantY) or 0) == 0 then
-                WalkOrParkourTo(x, plantY, token)
+                EnsureStandingAt(w, x, plantY, topDirtY, bedrockY, token)
                 if PlaceCell(seedId, { x = x, y = plantY }, 1) then
                     Stats.Planted += 1
                     table.insert(plantedSpots, { x = x, y = plantY, plantedTime = os.clock() })
@@ -4845,14 +5115,14 @@ do (function()
 
             if (TileValue(w, "fg", spot.x, spot.y) or 0) == seedId then
                 DF.status = string.format("Harvesting Dirt Tree (%d,%d) [%d/%d]", spot.x, spot.y, idx, #plantedSpots)
-                WalkOrParkourTo(spot.x, spot.y, token)
+                EnsureStandingAt(w, spot.x, spot.y, topDirtY, bedrockY, token)
                 local t0 = os.clock()
-                while DF.on and DF.token == token and (TileValue(w, "fg", spot.x, spot.y) or 0) == seedId and os.clock() - t0 < 3.5 do
+                while DF.on and DF.token == token and (TileValue(w, "fg", spot.x, spot.y) or 0) == seedId and (os.clock() - t0) < 3.5 do
                     local r = TryBreakOnce(spot.x, spot.y, false)
                     if r == "broke" then Stats.Harvested += 1 end
                     task.wait(math.max(0.05, Config.dfBreakDelay))
                 end
-                task.wait(0.25)
+                task.wait(GetPingSettleDelay())
             end
         end
         return true
@@ -4872,7 +5142,7 @@ do (function()
         return topDirtY
     end
 
-    local function EnsureDirtSupply(w, returnX, returnY, refPlatformY, topDirtY, bedrockY, token)
+    EnsureDirtSupply = function(w, returnX, returnY, refPlatformY, topDirtY, bedrockY, token)
         local dirtId = GetDirtId()
         local seedId = GetDirtSeedId()
         if CountItem(dirtId) > 0 then return true end
@@ -4883,7 +5153,7 @@ do (function()
         while DF.on and DF.token == token and alive() and CountItem(dirtId) < 15 do
             if CountItem(seedId) > 0 then
                 DF.status = "Dirt empty! Planting & harvesting Dirt Seeds..."
-                PlantAndHarvestDirtSeeds(w, workPlatformY, token, 20)
+                PlantAndHarvestDirtSeeds(w, workPlatformY, topDirtY, bedrockY, token, 20)
                 if CountItem(dirtId) >= 15 then break end
             end
 
@@ -4891,7 +5161,7 @@ do (function()
             if drop then
                 local dx, dy = math.floor(drop.x), math.floor(drop.y)
                 DF.status = string.format("Collecting Dirt/Seed drop at (%d, %d)...", dx, dy)
-                WalkOrParkourTo(dx, dy, token)
+                EnsureStandingAt(w, dx, dy, topDirtY, bedrockY, token)
                 task.wait(0.5)
                 if CountItem(dirtId) >= 15 then break end
             end
@@ -4899,13 +5169,13 @@ do (function()
             if CountItem(dirtId) < 15 and CountItem(seedId) == 0 then
                 local testX = 5
                 local standX, standY = 4, workPlatformY - 1
-                WalkOrParkourTo(standX, standY, token)
+                EnsureStandingAt(w, standX, standY, topDirtY, bedrockY, token)
                 while DF.on and DF.token == token and CountItem(seedId) < 4 and CountItem(dirtId) > 0 do
                     if (TileValue(w, "fg", testX, standY) or 0) == 0 then
                         PlaceCell(dirtId, { x = testX, y = standY }, 1)
                         task.wait(PLACE_GUARD)
                     end
-                    BreakTotalAt(w, testX, standY, standX, standY, token)
+                    BreakTotalAt(w, testX, standY, standX, standY, topDirtY, bedrockY, token)
                     task.wait(0.2)
                 end
                 if CountItem(seedId) == 0 then break end
@@ -4913,40 +5183,50 @@ do (function()
         end
 
         if returnX and returnY then
-            WalkOrParkourTo(returnX, returnY, token)
+            EnsureStandingAt(w, returnX, returnY, topDirtY, bedrockY, token)
         end
         return CountItem(dirtId) > 0
     end
 
+    -- Pastikan tile platform (tx, ty) berisi Dirt dengan verifikasi posisi & konfirmasi anti-rollback server
     local function EnsurePlatformDirtAt(w, tx, ty, standX, standY, topDirtY, bedrockY, token)
-        if not InBounds(w, tx, ty) then return end
+        if not InBounds(w, tx, ty) then return true end
         local dirtId = GetDirtId()
         local fg = TileValue(w, "fg", tx, ty) or 0
-        if fg == dirtId then return end
-        if fg ~= 0 and not CanBreakId(fg, tx, ty) then return end
-
-        WalkOrParkourTo(standX, standY, token)
+        if fg == dirtId then return true end
+        if fg ~= 0 and not CanBreakId(fg, tx, ty) then return true end
 
         if fg ~= 0 and fg ~= dirtId then
-            local t0 = os.clock()
-            while DF.on and DF.token == token and (TileValue(w, "fg", tx, ty) or 0) ~= 0 and os.clock() - t0 < DF_BREAK_TIMEOUT do
-                local r = TryBreakOnce(tx, ty, false)
-                if r == "broke" then DF.stats.broken += 1 end
-                task.wait(math.max(0.04, Config.dfBreakDelay))
-            end
+            BreakTotalAt(w, tx, ty, standX, standY, topDirtY, bedrockY, token)
         end
 
-        if DF.on and DF.token == token and (TileValue(w, "fg", tx, ty) or 0) == 0 then
+        for attempt = 1, 4 do
+            if not DF.on or DF.token ~= token or not alive() then return false end
+            w = FindWorld()
+            if not w then return false end
+            if (TileValue(w, "fg", tx, ty) or 0) == dirtId then return true end
+
             if CountItem(dirtId) <= 0 then
                 EnsureDirtSupply(w, standX, standY, ty, topDirtY, bedrockY, token)
             end
-            if CountItem(dirtId) > 0 then
-                if PlaceCell(dirtId, { x = tx, y = ty }, (tx >= standX) and 1 or -1) then
-                    DF.stats.placed += 1
-                    task.wait(0.14)
-                end
+            if CountItem(dirtId) <= 0 then return false end
+
+            EnsureStandingAt(w, standX, standY, topDirtY, bedrockY, token)
+            local s = PlayerPhysicsState()
+            if s and OverlapsPlayerBody(s, tx, ty) then
+                -- Geser sedikit ke standX jika badan masih menyentuh tile target
+                if Drops.walkToX then Drops.walkToX(standX + 0.5, 0.6) end
+            end
+
+            if PlaceCell(dirtId, { x = tx, y = ty }, (tx >= standX) and 1 or -1) then
+                DF.stats.placed += 1
+            end
+            task.wait(math.max(PLACE_GUARD, GetPingSettleDelay()))
+            if (TileValue(w, "fg", tx, ty) or 0) == dirtId then
+                return true
             end
         end
+        return (TileValue(w, "fg", tx, ty) or 0) == dirtId
     end
 
     local function FirstUncleanVerticalY(w, colA, colB, topDirtY, bedrockY)
@@ -4964,11 +5244,11 @@ do (function()
         return nil
     end
 
-    -- Bersihkan 2 kolom vertikal ujung (0,1 di kiri dan W-2,W-1 di kanan) hingga Bedrock terlebih dahulu
+    -- FASE 0: Bersihkan 2 kolom vertikal ujung (0,1 di kiri dan W-2,W-1 di kanan) hingga Bedrock terlebih dahulu
     local function ClearVerticalEdge(w, colA, colB, topDirtY, bedrockY, label, token)
         local firstY = FirstUncleanVerticalY(w, colA, colB, topDirtY, bedrockY)
         if not firstY then
-            DF.status = "Vertical edge " .. label .. " already clean, continuing..."
+            DF.status = "Vertical edge " .. label .. " already clean, skipping..."
             return true
         end
 
@@ -4977,17 +5257,10 @@ do (function()
         local platId = tonumber(Config.dfPlatformId) or 102
         local cancelFn = function() return DF.token ~= token or not DF.on or not alive() end
 
-        -- Pastikan karakter berada di permukaan atas parit sebelum mulai menggali ke bawah
         local startStandY = math.max(0, firstY - 1)
-        local startStandX = colB
-        if not Nav.RealSupport(colB, startStandY) then
-            if Nav.RealSupport(colA, startStandY) then
-                startStandX = colA
-            elseif Nav.OpenAt(innerPlatformX, startStandY) and Nav.RealSupport(innerPlatformX, startStandY) then
-                startStandX = innerPlatformX
-            end
-        end
-        WalkOrParkourTo(startStandX, startStandY, token)
+        local startStandX = Nav.RealSupport(colB, startStandY) and colB
+            or (Nav.RealSupport(colA, startStandY) and colA or innerPlatformX)
+        EnsureStandingAt(w, startStandX, startStandY, topDirtY, bedrockY, token)
 
         for y = firstY, bedrockY - 1 do
             if cancelFn() then return false end
@@ -5004,107 +5277,94 @@ do (function()
 
             DF.status = string.format("Vertical %s: Breaking Y=%d", label, y)
 
-            -- Jika chỉ colA yang punya blok pijakan di baris y (misal colB kosong/lava), berdiri di colA dulu
             if supA and not supB then
                 local fgB = TileValue(w, "fg", colB, y) or 0
                 if not (Config.dfUsePlatform and fgB == platId) then
-                    BreakTotalAt(w, colB, y, colA, standY, token)
+                    BreakTotalAt(w, colB, y, colA, standY, topDirtY, bedrockY, token)
                 end
                 if cancelFn() then return false end
-                BreakTotalAt(w, colA, y, colA, standY, token)
+                BreakTotalAt(w, colA, y, colA, standY, topDirtY, bedrockY, token)
             else
-                -- Default: Berdiri di colB (atau innerPlatformX jika di permukaan atas), hancurkan colA dulu baru colB
                 local standX = supB and colB or (supInner and innerPlatformX or (supA and colA or colB))
-
-                -- Jika kedua tile di bawah kaki kosong (misal ketemu gua di tengah jalan), pasang 1 Dirt penopang di colB
                 if not supB and not supA and not supInner and (TileValue(w, "fg", colB, y) or 0) == 0 then
                     local dirtId = GetDirtId()
                     if CountItem(dirtId) > 0 then
                         PlaceCell(dirtId, { x = colB, y = y }, 1)
-                        task.wait(PLACE_GUARD)
+                        task.wait(math.max(PLACE_GUARD, GetPingSettleDelay()))
                     end
                 end
 
-                BreakTotalAt(w, colA, y, standX, standY, token)
+                BreakTotalAt(w, colA, y, standX, standY, topDirtY, bedrockY, token)
                 if cancelFn() then return false end
 
                 local fgB = TileValue(w, "fg", colB, y) or 0
                 if not (Config.dfUsePlatform and fgB == platId) then
-                    BreakTotalAt(w, colB, y, standX, standY, token)
+                    BreakTotalAt(w, colB, y, standX, standY, topDirtY, bedrockY, token)
                 end
             end
 
-            -- Jika Use Platform aktif, pasang Platform di colB setiap kelipatan 2 baris dari topDirtY
             if Config.dfUsePlatform and ((y - topDirtY) % 2 == 0) and CountItem(platId) > 0 then
-                PlaceEdgePlatformAt(w, colB, y, colB, standY, token)
+                PlaceEdgePlatformAt(w, colB, y, colB, standY, topDirtY, bedrockY, token)
             end
         end
 
-        -- Naik kembali ke permukaan atas (topDirtY - 1) setelah mencapai Bedrock
         if DF.on and DF.token == token then
             local surfaceY = math.max(0, topDirtY - 1)
             DF.status = string.format("Climbing up from %s to surface...", label)
-
-            if Config.moveMethod == "Teleport Mode" or Config.dfModFly then
-                SetAutoFly("autodf", true)
-                Nav.FlyTo(innerPlatformX, surfaceY, cancelFn, Config.dfTpDelay, false)
-                SetAutoFly("autodf", false)
-            elseif Config.dfUsePlatform and (TileValue(w, "fg", colB, topDirtY) or 0) == platId then
-                WalkOrParkourTo(innerPlatformX, surfaceY, token)
-            else
-                -- Jika belum ada pola DF & tanpa Platform: panjat vertikal dengan Dirt lalu bersihkan jejak otomatis
-                local dirtId = GetDirtId()
-                local needDirt = math.max(5, bedrockY - topDirtY + 2)
-                if CountItem(dirtId) < needDirt then
-                    EnsureDirtSupply(w, colB, bedrockY - 1, topDirtY, topDirtY, bedrockY, token)
-                end
-                Nav.ClimbUpWithDirt(colB, surfaceY, cancelFn, true, Config.dfTpDelay, true)
-                WalkOrParkourTo(innerPlatformX, surfaceY, token)
-            end
+            ClimbUpSafely(w, innerPlatformX, surfaceY, topDirtY, bedrockY, token)
         end
         return true
     end
 
-    local function IsBottomRowComplete(w, emptyY, topDirtY, bedrockY)
+    -- Cek apakah 1 kolom x pada baris bawah (emptyY & platY) masih butuh dikerjakan
+    local function NeedsBottomColumnWork(w, x, emptyY, platY, topDirtY)
         local dirtId = GetDirtId()
-        local platY = emptyY - 1
-        local platId = tonumber(Config.dfPlatformId) or 102
-        for x = 2, w.w - 3 do
-            local fg = TileValue(w, "fg", x, emptyY) or 0
-            local bg = TileValue(w, "bg", x, emptyY) or 0
-            if (fg ~= 0 and CanBreakId(fg, x, emptyY)) or (bg ~= 0 and CanBreakId(bg, x, emptyY)) then
-                return false
-            end
-            if Config.dfReplacePlatform and platY >= topDirtY and (TileValue(w, "fg", x, platY) or 0) ~= dirtId then
-                return false
+        if HasBreakableAt(w, x, emptyY, true) then
+            return true
+        end
+        if platY >= topDirtY then
+            local pFg = TileValue(w, "fg", x, platY) or 0
+            if Config.dfReplacePlatform then
+                if pFg ~= dirtId and (pFg == 0 or CanBreakId(pFg, x, platY)) then
+                    return true
+                end
+            else
+                if pFg == 0 or Nav.HazardAt(x, platY) then
+                    return true
+                end
             end
         end
-        if Config.dfUsePlatform and platY >= topDirtY and CountItem(platId) > 0 then
-            if (TileValue(w, "fg", 1, platY) or 0) ~= platId or (TileValue(w, "fg", w.w - 2, platY) or 0) ~= platId then
-                return false
-            end
-        end
-        return true
+        return false
     end
 
-    local function IsUpperRowComplete(w, platformY)
+    -- Cari rentang kolom [minTodoX, maxTodoX] yang belum selesai pada baris bawah emptyY (Smart Resume)
+    local function GetBottomRowTodoBounds(w, emptyY, topDirtY)
+        local platY = emptyY - 1
+        local minX, maxX = nil, nil
+        for x = 2, w.w - 3 do
+            if NeedsBottomColumnWork(w, x, emptyY, platY, topDirtY) then
+                if not minX then minX = x end
+                maxX = x
+            end
+        end
+        return minX, maxX
+    end
+
+    -- Cari rentang kolom [minTodoX, maxTodoX] yang belum selesai pada baris platform atas (platformY)
+    local function GetUpperRowTodoBounds(w, platformY)
         local dirtId = GetDirtId()
         local walkY = platformY - 1
-        local platId = tonumber(Config.dfPlatformId) or 102
+        local minX, maxX = nil, nil
         for x = 2, w.w - 3 do
-            if (TileValue(w, "fg", x, platformY) or 0) ~= dirtId then
-                return false
-            end
-            if (TileValue(w, "fg", x, walkY) or 0) ~= 0 then
-                return false
-            end
-        end
-        if Config.dfUsePlatform and CountItem(platId) > 0 then
-            if (TileValue(w, "fg", 1, platformY) or 0) ~= platId or (TileValue(w, "fg", w.w - 2, platformY) or 0) ~= platId then
-                return false
+            local pFg = TileValue(w, "fg", x, platformY) or 0
+            local needPlat = (pFg ~= dirtId) and (pFg == 0 or CanBreakId(pFg, x, platformY))
+            local needWalkClear = HasBreakableAt(w, x, walkY, true)
+            if needPlat or needWalkClear then
+                if not minX then minX = x end
+                maxX = x
             end
         end
-        return true
+        return minX, maxX
     end
 
     local function DFLoop(token, home)
@@ -5118,44 +5378,57 @@ do (function()
         local topDirtY, bedrockY = DetectWorldLayers(w)
         DF.stats.topDirtY = topDirtY
         DF.stats.bedrockY = bedrockY
-        Notify(string.format("Auto DF: Pure Parkour Mode (Dirt Y=%d, Bedrock Y=%d).", topDirtY, bedrockY))
+        Notify(string.format("Auto DF Smart Resume (Surface Y=%d, Bedrock Y=%d).", topDirtY, bedrockY))
 
         local W = w.w
 
-        -- FASE 0 (BARU): Habiskan 2 tile vertikal di ujung kiri (0,1) dan ujung kanan (W-2,W-1) hingga Bedrock terlebih dahulu!
+        -- FASE 0: Habiskan 2 tile vertikal di ujung kiri (0,1) dan ujung kanan (W-2,W-1) hingga Bedrock terlebih dahulu!
         if not ClearVerticalEdge(w, 0, 1, topDirtY, bedrockY, "Left (1-2)", token) then return end
         if not DF.on or DF.token ~= token then return end
         if not ClearVerticalEdge(w, W - 2, W - 1, topDirtY, bedrockY, "Right (99-100)", token) then return end
         if not DF.on or DF.token ~= token then return end
 
-        -- Pastikan karakter berada di permukaan atas sebelum mulai membentuk pola Dirt Farm
-        DF.status = "Moving to surface start position..."
-        WalkOrParkourTo(2, math.max(0, topDirtY - 1), token)
-
-        -- FASE 1: Kerjakan baris bawah dari atas ke bawah
-        local leftToRight = true
+        -- FASE 1: Kerjakan baris bawah (Smart Resume: langsung lewati baris/kolom yang sudah jadi!)
         for emptyY = topDirtY + 1, bedrockY - 1, 2 do
             if not DF.on or DF.token ~= token or not alive() then return end
             w = FindWorld()
             if not w or CurrentWorldName() ~= home.world then return end
 
-            if IsBottomRowComplete(w, emptyY, topDirtY, bedrockY) then
-                DF.status = string.format("Row Y=%d already complete, skipping...", emptyY)
-            else
-                local platY = emptyY - 1  -- Baris platform tempat karakter berpijak
-                local standY = emptyY - 2 -- Tile badan karakter (di dalam lorong kosong di atas platY)
+            local platY  = emptyY - 1 -- Baris platform pijakan
+            local standY = emptyY - 2 -- Baris badan karakter (lorong kosong di atas platY)
+
+            -- Lakukan hingga 2 pass per baris untuk memastikan tidak ada blok yang tersisa karena ping rollback
+            for pass = 1, 2 do
+                if not DF.on or DF.token ~= token or not alive() then return end
+                w = FindWorld()
+                if not w then return end
+
+                local minTodoX, maxTodoX = GetBottomRowTodoBounds(w, emptyY, topDirtY)
+                if not minTodoX then
+                    if pass == 1 then
+                        DF.status = string.format("Row Y=%d already complete, skipping...", emptyY)
+                    end
+                    break
+                end
+
                 DF.stats.step = string.format("Bottom: Row Y=%d", emptyY)
 
-                local startX = leftToRight and 2 or (W - 3)
-                local endX   = leftToRight and (W - 3) or 2
+                -- Pilih arah sapuan dari ujung kerja yang paling dekat dengan posisi karakter sekarang
+                local px = GetTile() or 2
+                local leftToRight = (math.abs(px - minTodoX) <= math.abs(px - maxTodoX))
+                local startX = leftToRight and minTodoX or maxTodoX
+                local endX   = leftToRight and maxTodoX or minTodoX
                 local stepX  = leftToRight and 1 or -1
 
-                -- Masuk / turun ke lorong standY di titik startX (otomatis Break-Drop-Seal jika dari lorong atas)
-                EnterCorridorRow(w, startX, standY, topDirtY, bedrockY, token)
+                -- Masuk / turun / naik ke lorong standY tepat di startX
+                EnsureStandingAt(w, startX, standY, topDirtY, bedrockY, token)
 
                 if Config.dfUsePlatform and platY >= topDirtY then
-                    local startEdgePlatX = leftToRight and 1 or (W - 2)
-                    PlaceEdgePlatformAt(w, startEdgePlatX, platY, startX, standY, token)
+                    if startX <= 3 then
+                        PlaceEdgePlatformAt(w, 1, platY, 2, standY, topDirtY, bedrockY, token)
+                    elseif startX >= W - 4 then
+                        PlaceEdgePlatformAt(w, W - 2, platY, W - 3, standY, topDirtY, bedrockY, token)
+                    end
                 end
 
                 for x = startX, endX, stepX do
@@ -5164,11 +5437,13 @@ do (function()
                     if not w or CurrentWorldName() ~= home.world then return end
 
                     local prevX = (x == startX) and startX or (x - stepX)
-                    if (TileValue(w, "fg", x, standY) or 0) ~= 0 or (TileValue(w, "bg", x, standY) or 0) ~= 0 then
-                        BreakTotalAt(w, x, standY, prevX, standY, token)
+
+                    -- Bersihkan lorong badan (x, standY) jika masih ada blok
+                    if HasBreakableAt(w, x, standY, true) then
+                        BreakTotalAt(w, x, standY, prevX, standY, topDirtY, bedrockY, token)
                     end
 
-                    -- Jika x > startX, ganti Rock/Lava/Kosong di (x, platY) dari prevX sebelum dipijak
+                    -- Pastikan lantai pijakan (x, platY) adalah Dirt sebelum diinjak
                     if x ~= startX then
                         if Config.dfReplacePlatform or (TileValue(w, "fg", x, platY) or 0) == 0 or Nav.HazardAt(x, platY) then
                             EnsurePlatformDirtAt(w, x, platY, prevX, standY, topDirtY, bedrockY, token)
@@ -5177,95 +5452,96 @@ do (function()
                         EnsurePlatformDirtAt(w, startX, platY, startX, standY, topDirtY, bedrockY, token)
                     end
 
-                    WalkOrParkourTo(x, standY, token)
+                    -- Melangkah maju ke (x, standY) dan verifikasi posisi real-time
+                    EnsureStandingAt(w, x, standY, topDirtY, bedrockY, token)
 
-                    -- Setelah berdiri di tile ke-2 (startX + stepX), rapikan lantai (startX, platY) jika tadi belum Dirt
+                    -- Setelah maju 1 langkah dari startX, rapikan lantai (startX, platY) jika tadi belum Dirt
                     if x == (startX + stepX) and (Config.dfReplacePlatform or Nav.HazardAt(startX, platY)) then
                         EnsurePlatformDirtAt(w, startX, platY, x, standY, topDirtY, bedrockY, token)
                     end
 
-                    -- Hancurkan blok pola kosong (x, emptyY) yang berada tepat di bawah platform
-                    DF.status = string.format("Row Y=%d | Breaking (%d,%d)", emptyY, x, emptyY)
-                    BreakTotalAt(w, x, emptyY, x, standY, token)
+                    -- Hancurkan blok pola kosong (x, emptyY) tepat di bawah platform
+                    if HasBreakableAt(w, x, emptyY, true) then
+                        DF.status = string.format("Row Y=%d | Breaking (%d,%d)", emptyY, x, emptyY)
+                        BreakTotalAt(w, x, emptyY, x, standY, topDirtY, bedrockY, token)
+                    end
                 end
 
                 if Config.dfUsePlatform and platY >= topDirtY then
-                    local endEdgePlatX = leftToRight and (W - 2) or 1
-                    PlaceEdgePlatformAt(w, endEdgePlatX, platY, endX, standY, token)
+                    if endX >= W - 4 then
+                        PlaceEdgePlatformAt(w, W - 2, platY, W - 3, standY, topDirtY, bedrockY, token)
+                    elseif endX <= 3 then
+                        PlaceEdgePlatformAt(w, 1, platY, 2, standY, topDirtY, bedrockY, token)
+                    end
                 end
-
-                leftToRight = not leftToRight
             end
         end
 
-        -- Naik kembali dari dasar ke permukaan topDirtY - 1 untuk persiapan Fase 2
-        local surfaceStandY = math.max(0, topDirtY - 1)
-        DF.status = "Climbing up to surface for Upper Platforms..."
-        if not WalkOrParkourTo(2, surfaceStandY, token) then
-            local px = GetTile() or 2
-            local climbCol = (math.abs(px - 1) <= math.abs(px - (W - 2))) and 1 or (W - 2)
-            local cancelFn = function() return DF.token ~= token or not DF.on or not alive() end
-            Nav.ClimbUpWithDirt(climbCol, surfaceStandY, cancelFn, true, Config.dfTpDelay, true)
-            WalkOrParkourTo(2, surfaceStandY, token)
-        end
-
-        -- FASE 2: BANGUN PLATFORM ATAS DENGAN PARKOUR + USE PLATFORM
-        local upperLeftToRight = true
+        -- FASE 2: BANGUN PLATFORM ATAS (Smart Resume dari baris atas yang belum selesai)
         for platformY = topDirtY - 2, 2, -2 do
             if not DF.on or DF.token ~= token or not alive() then return end
             w = FindWorld()
             if not w or CurrentWorldName() ~= home.world then return end
 
-            if IsUpperRowComplete(w, platformY) then
-                DF.status = string.format("Upper Platform Y=%d complete, skipping...", platformY)
-            else
-                local walkY = platformY - 1
-                local prevWalkY = platformY + 1
+            local walkY     = platformY - 1
+            local prevWalkY = platformY + 1
+
+            for pass = 1, 2 do
+                if not DF.on or DF.token ~= token or not alive() then return end
+                w = FindWorld()
+                if not w then return end
+
+                local minTodoX, maxTodoX = GetUpperRowTodoBounds(w, platformY)
+                if not minTodoX then
+                    if pass == 1 then
+                        DF.status = string.format("Upper Platform Y=%d complete, skipping...", platformY)
+                    end
+                    break
+                end
+
                 DF.stats.step = string.format("Upper: Platform Y=%d", platformY)
 
-                local startX = upperLeftToRight and 2 or (W - 3)
-                local endX   = upperLeftToRight and (W - 3) or 2
+                local px = GetTile() or 2
+                local upperLeftToRight = (math.abs(px - minTodoX) <= math.abs(px - maxTodoX))
+                local startX = upperLeftToRight and minTodoX or maxTodoX
+                local endX   = upperLeftToRight and maxTodoX or minTodoX
                 local stepX  = upperLeftToRight and 1 or -1
 
-                WalkOrParkourTo(startX, prevWalkY, token)
-
-                if Config.dfUsePlatform then
-                    local startPlatX = upperLeftToRight and 1 or (W - 2)
-                    PlaceEdgePlatformAt(w, startPlatX, platformY, startX, prevWalkY, token)
+                -- Jika baru memulai baris atas ini dan pijakan awal (startX, platformY) belum ada, pasang dari prevWalkY dulu
+                if (TileValue(w, "fg", startX, platformY) or 0) == 0 then
+                    EnsureStandingAt(w, startX, prevWalkY, topDirtY, bedrockY, token)
+                    if Config.dfUsePlatform and (startX <= 3 or startX >= W - 4) then
+                        local startPlatX = upperLeftToRight and 1 or (W - 2)
+                        PlaceEdgePlatformAt(w, startPlatX, platformY, startX, prevWalkY, topDirtY, bedrockY, token)
+                    end
+                    EnsurePlatformDirtAt(w, startX, platformY, startX, prevWalkY, topDirtY, bedrockY, token)
+                    if InBounds(w, startX + stepX, platformY) then
+                        EnsurePlatformDirtAt(w, startX + stepX, platformY, startX + stepX, prevWalkY, topDirtY, bedrockY, token)
+                    end
                 end
 
-                EnsurePlatformDirtAt(w, startX, platformY, startX, prevWalkY, topDirtY, bedrockY, token)
-                EnsurePlatformDirtAt(w, startX + stepX, platformY, startX + stepX, prevWalkY, topDirtY, bedrockY, token)
+                -- Naik ke atas platform baru (startX, walkY)
+                EnsureStandingAt(w, startX, walkY, topDirtY, bedrockY, token)
 
-                -- Mundur 1 tile ke (startX + 2*stepX) yang atapnya masih terbuka agar bisa melompat naik ke (startX + stepX, walkY)
-                WalkOrParkourTo(startX + (stepX * 2), prevWalkY, token)
-                if not WalkOrParkourTo(startX, walkY, token) then
-                    local cancelFn = function() return DF.token ~= token or not DF.on or not alive() end
-                    Nav.ClimbUpWithDirt(startX + (stepX * 2), walkY, cancelFn, true, Config.dfTpDelay, true)
-                    WalkOrParkourTo(startX, walkY, token)
-                end
-
-                for x = startX + stepX, endX, stepX do
+                for x = startX, endX, stepX do
                     if not DF.on or DF.token ~= token or not alive() then return end
                     w = FindWorld()
                     if not w or CurrentWorldName() ~= home.world then return end
 
-                    local standX = x - stepX
-                    if (TileValue(w, "fg", x, walkY) or 0) ~= 0 or (TileValue(w, "bg", x, walkY) or 0) ~= 0 then
-                        BreakTotalAt(w, x, walkY, standX, walkY, token)
+                    local standX = (x == startX) and startX or (x - stepX)
+                    if HasBreakableAt(w, x, walkY, true) then
+                        BreakTotalAt(w, x, walkY, standX, walkY, topDirtY, bedrockY, token)
                     end
 
                     DF.status = string.format("Upper Y=%d | Placing Dirt (%d,%d)", platformY, x, platformY)
                     EnsurePlatformDirtAt(w, x, platformY, standX, walkY, topDirtY, bedrockY, token)
-                    WalkOrParkourTo(x, walkY, token)
+                    EnsureStandingAt(w, x, walkY, topDirtY, bedrockY, token)
                 end
 
-                if Config.dfUsePlatform then
+                if Config.dfUsePlatform and (endX >= W - 4 or endX <= 3) then
                     local endPlatX = upperLeftToRight and (W - 2) or 1
-                    PlaceEdgePlatformAt(w, endPlatX, platformY, endX, walkY, token)
+                    PlaceEdgePlatformAt(w, endPlatX, platformY, endX, walkY, topDirtY, bedrockY, token)
                 end
-
-                upperLeftToRight = not upperLeftToRight
             end
         end
 
