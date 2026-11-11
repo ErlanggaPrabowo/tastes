@@ -320,6 +320,11 @@ local Config = {
     harvestTpDelay = 0.30,
     harvestTake = true,
     harvestModFly = false,
+    harvestAutoSaveBlock = true, -- Auto simpan block saat >= 200
+    harvestSaveWorld = "",       -- Kosong = simpan di world ini | "WORLD" / "WORLD:DOOR"
+    harvestSaveX = -1,           -- Posisi X simpan block (-1 = ikut Pos Drop Factory/Farm)
+    harvestSaveY = -1,           -- Posisi Y simpan block (-1 = ikut Pos Drop Factory/Farm)
+    harvestAutoTakeSeed = true,  -- Auto ambil dropped seed di world saat seed tanam habis
     -- Auto Dirt Farm (DF Full World + Use Platform)
     dfBreakDelay = 0.15,
     dfTpDelay = 0.28,
@@ -1140,21 +1145,33 @@ local function CountItem(id)
 end
 
 local function SeedOfBlock(blockId)
-    local it = blockId and ItemDB[blockId]
-    if not it then return nil end
-    local sid = it.seedId or (blockId + 1)
-    local sit = ItemDB[sid]
-    return (sit and sit.kind == "seed") and sid or nil
+    blockId = tonumber(blockId)
+    if not blockId then return nil end
+    local it = GetItemEntry(blockId)
+    if it and (it.kind == "seed" or type(it.tree) == "table" or type(it.grow) == "number") then
+        return blockId
+    end
+    local sid = (it and tonumber(it.seedId)) or (blockId + 1)
+    local sit = GetItemEntry(sid)
+    if sit and (sit.kind == "seed" or type(sit.tree) == "table" or type(sit.grow) == "number") then
+        return sid
+    end
+    return blockId + 1
 end
 
 local function BlockOfSeed(seedId)
+    seedId = tonumber(seedId)
     if not seedId then return nil end
-    local bid = seedId - 1
-    local bit = ItemDB[bid]
-    if bit and bit.kind ~= "seed" and (bit.seedId == nil or bit.seedId == seedId) then
+    local sit = GetItemEntry(seedId)
+    if sit and sit.kind ~= "seed" and type(sit.tree) ~= "table" and type(sit.grow) ~= "number" then
+        return seedId
+    end
+    local bid = (sit and tonumber(sit.blockId)) or (seedId - 1)
+    local bit = GetItemEntry(bid)
+    if bit and bit.kind ~= "seed" then
         return bid
     end
-    return nil
+    return seedId - 1
 end
 
 local cachedDirtId = nil
@@ -3203,7 +3220,7 @@ do (function()
         local tol = 0.14
         local t0 = os.clock()
 
-        while alive() and (Farm.on or Farm.Override ~= nil) and (os.clock() - t0) < (maxSec or 1.6) do
+        while alive() and (Farm.on or Farm.Override ~= nil or Farmer.on or Pabrik.on or Pabrik.traveling or AutoMove.on) and (os.clock() - t0) < (maxSec or 1.6) do
             local s = PlayerPhysicsState()
             if not s or s.dead then break end
 
@@ -3670,23 +3687,43 @@ do (function()
             local doBreak = mode ~= "Place saja"
             local id = (Farm.Override and Farm.Override.block) or Config.farmPlaceId
 
-            -- Auto Drop Seed saat Seed >= Batas
-            if not Farm.Override and Config.farmAutoDropSeed then
+            -- Helper Cek & Eksekusi Auto Drop Seed (Mencegah stuck di 195-199 karena partial pickup ditolak server)
+            local function CheckAndExecuteFarmSeedDrop()
+                if Farm.Override or not Config.farmAutoDropSeed then return false end
                 local seedId = IsSeedId(id) and id or SeedOfBlock(id)
-                local threshold = tonumber(Config.farmSeedDropAt) or 200
-                if seedId and CountItem(seedId) >= threshold then
-                    local keep = tonumber(Config.farmSeedKeep) or 0
-                    local dropAmt = CountItem(seedId) - keep
+                if not seedId then return false end
+
+                local userTarget = tonumber(Config.farmSeedDropAt) or 200
+                -- Jika user set 200, trigger pada >= 195 agar tidak stuck di 198-199 saat tumpukan drop > sisa slot
+                local effectiveThreshold = (userTarget >= 196) and 195 or math.max(1, userTarget)
+                local curSeeds = CountItem(seedId)
+
+                if curSeeds >= effectiveThreshold then
+                    local keep = math.max(0, tonumber(Config.farmSeedKeep) or 0)
+                    local dropAmt = curSeeds - keep
                     if dropAmt > 0 and Pabrik and type(Pabrik.ExternalDropSeed) == "function" then
+                        local dropW = Trim(Config.farmDropWorld or "")
+                        local dx, dy = tonumber(Config.farmDropX) or -1, tonumber(Config.farmDropY) or -1
+                        -- Jika user belum SetPos Drop dan masih di world yang sama, drop 2 tile di samping anchor agar tidak menghambat!
+                        if dropW == "" and (dx < 0 or dy < 0) then
+                            dx = math.clamp(anchor.x + ((anchor.x >= 4) and -2 or 2), 1, w.w - 2)
+                            dy = anchor.y
+                        end
                         Farm.stats.status = string.format("Auto Drop Seed %s x%d...", ItemName(seedId), dropAmt)
                         Pabrik.ExternalDropSeed(
-                            seedId, dropAmt, Config.farmDropWorld, Config.farmDropX, Config.farmDropY,
+                            seedId, dropAmt, dropW, dx, dy,
                             anchor.world, anchor.x, anchor.y,
                             function() return Farm.on and Farm.token == token and alive() end
                         )
-                        w = FindWorld()
+                        return true
                     end
                 end
+                return false
+            end
+
+            if CheckAndExecuteFarmSeedDrop() then
+                w = FindWorld()
+                if not w then break end
             end
 
             local offsets = activeOffsets()
@@ -3835,6 +3872,13 @@ do (function()
                 if Drops.touchAll then
                     Drops.touchAll(brokenTiles, anchor.x, anchor.y)
                 end
+                task.wait(0.15) -- Tunggu inventori sinkron dari server setelah menyapu drop
+            end
+
+            -- Cek kembali Auto Drop Seed tepat setelah selesai mengambil drop!
+            if CheckAndExecuteFarmSeedDrop() then
+                w = FindWorld()
+                if not w then break end
             end
 
             -- Cek apakah stok blok habis dan Auto Refill aktif
@@ -4273,16 +4317,155 @@ do (function()
 end)() end
 
 ----------------------------------------------------------------------
--- 3. FARMER: AUTO HARVEST + AUTO PLANT (BERSIH PIJAKAN)
+-- 3. FARMER: AUTO HARVEST (+AUTO SAVE BLOCK) & AUTO PLANT (+AUTO TAKE SEED)
 ----------------------------------------------------------------------
 do (function()
+    local FailedSeedDrops = {}
+
+    -- Tentukan koordinat & world penyimpanan block untuk Farmer
+    local function GetFarmerSaveTarget(homeWorld, homeX, homeY, w)
+        local saveW = Trim(Config.harvestSaveWorld or "")
+        local sx = tonumber(Config.harvestSaveX) or -1
+        local sy = tonumber(Config.harvestSaveY) or -1
+
+        -- Fallback ke pengaturan Drop Factory / Farm jika Pos Simpan Farmer belum di-set
+        if saveW == "" and (sx < 0 or sy < 0) then
+            if (tonumber(Config.pabrikDropX) or -1) >= 0 and (tonumber(Config.pabrikDropY) or -1) >= 0 then
+                saveW = Trim(Config.pabrikDropWorld or "")
+                sx, sy = tonumber(Config.pabrikDropX), tonumber(Config.pabrikDropY)
+            elseif (tonumber(Config.farmDropX) or -1) >= 0 and (tonumber(Config.farmDropY) or -1) >= 0 then
+                saveW = Trim(Config.farmDropWorld or "")
+                sx, sy = tonumber(Config.farmDropX), tonumber(Config.farmDropY)
+            elseif type(Config.pos1) == "table" and type(Config.pos1.x) == "number" and type(Config.pos1.y) == "number" then
+                saveW = Trim(Config.pos1.world or "")
+                sx, sy = Config.pos1.x, Config.pos1.y
+            else
+                -- Fallback terakhir: di dekat Main Door / posisi awal mulai
+                sx, sy = homeX, homeY
+            end
+        end
+        return saveW, sx, sy
+    end
+
+    -- Simpan Block ke Posisi Simpan (Matikan Auto Collect -> Jalan ke Pos -> Drop -> Nyalakan Auto Collect)
+    local function ExecuteSaveHarvestBlock(blockId, home, returnX, returnY, token)
+        local function liveFn() return Farmer.on and Farmer.token == token and alive() end
+        local have = CountItem(blockId)
+        if have <= 0 then return false end
+
+        local w = FindWorld()
+        local saveW, saveX, saveY = GetFarmerSaveTarget(home.world, home.x, home.y, w)
+
+        Farmer.status = string.format("Tas Block penuh (%d)! Menuju pos simpan (%d,%d)...", have, saveX, saveY)
+        Notify(string.format("Auto Harvest: Menyimpan %s x%d ke (%d,%d)...", ItemName(blockId), have, saveX, saveY), "Farmer ANCH", 4)
+
+        -- 1. Matikan Auto Collect sementara
+        AutoMove.pauseCollect = true
+        local savedTakeCfg = Config.harvestTake
+        Config.harvestTake = false
+
+        -- 2. Gunakan ExternalDropSeed untuk melakukan perjalanan, drop (dengan auto geser kanan jika penuh), dan kembali
+        if Pabrik and type(Pabrik.ExternalDropSeed) == "function" then
+            Pabrik.ExternalDropSeed(blockId, have, saveW, saveX, saveY, home.world, returnX, returnY, liveFn)
+        end
+
+        -- 3. Nyalakan kembali Auto Collect
+        Config.harvestTake = savedTakeCfg
+        AutoMove.pauseCollect = false
+        Farmer.status = "Selesai simpan block, melanjutkan panen..."
+        return true
+    end
+
+    -- Cari dropped seed terdekat di world (di luar zona simpan Pabrik.Zone) untuk Auto Take Seed saat Planting
+    local function FindDroppedSeedInWorld(seedId)
+        if not Drops.list and Drops.findRefs then Drops.findRefs() end
+        local list = Drops.list
+        if type(list) ~= "table" then return nil end
+
+        local px, py = GetTile()
+        px, py = px or 50, py or 30
+        local now = os.clock()
+        local dropZone = Pabrik.Zone
+        if dropZone and dropZone.world ~= CurrentWorldName() then dropZone = nil end
+
+        local best, bestDist = nil, math.huge
+        for _, d in ipairs(list) do
+            if type(d) == "table" and d.id == seedId and (d.n or 0) > 0 and not d.display and type(d.x) == "number" then
+                local key = d.uid or (math.floor(d.x) .. "," .. math.floor(d.y))
+                local skipUntil = FailedSeedDrops[key]
+                local dx, dy = math.floor(d.x), math.floor(d.y)
+                if not (skipUntil and now < skipUntil) and not Nav.SolidAt(dx, dy) then
+                    local dist = math.abs(d.x - px) + math.abs(d.y - py)
+                    if dist < bestDist then
+                        best, bestDist = d, dist
+                    end
+                end
+            end
+        end
+        return best
+    end
+
+    -- Auto Take Seed: Cari dan ambil dropped seed di world sampai tas penuh (200) atau drop habis
+    local function CollectDroppedSeedsForPlanting(seedId, token)
+        local function liveFn() return Farmer.on and Farmer.token == token and alive() end
+        local gotAny = false
+        local tries = {}
+        local tStart = os.clock()
+
+        while liveFn() and CountItem(seedId) < 200 and (os.clock() - tStart) < 40 do
+            local d = FindDroppedSeedInWorld(seedId)
+            if not d then break end
+
+            local key = d.uid or (math.floor(d.x) .. "," .. math.floor(d.y))
+            tries[key] = (tries[key] or 0) + 1
+            if tries[key] > 2 then
+                FailedSeedDrops[key] = os.clock() + 45
+                continue
+            end
+
+            local tx, ty = math.floor(d.x), math.floor(d.y)
+            local before = CountItem(seedId)
+            Farmer.status = string.format("Seed habis! Mengambil drop %s di (%d,%d) [%d/200]...", ItemName(seedId), tx, ty, before)
+
+            local reached = Nav.To(tx, ty, function() return not liveFn() end, 0.4, Config.harvestUseBlock)
+            if reached and Drops.walkToX then
+                local wasA = AutoInput.active
+                AutoInput.active = true
+                Drops.collecting = true
+                Drops.walkToX(d.x, 0.9)
+                Drops.collecting = false
+                AutoInput.active = wasA
+            end
+
+            local w = FindWorld()
+            local worldTake = w and rawget(w, "takeDrop")
+            if type(worldTake) == "function" and d.uid then
+                local room = 200 - CountItem(seedId)
+                if room > 0 then pcall(worldTake, d.uid, math.min(d.n or 1, room)) end
+            end
+
+            task.wait(0.35)
+            if CountItem(seedId) > before then
+                gotAny = true
+                FailedSeedDrops[key] = nil
+            elseif not reached then
+                FailedSeedDrops[key] = os.clock() + 45
+            end
+        end
+
+        return gotAny or CountItem(seedId) > 0
+    end
+
     local function FarmerLoop(token, home)
         if Config.harvestModFly then
             SetAutoFly("autoharvest", true)
         end
 
+        table.clear(FailedSeedDrops)
         local failedSet = {}
         local pass = 0
+        local targetSeedId = tonumber(Config.harvestSeedId) or 3
+        local targetBlockId = BlockOfSeed(targetSeedId)
 
         while Farmer.on and Farmer.token == token and alive() do
             pass += 1
@@ -4292,19 +4475,43 @@ do (function()
                 break
             end
 
+            targetSeedId = tonumber(Config.harvestSeedId) or 3
+            targetBlockId = BlockOfSeed(targetSeedId)
+
+            -- Cek di awal pass: jika Auto Harvest aktif & block sudah >= 200, simpan dulu!
+            if Config.harvestDoHarvest and Config.harvestAutoSaveBlock and targetBlockId and CountItem(targetBlockId) >= 200 then
+                local cx, cy = GetTile()
+                ExecuteSaveHarvestBlock(targetBlockId, home, cx or home.x, cy or home.y, token)
+                if not Farmer.on or Farmer.token ~= token then break end
+                w = FindWorld()
+                if not w then break end
+            end
+
+            -- Cek di awal pass: jika Auto Plant aktif tapi seed di tas 0, coba ambil dropped seed di world dulu!
+            if Config.harvestDoPlant and CountItem(targetSeedId) <= 0 and Config.harvestAutoTakeSeed ~= false then
+                if FindDroppedSeedInWorld(targetSeedId) then
+                    CollectDroppedSeedsForPlanting(targetSeedId, token)
+                    w = FindWorld()
+                    if not w then break end
+                end
+            end
+
             Farmer.status = "Scan pohon & lahan tanam..."
             local readyTrees = {}
             local plantSpots = {}
             local totalTrees = 0
             local skippedNotReady = 0
-            local doPlant = Config.harvestDoPlant and Config.harvestSeedId and CountItem(Config.harvestSeedId) > 0
+            local hasSeedOrDrop = (CountItem(targetSeedId) > 0)
+                or (Config.harvestAutoTakeSeed ~= false and FindDroppedSeedInWorld(targetSeedId) ~= nil)
+            local doPlant = Config.harvestDoPlant and targetSeedId and hasSeedOrDrop
 
             local rowDir = 1
             for y = 0, w.h - 1 do
                 local rowTrees, rowSpots = {}, {}
                 for x = 0, w.w - 1 do
                     local id = TileValue(w, "fg", x, y) or 0
-                    if id ~= 0 and IsSeedId(id) then
+                    -- Cek pohon yang sesuai dengan ID Seed yang dipilih user
+                    if id ~= 0 and id == targetSeedId then
                         totalTrees = totalTrees + 1
                         if Config.harvestDoHarvest and not failedSet[x .. "," .. y] then
                             if IsTreeReady(w, x, y, id) then
@@ -4313,7 +4520,7 @@ do (function()
                                 skippedNotReady = skippedNotReady + 1
                             end
                         end
-                    elseif doPlant and id == 0 and CanPlantAt(w, x, y, Config.harvestSeedId) then
+                    elseif doPlant and id == 0 and CanPlantAt(w, x, y, targetSeedId) then
                         table.insert(rowSpots, { x = x, y = y })
                     end
                 end
@@ -4333,9 +4540,14 @@ do (function()
 
             Farmer.stats.totalTrees = totalTrees
             Farmer.stats.ready = #readyTrees
+
             if pass == 1 then
                 Farmer.stats.skipped = skippedNotReady
-                Notify(string.format("Farmer Scan: %d pohon (%d siap panen, %d belum siap) | %d lahan kosong.", totalTrees, #readyTrees, skippedNotReady, #plantSpots))
+                if Config.harvestDoHarvest and #readyTrees == 0 then
+                    Notify(string.format("Tidak ada pohon %s yang siap panen terdeteksi! (Total pohon: %d, Belum siap: %d)", ItemName(targetSeedId), totalTrees, skippedNotReady), "Auto Harvest", 5)
+                else
+                    Notify(string.format("Farmer Scan (%s): %d siap panen, %d belum siap | %d lahan kosong.", ItemName(targetSeedId), #readyTrees, skippedNotReady, #plantSpots), "Farmer ANCH", 4)
+                end
             end
 
             if #readyTrees == 0 and #plantSpots == 0 then
@@ -4345,21 +4557,30 @@ do (function()
             local actedInPass = false
             local R = math.min(PunchReach(), BuildReach()) - 0.15
 
+            -- FASE 1: AUTO HARVEST (+ AUTO COLLECT BLOCK & AUTO SAVE SAAT >= 200)
             for idx, tree in ipairs(readyTrees) do
                 if not Farmer.on or Farmer.token ~= token or not alive() then return end
                 w = FindWorld()
                 if not w or CurrentWorldName() ~= home.world then return end
 
+                -- Cek apakah block di inventory sudah >= 200 (atau >= 196 agar tidak menolak tumpukan pohon berikutnya)
+                if Config.harvestAutoSaveBlock and targetBlockId and CountItem(targetBlockId) >= 200 then
+                    ExecuteSaveHarvestBlock(targetBlockId, home, tree.x, tree.y, token)
+                    if not Farmer.on or Farmer.token ~= token then return end
+                    w = FindWorld()
+                    if not w then return end
+                end
+
                 if TileValue(w, "fg", tree.x, tree.y) == tree.id then
                     local s = PlayerPhysicsState()
                     if not (s and Nav.StateReaches(s, tree.x, tree.y, R)) then
-                        Farmer.status = string.format("Jalan Zig-Zag ke pohon (%d,%d) [%d/%d]", tree.x, tree.y, idx, #readyTrees)
+                        Farmer.status = string.format("Jalan ke pohon (%d,%d) [%d/%d | Block: %d/200]", tree.x, tree.y, idx, #readyTrees, targetBlockId and CountItem(targetBlockId) or 0)
                         local moved = Nav.To(tree.x, tree.y, function() return Farmer.token ~= token or not Farmer.on end, R, Config.harvestUseBlock)
                         if not moved then
                             failedSet[tree.x .. "," .. tree.y] = true
                             Farmer.stats.skipped = Farmer.stats.skipped + 1
                         end
-                        task.wait(math.max(0.10, Config.harvestTpDelay))
+                        task.wait(math.max(0.08, Config.harvestTpDelay))
                     end
 
                     local sCheck = PlayerPhysicsState()
@@ -4376,13 +4597,44 @@ do (function()
                             Farmer.stats.harvested = Farmer.stats.harvested + 1
                             Stats.Harvested = Stats.Harvested + 1
                             Farmer.stats.ready = math.max(0, Farmer.stats.ready - 1)
-                            if Config.harvestDoPlant and Config.harvestSeedId and CountItem(Config.harvestSeedId) > 0 and CanPlantAt(w, tree.x, tree.y, Config.harvestSeedId) then
-                                task.wait(0.08)
-                                if PlaceCell(Config.harvestSeedId, { x = tree.x, y = tree.y }, 1) then
-                                    Farmer.stats.planted = Farmer.stats.planted + 1
-                                    Stats.Planted = Stats.Planted + 1
-                                    task.wait(math.max(0.05, Config.harvestPlantDelay))
+
+                            -- Auto Collect: Maju sentuh tile bekas pohon agar block yang jatuh langsung terambil!
+                            if Config.harvestTake then
+                                task.wait(0.14)
+                                local px, py = GetTile()
+                                if Config.collectMode == "Legit" and px and py == tree.y and math.abs(px - tree.x) <= 3 and not Nav.SolidAt(tree.x, tree.y) and Drops.walkToX then
+                                    local wasA = AutoInput.active
+                                    AutoInput.active = true
+                                    Drops.collecting = true
+                                    Drops.walkToX(tree.x + 0.5, 0.9)
+                                    Drops.collecting = false
+                                    AutoInput.active = wasA
+                                    if Drops.waitNearDrops then Drops.waitNearDrops(0.25) end
+                                else
+                                    task.wait(0.15)
                                 end
+                            end
+
+                            -- Tanam ulang langsung di tile bekas pohon jika Auto Plant juga dinyalakan
+                            if Config.harvestDoPlant and targetSeedId then
+                                if CountItem(targetSeedId) <= 0 and Config.harvestAutoTakeSeed ~= false then
+                                    CollectDroppedSeedsForPlanting(targetSeedId, token)
+                                end
+                                if CountItem(targetSeedId) > 0 and CanPlantAt(w, tree.x, tree.y, targetSeedId) then
+                                    task.wait(0.06)
+                                    if PlaceCell(targetSeedId, { x = tree.x, y = tree.y }, 1) then
+                                        Farmer.stats.planted = Farmer.stats.planted + 1
+                                        Stats.Planted = Stats.Planted + 1
+                                        task.wait(math.max(0.05, Config.harvestPlantDelay))
+                                    end
+                                end
+                            end
+
+                            -- Cek langsung setelah collect pohon ini: apakah block sudah >= 200?
+                            if Config.harvestAutoSaveBlock and targetBlockId and CountItem(targetBlockId) >= 200 then
+                                ExecuteSaveHarvestBlock(targetBlockId, home, tree.x, tree.y, token)
+                                if not Farmer.on or Farmer.token ~= token then return end
+                                w = FindWorld()
                             end
                         else
                             failedSet[tree.x .. "," .. tree.y] = true
@@ -4392,28 +4644,42 @@ do (function()
                 end
             end
 
-            if Config.harvestDoPlant and Config.harvestSeedId and CountItem(Config.harvestSeedId) > 0 then
+            -- FASE 2: AUTO PLANT (+ AUTO TAKE DROPPED SEED SAAT SEED DI TAS HABIS)
+            if Config.harvestDoPlant and targetSeedId and #plantSpots > 0 then
                 for idx, spot in ipairs(plantSpots) do
                     if not Farmer.on or Farmer.token ~= token or not alive() then return end
-                    if CountItem(Config.harvestSeedId) <= 0 then break end
+
+                    -- Jika seed di tas habis (0), cek apakah ada dropped seed di world lalu ambil!
+                    if CountItem(targetSeedId) <= 0 then
+                        if Config.harvestAutoTakeSeed ~= false and FindDroppedSeedInWorld(targetSeedId) then
+                            if not CollectDroppedSeedsForPlanting(targetSeedId, token) then
+                                Notify("Auto Plant: " .. ItemName(targetSeedId) .. " habis & drop tidak terjangkau!", "Auto Plant", 4)
+                                break
+                            end
+                        else
+                            Notify("Auto Plant berhenti: " .. ItemName(targetSeedId) .. " di tas dan di world sudah habis!", "Auto Plant", 4)
+                            break
+                        end
+                    end
+
                     w = FindWorld()
                     if not w or CurrentWorldName() ~= home.world then return end
 
-                    if CanPlantAt(w, spot.x, spot.y, Config.harvestSeedId) then
+                    if CanPlantAt(w, spot.x, spot.y, targetSeedId) then
                         local s = PlayerPhysicsState()
                         if not (s and Nav.StateReaches(s, spot.x, spot.y, R)) then
-                            Farmer.status = string.format("Jalan Zig-Zag ke tanam (%d,%d) [%d/%d]", spot.x, spot.y, idx, #plantSpots)
+                            Farmer.status = string.format("Jalan ke tanam (%d,%d) [%d/%d | Seed: %d]", spot.x, spot.y, idx, #plantSpots, CountItem(targetSeedId))
                             Nav.To(spot.x, spot.y, function() return Farmer.token ~= token or not Farmer.on end, R, Config.harvestUseBlock)
-                            task.wait(math.max(0.10, Config.harvestTpDelay))
+                            task.wait(math.max(0.08, Config.harvestTpDelay))
                         end
 
                         local sCheck = PlayerPhysicsState()
-                        if sCheck and Nav.StateReaches(sCheck, spot.x, spot.y, R + 0.5) and CanPlantAt(w, spot.x, spot.y, Config.harvestSeedId) then
-                            if PlaceCell(Config.harvestSeedId, spot, 1) then
+                        if sCheck and Nav.StateReaches(sCheck, spot.x, spot.y, R + 0.5) and CanPlantAt(w, spot.x, spot.y, targetSeedId) then
+                            if PlaceCell(targetSeedId, spot, 1) then
                                 actedInPass = true
                                 Farmer.stats.planted = Farmer.stats.planted + 1
                                 Stats.Planted = Stats.Planted + 1
-                                Farmer.status = string.format("Tanam %s (%d,%d)", ItemName(Config.harvestSeedId), spot.x, spot.y)
+                                Farmer.status = string.format("Tanam %s (%d,%d) [Sisa: %d]", ItemName(targetSeedId), spot.x, spot.y, CountItem(targetSeedId))
                                 task.wait(math.max(0.05, Config.harvestPlantDelay))
                             end
                         end
@@ -4424,11 +4690,12 @@ do (function()
             if not actedInPass then break end
         end
 
+        AutoMove.pauseCollect = false
         SetAutoFly("autoharvest", false)
         ReleaseInput()
         AutoInput.active = false
         Farmer.status = "Selesai"
-        local msg = string.format("Farmer selesai! Panen: %d | Tanam: %d | Drop: %d", Farmer.stats.harvested, Farmer.stats.planted, Farmer.stats.picked)
+        local msg = string.format("Farmer selesai! Panen: %d | Tanam: %d | Drop diambil: %d", Farmer.stats.harvested, Farmer.stats.planted, Farmer.stats.picked)
         Notify(msg)
         Webhook.Send("stop", msg)
     end
@@ -4437,6 +4704,7 @@ do (function()
         if not Farmer.on then return false end
         Farmer.token += 1
         Farmer.on = false
+        AutoMove.pauseCollect = false
         SetAutoFly("autoharvest", false)
         ReleaseInput()
         AutoInput.active = false
@@ -4451,6 +4719,7 @@ do (function()
         if DF.on then DF.Stop() end
         if SpliceBot.on then SpliceBot.Stop() end
         if Pabrik.on then Pabrik.Stop() end
+        if Session.Rotation and Session.Rotation.on then Session.Rotation.Stop() end
 
         local x, y = GetGridState()
         if not x then Notify("Posisi belum terdeteksi."); return false end
@@ -4464,6 +4733,7 @@ do (function()
         task.spawn(function()
             local ok, err = pcall(FarmerLoop, token, home)
             if not ok then warn("[ANCHHub] Farmer error: " .. tostring(err)) end
+            AutoMove.pauseCollect = false
             SetAutoFly("autoharvest", false)
             ReleaseInput()
             AutoInput.active = false
@@ -10882,6 +11152,52 @@ SafeUI("Tab:Farmer", function()
             end
         end,
     })
+
+    Tab:Toggle({
+    Title = "Auto Save Block (>= 200)",
+    Desc = "Auto save block from harvest",
+    Value = Config.harvestAutoSaveBlock,
+    Callback = function(v)
+        Config.harvestAutoSaveBlock = v
+        SaveConfig()
+    end,
+})
+
+Tab:Toggle({
+    Title = "Auto Take Seed (Saat Habis)",
+    Desc = "Auto take seed when empty",
+    Value = Config.harvestAutoTakeSeed,
+    Callback = function(v)
+        Config.harvestAutoTakeSeed = v
+        SaveConfig()
+    end,
+})
+
+Tab:Input({
+    Title = "World Drop Block",
+    Desc = "Empty = this world, WORLD / WORLD:DOOR",
+    Value = Config.harvestSaveWorld,
+    Placeholder = "Example: STORAGE1:DOOR1",
+    Callback = function(txt)
+        Config.harvestSaveWorld = Trim(txt):upper()
+        SaveConfig()
+    end,
+})
+
+Tab:Button({
+    Title = "SetPos Simpan Block (Posisi Sekarang)",
+    Desc = "Simpan koordinat berdiri saat ini untuk tempat drop block hasil panen",
+    Callback = function()
+        local tx, ty = GetTile()
+        if not tx then
+            Notify("Posisi karakter belum terbaca!")
+            return
+        end
+        Config.harvestSaveX, Config.harvestSaveY = tx, ty
+        SaveConfig()
+        Notify(string.format("Pos Simpan Block Farmer diatur ke (%d, %d)", tx, ty))
+    end,
+})
 
     Tab:Toggle({
         Title = "Use Scaffold Blocks When Climbing",
