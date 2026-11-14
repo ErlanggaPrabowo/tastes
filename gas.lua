@@ -4764,7 +4764,9 @@ end)() end
 do (function()
     local BREAK_TIMEOUT = 6.0
     local DIRT_TARGET = 30      -- stok dirt yang dikejar saat restock
-    local SEED_TARGET = 4       -- seed minimal sebelum mulai tanam
+    local SEED_TARGET = 6       -- seed minimal sebelum mulai tanam
+    local PLANT_BATCH = 12      -- jumlah seed yang ditanam sekali putaran
+    local MAX_HOP = 2           -- jarak antar tile kerja yang masih layak dilewati jalan kaki
     local Blocked = {}          -- "x,y" -> os.clock() kedaluwarsa (tile yang gagal dikerjakan)
 
     ------------------------------------------------------------------
@@ -5056,9 +5058,9 @@ do (function()
         local _, cx = Settle(token, 1.0)
         if not cx then return false end
 
-        for d = 0, 10 do
+        for d = 0, 18 do
             for _, x in ipairs({ cx + d, cx - d }) do
-                if #spots >= 6 or CountItem(seedId) <= #spots then break end
+                if #spots >= PLANT_BATCH or CountItem(seedId) <= #spots then break end
                 if x >= 2 and x <= w.w - 3 and x ~= cx
                     and (TileValue(w, "fg", x, standY) or 0) == 0
                     and (TileValue(w, "fg", x, dirtY) or 0) ~= 0
@@ -5066,7 +5068,7 @@ do (function()
                     spots[#spots + 1] = { x = x, y = standY }
                 end
             end
-            if #spots >= 6 then break end
+            if #spots >= PLANT_BATCH then break end
         end
         if #spots == 0 then return false end
 
@@ -5100,9 +5102,9 @@ do (function()
         local _, cx = Settle(token, 1.0)
         if not cx then return false end
 
-        for d = 1, 12 do
+        for d = 1, 18 do
             for _, x in ipairs({ cx + d, cx - d }) do
-                if CountItem(seedId) >= SEED_TARGET or #holes >= 8 then break end
+                if CountItem(seedId) >= SEED_TARGET or #holes >= PLANT_BATCH then break end
                 if x >= 2 and x <= w.w - 3 and (TileValue(w, "fg", x, dirtY) or 0) == dirtId then
                     local standX = (x > cx) and (x - 1) or (x + 1)
                     if GoStand(standX, standY, token, false) then
@@ -5114,7 +5116,7 @@ do (function()
                     end
                 end
             end
-            if CountItem(seedId) >= SEED_TARGET or #holes >= 8 then break end
+            if CountItem(seedId) >= SEED_TARGET or #holes >= PLANT_BATCH then break end
         end
 
         -- Tambal kembali lubangnya (langkah 7: jangan tinggalkan pola bolong)
@@ -5176,12 +5178,39 @@ do (function()
         return list
     end
 
+    -- Apa yang masih perlu dikerjakan di satu kolom parit? Dicek dari grid DULU,
+    -- supaya karakter tidak berjalan ke ujung world cuma untuk menemukan tidak ada kerjaan.
+    local function EdgeSideNeeds(w, dirtY, standY, cols)
+        local lid = LadderId()
+        for i, col in ipairs(cols) do
+            if Breakable(w, col, standY, true) then return true end
+            if i == 1 then
+                if (TileValue(w, "fg", col, dirtY) or 0) ~= lid and CountItem(lid) > 0 then return true end
+            elseif Breakable(w, col, dirtY, true) then
+                return true
+            end
+        end
+        return false
+    end
+
     -- Kolom parit ujung: lorong dibersihkan, baris dirt dapat tile tangga.
     local function EdgeWork(w, dirtY, standY, token)
         local W = w.w
-        for _, side in ipairs({ { stand = 2, cols = { 1, 0 } }, { stand = W - 3, cols = { W - 2, W - 1 } } }) do
+        local sides = { { stand = 2, cols = { 1, 0 } }, { stand = W - 3, cols = { W - 2, W - 1 } } }
+
+        -- Sisi terdekat dikerjakan lebih dulu, dan sisi yang tidak ada kerjaannya tidak didatangi
+        local _, px = Settle(token, 1.0)
+        if px and math.abs(px - sides[2].stand) < math.abs(px - sides[1].stand) then
+            sides[1], sides[2] = sides[2], sides[1]
+        end
+
+        for _, side in ipairs(sides) do
             if Cancelled(token) then return end
-            if Nav.RealSupport(side.stand, standY) and GoStand(side.stand, standY, token, false) then
+            w = FindWorld()
+            if not w then return end
+            if EdgeSideNeeds(w, dirtY, standY, side.cols)
+                and Nav.RealSupport(side.stand, standY)
+                and GoStand(side.stand, standY, token, false) then
                 for i, col in ipairs(side.cols) do
                     if Cancelled(token) then return end
                     if Breakable(w, col, standY, true) and ReachOk(col, standY, PunchReach()) then
@@ -5204,44 +5233,43 @@ do (function()
         end
     end
 
-    -- Kerjakan 1 baris dirt. Return: "done" | "progress" | "stuck"
-    local function BuildRow(w, dirtY, standY, token)
-        local dirtId = GetDirtId()
-        local todo = RowTodo(w, dirtY, standY)
-        if #todo == 0 then
-            EdgeWork(w, dirtY, standY, token)
-            return "done"
+    -- Pecah daftar kerja jadi gugus tile yang berdekatan. Tanpa ini, baris yang cuma
+    -- bolong di dua ujungnya membuat karakter menyusuri seluruh baris tile per tile.
+    local function Clusters(todo)
+        local out = {}
+        for _, t in ipairs(todo) do
+            local last = out[#out]
+            if last and (t.x - last.hi) <= (MAX_HOP + 1) then
+                last.hi = t.x
+            else
+                out[#out + 1] = { lo = t.x, hi = t.x }
+            end
         end
+        return out
+    end
 
-        DF.stats.step = string.format("Row Y=%d", dirtY)
-        local _, px = Settle(token, 1.2)
-        px = px or 2
-        local minX, maxX = todo[1].x, todo[#todo].x
-        local leftToRight = math.abs(px - minX) <= math.abs(px - maxX)
-        local startX = leftToRight and minX or maxX
-        local endX = leftToRight and maxX or minX
-        local step = leftToRight and 1 or -1
+    -- Sapu satu gugus saja. Return: progress, stuck
+    local function SweepSegment(w, dirtY, standY, startX, endX, step, token)
+        local dirtId = GetDirtId()
+        local progress, prevNeedFloor = false, nil
 
         -- Masuk ke lorong dulu; kalau pijakan awalnya belum ada, izinkan Nav pakai pijakan sementara
         if not GoStand(startX, standY, token, true) then
             MarkBlocked(startX, standY, 45)
-            return "stuck"
+            return false, true
         end
 
-        local progress = false
-        local prevNeedFloor = nil
-
         for x = startX, endX, step do
-            if Cancelled(token) then return progress and "progress" or "stuck" end
+            if Cancelled(token) then return progress, true end
             w = FindWorld()
-            if not w or CurrentWorldName() ~= DF.homeWorld then return "stuck" end
+            if not w or CurrentWorldName() ~= DF.homeWorld then return progress, true end
 
             local _, cx, cy = Settle(token, 1.2)
             if not cx or cy ~= standY then
                 -- Terperosok / terlempar: hitung ulang dari posisi nyata, jangan lanjut membabi buta
-                if not GoStand(x, standY, token, true) then return progress and "progress" or "stuck" end
+                if not GoStand(x, standY, token, true) then return progress, true end
                 _, cx, cy = Settle(token, 1.0)
-                if cy ~= standY then return progress and "progress" or "stuck" end
+                if cy ~= standY then return progress, true end
             end
 
             -- 1. Kosongkan lorong di depan (dx=1, dy=0)
@@ -5261,10 +5289,10 @@ do (function()
                     if (TileValue(FindWorld() or w, "fg", x, dirtY) or 0) == 0 then
                         if CountItem(dirtId) <= 0 and not Supply(w, token, standY) then
                             DF.status = "Out of dirt & no way to restock"
-                            return progress and "progress" or "stuck"
+                            return progress, true
                         end
                         if not GoStand((x == cx) and cx or (x - step), standY, token, false) then
-                            return progress and "progress" or "stuck"
+                            return progress, true
                         end
                         DF.status = string.format("Row Y=%d | placing dirt (%d,%d)", dirtY, x, dirtY)
                         if PlaceAt(FindWorld() or w, dirtId, x, dirtY, token) then
@@ -5289,7 +5317,7 @@ do (function()
                 end
             end
 
-            -- 4. Tile pertama: lantainya hanya bisa dikerjakan dari tetangganya
+            -- 4. Tile pertama gugus: lantainya hanya bisa dikerjakan dari tetangganya
             if prevNeedFloor then
                 local f2 = TileValue(FindWorld() or w, "fg", prevNeedFloor, dirtY) or 0
                 if f2 ~= dirtId and CountItem(dirtId) > 0 and ReachOk(prevNeedFloor, dirtY, BuildReach()) then
@@ -5304,7 +5332,7 @@ do (function()
             end
         end
 
-        -- Tile terakhir yang lantainya belum tergarap: coba dari posisi berdiri sekarang
+        -- Tile terakhir yang lantainya belum tergarap: dekati dari tetangganya
         if prevNeedFloor then
             local f3 = TileValue(FindWorld() or w, "fg", prevNeedFloor, dirtY) or 0
             if f3 ~= dirtId and CountItem(dirtId) > 0 then
@@ -5314,6 +5342,41 @@ do (function()
                     if PlaceAt(FindWorld() or w, dirtId, prevNeedFloor, dirtY, token) then progress = true end
                 end
             end
+        end
+
+        return progress, false
+    end
+
+    -- Kerjakan 1 baris dirt. Return: "done" | "progress" | "stuck"
+    local function BuildRow(w, dirtY, standY, token)
+        local todo = RowTodo(w, dirtY, standY)
+        if #todo == 0 then
+            EdgeWork(w, dirtY, standY, token)
+            return "done"
+        end
+
+        DF.stats.step = string.format("Row Y=%d", dirtY)
+        local segs = Clusters(todo)
+        local progress = false
+
+        while #segs > 0 and not Cancelled(token) do
+            -- Gugus terdekat dulu, biar tidak menyeberangi world berkali-kali
+            local _, px = Settle(token, 1.2)
+            px = px or 2
+            local pick, bestD = 1, math.huge
+            for i, sg in ipairs(segs) do
+                local d = math.min(math.abs(px - sg.lo), math.abs(px - sg.hi))
+                if d < bestD then pick, bestD = i, d end
+            end
+            local sg = table.remove(segs, pick)
+
+            local leftToRight = math.abs(px - sg.lo) <= math.abs(px - sg.hi)
+            local startX = leftToRight and sg.lo or sg.hi
+            local endX = leftToRight and sg.hi or sg.lo
+            local gained = SweepSegment(w, dirtY, standY, startX, endX, leftToRight and 1 or -1, token)
+            if gained then progress = true end
+            w = FindWorld()
+            if not w then return progress and "progress" or "stuck" end
         end
 
         EdgeWork(FindWorld() or w, dirtY, standY, token)
