@@ -4797,14 +4797,28 @@ do (function()
 
     -- Posisi NYATA karakter: tunggu sampai mendarat & berhenti dulu.
     -- Semua pengecekan "sudah sampai?" wajib lewat sini, jangan pernah percaya niat gerak.
+    -- Sebagian pijakan (door, platform, tile tangga) tidak pernah melaporkan grounded.
+    -- Tanpa jalan keluar di bawah, tiap pemanggilan akan membuang seluruh timeout-nya dan
+    -- karakter tampak membeku belasan detik. Jadi: tile yang sudah berhenti berubah & tidak
+    -- sedang jatuh dianggap sudah mapan.
     local function Settle(token, maxSec)
         local t0 = os.clock()
-        while (os.clock() - t0) < (maxSec or 1.2) do
+        local limit = math.min(maxSec or 0.8, 0.9)
+        local lastX, lastY, same = nil, nil, 0
+        while (os.clock() - t0) < limit do
             if Cancelled(token) then return nil end
             local s = PlayerPhysicsState()
             if not s or s.dead then return nil end
-            if s.grounded and math.abs(s.vx or 0) < 1.2 and math.abs(s.vy or 0) < 1.2 then
-                return s, math.floor(s.x), math.floor(s.y - 0.475), true
+            local tx, ty = math.floor(s.x), math.floor(s.y - 0.475)
+            local vx, vy = math.abs(s.vx or 0), math.abs(s.vy or 0)
+            if s.grounded and vx < 1.2 and vy < 1.2 then
+                return s, tx, ty, true
+            end
+            if tx == lastX and ty == lastY then
+                same += 1
+                if same >= 3 and vy < 1.2 then return s, tx, ty, true end
+            else
+                lastX, lastY, same = tx, ty, 0
             end
             task.wait(0.04)
         end
@@ -4860,9 +4874,19 @@ do (function()
     -- DENAH WORLD
     ------------------------------------------------------------------
     -- topDirtY = baris dirt pertama, yaitu 1 tile di bawah White Door.
+    -- Dulu fungsi ini memindai SELURUH grid tanpa yield sekali pun, jadi game ikut berhenti
+    -- dan karakter diam lama di awal. Sekarang: tebak dari w.spawn, lalu pastikan hanya di
+    -- band sempit sekitarnya, dan bedrock dicari dari dasar world ke atas.
     local function Layers(w)
+        DF.status = "Scanning world layers..."
+        local spawnY = (typeof(w.spawn) == "Vector2") and math.floor(w.spawn.Y) or nil
         local doorY
-        for y = 0, w.h - 1 do
+
+        local y0, y1 = 0, w.h - 1
+        if spawnY then
+            y0, y1 = math.max(0, spawnY - 6), math.min(w.h - 1, spawnY + 6)
+        end
+        for y = y0, y1 do
             for x = 0, w.w - 1 do
                 local id = TileValue(w, "fg", x, y) or 0
                 if id ~= 0 then
@@ -4875,19 +4899,27 @@ do (function()
                 end
             end
             if doorY then break end
+            task.wait()           -- kembalikan thread ke game tiap baris
         end
-        if not doorY and typeof(w.spawn) == "Vector2" then doorY = math.floor(w.spawn.Y) end
+        doorY = doorY or spawnY
 
+        -- Bedrock ada di dasar: cari dari bawah, bukan menyapu seluruh kedalaman world
         local bedrockY
-        for y = (doorY or 10) + 1, w.h - 1 do
+        local need = math.floor(w.w * 0.4)
+        for y = w.h - 1, (doorY or 10) + 1, -1 do
             local n = 0
             for x = 0, w.w - 1 do
-                if IsBedrock(TileValue(w, "fg", x, y) or 0) then n += 1 end
+                if IsBedrock(TileValue(w, "fg", x, y) or 0) then
+                    n += 1
+                    if n >= need then break end
+                end
             end
-            if n >= math.floor(w.w * 0.4) then
+            if n >= need then
                 bedrockY = y
-                break
+            elseif bedrockY then
+                break             -- baris bedrock teratas sudah lewat
             end
+            task.wait()
         end
         return (doorY and (doorY + 1)) or 37, bedrockY or (w.h - 6)
     end
@@ -5174,6 +5206,7 @@ do (function()
             if needClear or needFloor then
                 list[#list + 1] = { x = x, clear = needClear, floor = needFloor }
             end
+            if x % 32 == 0 then task.wait() end
         end
         return list
     end
@@ -5395,6 +5428,7 @@ do (function()
         if not w then return end
         DF.homeWorld = home.world
 
+        DF.stats.step = "Scanning"
         local topDirtY, bedrockY = Layers(w)
         DF.stats.topDirtY, DF.stats.bedrockY = topDirtY, bedrockY
         Notify(string.format("Auto DF: dirt row Y=%d, bedrock Y=%d. Resuming from world grid.", topDirtY, bedrockY))
@@ -5409,7 +5443,7 @@ do (function()
             pass += 1
             local left, progressed, firstStuck = 0, false, nil
 
-            for _, dirtY in ipairs(rows) do
+            for idx, dirtY in ipairs(rows) do
                 if Cancelled(token) then return end
                 w = FindWorld()
                 if not w or CurrentWorldName() ~= home.world then
@@ -5417,10 +5451,14 @@ do (function()
                     return
                 end
 
+                -- Status ikut bergerak selama pemindaian, biar jeda singkat tidak terbaca stuck
+                DF.stats.step = string.format("Scan %d/%d", idx, #rows)
+                DF.status = string.format("Checking row Y=%d (pass %d)", dirtY, pass)
+
                 local standY = dirtY - 1
                 if standY >= 0 and #RowTodo(w, dirtY, standY) > 0 then
                     -- Turun ke level berikutnya lewat tile di bawah kaki, bukan lewat parit
-                    local _, _, cy = Settle(token, 1.0)
+                    local _, _, cy = Settle(token, 0.6)
                     if cy and cy < standY and (standY - cy) <= 4 then
                         DF.status = string.format("Digging down to row Y=%d", dirtY)
                         DropOneLevel(w, token, standY)
